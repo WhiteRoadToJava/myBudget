@@ -51,8 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").hasRole("USER")
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("healthy").permitAll()
-
+                        .requestMatchers("/healthy/**").permitAll()
                         //.requestMatchers("/products/**").permitAll()
                         // any other requests the user need to be logged
                         .anyRequest().authenticated()
