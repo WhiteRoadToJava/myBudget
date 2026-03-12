@@ -1,4 +1,4 @@
-package dto;
+package com.mybudget.server.dto;
 
 import com.mybudget.server.module.Role;
 

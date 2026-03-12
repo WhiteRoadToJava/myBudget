@@ -1,6 +1,7 @@
-package se.java.security.dto;
+package com.mybudget.server.dto;
 
-import se.java.security.models.Role;
+import com.mybudget.server.module.Role;
+
 
 import java.util.Set;
 
@@ -14,6 +15,10 @@ public class RegisterResponse {
         this.username = username;
         this.roles = roles;
     }
+
+
+
+
 
     public String getMessage() {
         return message;

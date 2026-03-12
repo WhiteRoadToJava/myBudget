@@ -2,6 +2,10 @@
 package com.mybudget.server.controll;
 
 
+import com.mybudget.server.dto.AuthRequest;
+import com.mybudget.server.dto.AuthResponse;
+import com.mybudget.server.dto.RegisterRequest;
+import com.mybudget.server.dto.RegisterResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -24,7 +28,7 @@ import com.mybudget.server.module.User;
 import com.mybudget.server.service.UserService;
 import com.mybudget.server.util.JwtUtil;
 
-import
+
 
 import java.util.Set;
 
