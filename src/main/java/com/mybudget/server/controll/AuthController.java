@@ -127,6 +127,24 @@ public class AuthController {
     }
 
 
+        @PostMapping("/logout")
+        public ResponseEntity<?> logout() {
+            // create cookie with same name and empty value to delete it
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
+                    .httpOnly(true)
+                    .secure(false) //IMPORTANT TO CHANGE IN PRODUCTION TO TRUE
+                    .path("/")
+                    .maxAge(0) // expire immediately
+                    .sameSite("Strict")
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                    .body("Logout successful");
+        }
+   
+
+
 
 
 
