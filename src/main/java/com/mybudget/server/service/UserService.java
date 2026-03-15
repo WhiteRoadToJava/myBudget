@@ -36,13 +36,16 @@ public class UserService {
         userRepository.save(user);
     }
 
-    // find user by username
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
+    // find user by email
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
-    // check if username already exists
+    // check if email already exists
+    public boolean existsByEmail(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
     public boolean existsByUsername(String username) {
         return userRepository.findByUsername(username).isPresent();
     }

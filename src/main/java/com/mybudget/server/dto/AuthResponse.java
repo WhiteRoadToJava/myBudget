@@ -7,12 +7,12 @@ import java.util.Set;
 
 public class AuthResponse {
     private String jwtToken;
-    private String username;
+    private String email;
     private Set<Role> roles;
 
-    public AuthResponse(String jwtToken, String username, Set<Role> roles) {
+    public AuthResponse(String jwtToken, String email, Set<Role> roles) {
         this.jwtToken = jwtToken;
-        this.username = username;
+        this.email = email;
         this.roles = roles;
     }
 
@@ -24,12 +24,12 @@ public class AuthResponse {
         this.jwtToken = jwtToken;
     }
 
-    public String getUsername() {
-        return username;
+    public String getEmail() {
+        return email;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Set<Role> getRoles() {
