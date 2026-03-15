@@ -6,17 +6,17 @@ import jakarta.validation.constraints.NotBlank;
 
 public class AuthRequest {
     @NotBlank
-    private String username;
+    private String email;
     @NotBlank
     private String password;
 
-    public AuthRequest(String username, String password) {
-        this.username = username;
+    public AuthRequest(String email, String password) {
+        this.email = email;
         this.password = password;
     }
 
-    public @NotBlank String getUsername() {
-        return username;
+    public @NotBlank String getEmail() {
+        return email;
     }
 
     public @NotBlank String getPassword() {

@@ -11,6 +11,8 @@ public class RegisterRequest {
     @NotBlank
     private String username;
     @NotBlank
+    private String email;
+    @NotBlank
     private String password;
     private Set<Role> roles;
 
@@ -30,5 +32,15 @@ public class RegisterRequest {
 
     public Set<Role> getRoles() {
         return roles;
+    }
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
