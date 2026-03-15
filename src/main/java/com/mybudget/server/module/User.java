@@ -16,6 +16,9 @@ public class User {
     @Indexed(unique = true)
     @NotEmpty(message = "Username cannot be empty")
     private String username;
+    @NotEmpty(message = "Email cannot be empty")
+    @Indexed(unique = true)
+    private String email;
 
     @Pattern(
             regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()\\-_=+{};:,<.>])(?=.{8,})" +
@@ -30,8 +33,9 @@ public class User {
     public User() {
     }
 
-    public User(String username, String password, Set<Role> roles) {
+    public User(String username, String email, String password, Set<Role> roles) {
         this.username = username;
+        this.email = email;
         this.password = password;
         this.roles = roles;
     }
@@ -64,6 +68,14 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
 

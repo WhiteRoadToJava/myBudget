@@ -49,16 +49,17 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        // check if username already exists
-        if(userService.existsByUsername(registerRequest.getUsername())) {
+        // check if email already exists
+        if(userService.existsByEmail(registerRequest.getEmail())) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body("Username already exists.");
+                    .body("Email already exists.");
         }
 
         // map the AuthRequest to a User entity
         User user = new User();
         user.setUsername(registerRequest.getUsername());
+        user.setEmail(registerRequest.getEmail());
         user.setPassword(registerRequest.getPassword());
 
         // assign roles
@@ -75,6 +76,7 @@ public class AuthController {
         RegisterResponse response = new RegisterResponse(
                 "User registered successfully",
                 user.getUsername(),
+                user.getEmail(),
                 user.getRoles()
         );
 
@@ -88,7 +90,7 @@ public class AuthController {
             // authenticate user
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            authRequest.getUsername(),
+                            authRequest.getEmail(),
                             authRequest.getPassword()
                     )
             );
@@ -113,7 +115,7 @@ public class AuthController {
             AuthResponse authResponse = new AuthResponse(
                     "Login successful",
                     userDetails.getUsername(),
-                    userService.findByUsername(userDetails.getUsername()).getRoles()
+                    userService.findByEmail(userDetails.getUsername()).getRoles()
             );
 
             return ResponseEntity.ok()
@@ -157,14 +159,14 @@ public class AuthController {
 
         // returnera user info om authentication
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userService.findByUsername(userDetails.getUsername());
+        User user = userService.existsByEmail(userDetails.getUsername()) ? userService.findByEmail(userDetails.getUsername()) : null;
 
         // added getter for everything i can to return in the respond to the client
         // also had to add them to login since we use the same DTO..
         // a better solution would be to create two separate DTOs
         return ResponseEntity.ok(new AuthResponse(
                 "Authenticated",
-                user.getUsername(),
+                user.getEmail(),
                 user.getRoles()
         ));
     }
