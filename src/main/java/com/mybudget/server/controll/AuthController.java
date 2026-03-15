@@ -152,7 +152,7 @@ public class AuthController {
 
         // kontrollera om användaren är authenticated
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated!");
+            return ResponseEntity.ok().body(null);
         }
 
         // returnera user info om authentication
