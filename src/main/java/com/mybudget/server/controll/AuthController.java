@@ -12,12 +12,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -143,7 +145,29 @@ public class AuthController {
                     .body("Logout successful");
         }
    
+ // kolla om en user är authenticated
+    @GetMapping("/check")
+    public ResponseEntity<?> checkAuthentication() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+        // kontrollera om användaren är authenticated
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated!");
+        }
+
+        // returnera user info om authentication
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userService.findByUsername(userDetails.getUsername());
+
+        // added getter for everything i can to return in the respond to the client
+        // also had to add them to login since we use the same DTO..
+        // a better solution would be to create two separate DTOs
+        return ResponseEntity.ok(new AuthResponse(
+                "Authenticated",
+                user.getUsername(),
+                user.getRoles()
+        ));
+    }
 
 
 
