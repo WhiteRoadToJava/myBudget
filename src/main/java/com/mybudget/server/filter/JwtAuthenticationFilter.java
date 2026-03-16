@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.mybudget.server.service.CustomUserDetailsService;
+import com.mybudget.server.services.CustomUserDetailsService;
 import com.mybudget.server.util.JwtUtil;
 
 import io.jsonwebtoken.JwtException;
@@ -26,7 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
-    private final com.mybudget.server.service.CustomUserDetailsService userDetailsService;
+    private final com.mybudget.server.services.CustomUserDetailsService userDetailsService;
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 

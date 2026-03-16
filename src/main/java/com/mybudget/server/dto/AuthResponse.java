@@ -1,18 +1,17 @@
 package com.mybudget.server.dto;
 
-import com.mybudget.server.module.Role;
-
-
 import java.util.Set;
+
+import com.mybudget.server.modules.Role;
 
 public class AuthResponse {
     private String jwtToken;
-    private String email;
+    private String username;
     private Set<Role> roles;
 
-    public AuthResponse(String jwtToken, String email, Set<Role> roles) {
+    public AuthResponse(String jwtToken, String username, Set<Role> roles) {
         this.jwtToken = jwtToken;
-        this.email = email;
+        this.username = username;
         this.roles = roles;
     }
 
@@ -23,14 +22,14 @@ public class AuthResponse {
     public void setJwtToken(String jwtToken) {
         this.jwtToken = jwtToken;
     }
-
-    public String getEmail() {
-        return email;
+    public String getUsername() {
+        return username;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setUsername(String username) {
+        this.username = username;
     }
+
 
     public Set<Role> getRoles() {
         return roles;
