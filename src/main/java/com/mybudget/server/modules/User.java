@@ -1,6 +1,5 @@
 package com.mybudget.server.modules;
 
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -12,6 +11,7 @@ import java.util.Set;
 @Data
 @Document(collection = "users")
 public class User {
+
     @Id
     private String id;
 
@@ -24,10 +24,10 @@ public class User {
     private String username;
 
     @Pattern(
-            regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()\\-_=+{};:,<.>])(?=.{8,})" +
-                    ".*$",
-            message = "Password must be at least 8 characters long and contain at least " +
-                    "one uppercase letter, one number, and one special character"
+            regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()\\-_=+{};:,<.>])(?=.{8,})"
+            + ".*$",
+            message = "Password must be at least 8 characters long and contain at least "
+            + "one uppercase letter, one number, and one special character"
     )
     private String password;
 
@@ -42,7 +42,4 @@ public class User {
         this.roles = roles;
     }
 
-
-
 }
-
