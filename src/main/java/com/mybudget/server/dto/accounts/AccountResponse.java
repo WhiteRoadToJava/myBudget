@@ -8,13 +8,15 @@ import java.util.ArrayList;
 @NoArgsConstructor
 public class AccountResponse {
     private ArrayList allTransactions;
+    private AccountInfo accountInfo;
+
+
+
     @Data
-    public static class accouteInfo {
+    public static class AccountInfo {
         private String name;
         private String currency;
+        private Double balance;
         private String type;
-        private String category;
-        private String subCategory;
-        private String icon;
     }
 }
