@@ -1,11 +1,15 @@
 
-package com.mybudget.server.controll;
+package com.mybudget.server.controllers;
 
 
 import com.mybudget.server.dto.AuthRequest;
 import com.mybudget.server.dto.AuthResponse;
 import com.mybudget.server.dto.RegisterRequest;
 import com.mybudget.server.dto.RegisterResponse;
+import com.mybudget.server.modules.Role;
+import com.mybudget.server.modules.User;
+import com.mybudget.server.services.UserService;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -25,9 +29,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mybudget.server.module.Role;
-import com.mybudget.server.module.User;
-import com.mybudget.server.service.UserService;
 import com.mybudget.server.util.JwtUtil;
 
 
@@ -49,17 +50,16 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        // check if email already exists
-        if(userService.existsByEmail(registerRequest.getEmail())) {
+        // check if username already exists
+        if(userService.existsByUsername(registerRequest.getUsername())) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body("Email already exists.");
+                    .body("Username already exists.");
         }
 
         // map the AuthRequest to a User entity
         User user = new User();
         user.setUsername(registerRequest.getUsername());
-        user.setEmail(registerRequest.getEmail());
         user.setPassword(registerRequest.getPassword());
 
         // assign roles
@@ -76,7 +76,6 @@ public class AuthController {
         RegisterResponse response = new RegisterResponse(
                 "User registered successfully",
                 user.getUsername(),
-                user.getEmail(),
                 user.getRoles()
         );
 
@@ -90,7 +89,7 @@ public class AuthController {
             // authenticate user
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            authRequest.getEmail(),
+                            authRequest.getUsername(),
                             authRequest.getPassword()
                     )
             );
@@ -115,7 +114,7 @@ public class AuthController {
             AuthResponse authResponse = new AuthResponse(
                     "Login successful",
                     userDetails.getUsername(),
-                    userService.findByEmail(userDetails.getUsername()).getRoles()
+                    userService.findByUsername(userDetails.getUsername()).getRoles()
             );
 
             return ResponseEntity.ok()
@@ -159,14 +158,14 @@ public class AuthController {
 
         // returnera user info om authentication
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userService.existsByEmail(userDetails.getUsername()) ? userService.findByEmail(userDetails.getUsername()) : null;
+         User user = userService.findByUsername(userDetails.getUsername());
 
         // added getter for everything i can to return in the respond to the client
         // also had to add them to login since we use the same DTO..
         // a better solution would be to create two separate DTOs
         return ResponseEntity.ok(new AuthResponse(
                 "Authenticated",
-                user.getEmail(),
+                user.getUsername(),
                 user.getRoles()
         ));
     }

@@ -1,4 +1,4 @@
-package com.mybudget.server.service;
+package com.mybudget.server.services;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -7,12 +7,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.mybudget.server.repository.UserRepository;
+import com.mybudget.server.modules.User;
+import com.mybudget.server.repositories.UserRepository;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
-
-import com.mybudget.server.module.User;
 
 @Service
 public class CustomUserDetailsService  implements UserDetailsService {
@@ -24,15 +23,17 @@ public class CustomUserDetailsService  implements UserDetailsService {
 
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+    public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(userName)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
+                user.getUsername(),
                 user.getPassword(),
                 getAuthorities(user)
         );
+    
+    
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
