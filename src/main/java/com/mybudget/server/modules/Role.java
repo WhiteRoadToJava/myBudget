@@ -1,4 +1,4 @@
-package com.mybudget.server.module;
+package com.mybudget.server.modules;
 
 public enum Role {
     USER,

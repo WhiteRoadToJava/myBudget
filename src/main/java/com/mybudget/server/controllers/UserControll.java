@@ -1,4 +1,4 @@
-package com.mybudget.server.controll;
+package com.mybudget.server.controllers;
 
 import org.springframework.web.bind.annotation.GetMapping;
 

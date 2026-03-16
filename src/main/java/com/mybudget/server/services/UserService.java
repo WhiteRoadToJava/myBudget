@@ -1,14 +1,13 @@
-package com.mybudget.server.service;
+package com.mybudget.server.services;
 
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.mybudget.server.module.Role;
-import com.mybudget.server.module.User;
-import com.mybudget.server.repository.UserRepository;
-
+import com.mybudget.server.modules.Role;
+import com.mybudget.server.modules.User;
+import com.mybudget.server.repositories.UserRepository;
 
 import java.util.Set;
 
@@ -36,16 +35,13 @@ public class UserService {
         userRepository.save(user);
     }
 
-    // find user by email
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
+    // find user by username
+    public User findByUsername(String userName) {
+        return userRepository.findByUsername(userName)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
-    // check if email already exists
-    public boolean existsByEmail(String email) {
-        return userRepository.findByEmail(email).isPresent();
-    }
+    // check if username already exists
     public boolean existsByUsername(String username) {
         return userRepository.findByUsername(username).isPresent();
     }
