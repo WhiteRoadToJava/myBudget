@@ -30,5 +30,9 @@ public class Account {
         this.type = type;
         this.user = currentUser;
     }
-    
+
+    public Double getTotalBalance() {
+
+        return 0.0;
+    }
 }
