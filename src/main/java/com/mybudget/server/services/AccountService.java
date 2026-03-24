@@ -3,6 +3,7 @@ package com.mybudget.server.services;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
+import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.AccountRepository;
@@ -25,7 +26,7 @@ public class AccountService {
     public AccountResponse createAccount (AccountRequest accountRequest){
         User currentUser  = userUtils.getCurrentAuthenticatedUser();
         if (findAccountByName(accountRequest.getName() , currentUser)){
-            throw new IllegalArgumentException("Account already exists");
+            throw new ResourceNotFoundException("Account already exists");
         }
         Account account = new Account(
                 accountRequest.getName(),
