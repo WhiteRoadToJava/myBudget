@@ -22,11 +22,16 @@ public class AccountController {
     }
 
     @PostMapping
-    public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody AccountRequest accountRequest) {
-        AccountResponse response = accountService.createAccount(accountRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<?> createAccount(@Valid @RequestBody AccountRequest accountRequest) {
+        try {
+            AccountResponse response = accountService.createAccount(accountRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+        }
     }
-
 
     @GetMapping
     public ResponseEntity<AllAccounts> getAllAccounts() {
