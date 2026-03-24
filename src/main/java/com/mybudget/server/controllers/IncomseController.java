@@ -27,7 +27,7 @@ public class IncomseController {
 
     @GetMapping("/account")
     public ResponseEntity<?> getAllIncomseAccount(@RequestBody Account account){
-        List<IncomseResponse> list = incomseService.getAllIncomseAccount(account);
+        List<IncomseResponse> list = incomseService.getAllIncomseByAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
