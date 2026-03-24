@@ -44,7 +44,7 @@ public class IncomseService {
         }
 
 
-        public List<IncomseResponse> getAllIncomseAccount(Account account){
+        public List<IncomseResponse> getAllIncomseByAccount(Account account){
             List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
             return incomseResponses.stream().map(this::mapToIncomseResponse).toList();
         }
