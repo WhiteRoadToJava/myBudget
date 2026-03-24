@@ -17,7 +17,7 @@ public class UserUtils {
         this.userRepository = userRepository;
     }
 
-    public User getCurentAuthenticatedUser() {
+    public User getCurrentAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {

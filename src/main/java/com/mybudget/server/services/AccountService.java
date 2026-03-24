@@ -10,9 +10,7 @@ import com.mybudget.server.util.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 
@@ -25,8 +23,10 @@ public class AccountService {
     }
 
     public AccountResponse createAccount (AccountRequest accountRequest){
-        User currentUser  = userUtils.getCurentAuthenticatedUser();
-
+        User currentUser  = userUtils.getCurrentAuthenticatedUser();
+        if (findAccountByName(accountRequest.getName() , currentUser)){
+            throw new IllegalArgumentException("Account already exists");
+        }
         Account account = new Account(
                 accountRequest.getName(),
                 accountRequest.getDescription(),
@@ -42,7 +42,7 @@ public class AccountService {
 
 
     public AllAccounts getAllAccounts (){
-        User currentUser = userUtils.getCurentAuthenticatedUser();
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
         AllAccounts allAccounts = new AllAccounts();
         List<Account> accounts = accountRepository.findAllByUser(currentUser);
         allAccounts.setAccounts(accounts);
@@ -55,6 +55,10 @@ public class AccountService {
         allAccounts.setAccountsInfo(accountsInfo);
 
         return allAccounts;
+    }
+
+    private boolean findAccountByName(String accountName, User currentUser){
+        return  accountRepository.findByNameAndUser(accountName, currentUser).isPresent();
     }
 
 
