@@ -77,5 +77,4 @@ public class AccountService {
         accountResponse.setAccountInfo(accountInfo);
         return accountResponse;
     }
-
 }
