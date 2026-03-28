@@ -13,10 +13,8 @@ import java.util.Date;
 @AllArgsConstructor
 public class IncomseResponse {
     private String id;
-    private  String name;
     private double amount;
     private String category;
-    private Date createdAt;
     private User user;
     private Account account;
 

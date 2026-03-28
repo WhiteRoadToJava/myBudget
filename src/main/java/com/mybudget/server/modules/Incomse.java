@@ -14,12 +14,11 @@ import java.util.Date;
 public class Incomse {
     @Id
     private String id;
-    private  String name;
     private double amount;
     private String category;
     @DBRef
     private User user;
     @DBRef
     private Account account;
-    private Date createdAt;
+    private String createdAt;
 }
