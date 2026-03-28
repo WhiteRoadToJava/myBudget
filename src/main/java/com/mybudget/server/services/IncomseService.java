@@ -12,6 +12,7 @@ import com.mybudget.server.repositories.IncomseRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,19 +20,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IncomseService {
     private final UserUtils userUtils;
+    private final AccountService accountService;
     private final IncomseRepository incomseRepository;
     private final AccountRepository accountRepository;
 
 
 
+
+@Transactional
         public IncomseResponse addInccmse(IncomseRequset incomseRequest){
             User currentUser  = userUtils.getCurrentAuthenticatedUser();
             Incomse incomse = new Incomse();
-            incomse.setName(incomseRequest.getName());
             incomse.setAmount(incomseRequest.getAmount());
-            incomse.setCategory(incomseRequest.getCategory());
-            incomse.setCreatedAt(incomseRequest.getCreatedAt());
-            incomse.setUser(currentUser);
+            incomse.setCategory(incomseRequest.getCategory());incomse.setUser(currentUser);
 
             String accountId = incomseRequest.getAccount().getId();
             Account  account = accountRepository.findByIdAndUser(accountId, currentUser);
@@ -39,6 +40,7 @@ public class IncomseService {
                 throw new ResourceNotFoundException("Account not found");
             }
             incomse.setAccount(account);
+            accountService.updateTotalBalanceWithIncome(account, incomseRequest.getAmount());
 
             return  mapToIncomseResponse(incomseRepository.save(incomse));
         }
@@ -48,6 +50,7 @@ public class IncomseService {
             List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
             return incomseResponses.stream().map(this::mapToIncomseResponse).toList();
         }
+
 
         public List<IncomseResponse> getAllIncomseByUser(){
             User user = userUtils.getCurrentAuthenticatedUser();
@@ -61,10 +64,8 @@ public class IncomseService {
     private  IncomseResponse mapToIncomseResponse(Incomse incomse){
         return new IncomseResponse(
                 incomse.getId(),
-                incomse.getName(),
                 incomse.getAmount(),
                 incomse.getCategory(),
-                incomse.getCreatedAt(),
                 incomse.getUser(),
                 incomse.getAccount()
         );

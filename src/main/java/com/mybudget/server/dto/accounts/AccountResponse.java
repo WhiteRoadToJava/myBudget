@@ -6,17 +6,12 @@ import java.util.ArrayList;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class AccountResponse {
-    private ArrayList allTransactions;
-    private AccountInfo accountInfo;
-
-
-
-    @Data
-    public static class AccountInfo {
-        private String name;
-        private String currency;
-        private Double balance;
-        private String type;
-    }
+    private String id;
+    private String name;
+    private String currency;
+    private String type;
+    private Double balance;
+    private Double totalBalance;
 }

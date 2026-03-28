@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
 
 @Getter @Setter
 @NoArgsConstructor
@@ -22,5 +24,8 @@ public class AccountRequest {
     private String description;
     @NotNull(message = "Balance is required")
     private Double balance;
+    private Double totalBalance;
+    private Date createdAt;
     private User user;
+
 }

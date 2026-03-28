@@ -1,6 +1,8 @@
 package com.mybudget.server.controllers;
 
 import com.mybudget.server.dto.accounts.AllAccounts;
+import com.mybudget.server.modules.Account;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,15 +13,15 @@ import com.mybudget.server.services.AccountService;
 
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/user/accounts")
 public class AccountController {
 
     public final AccountService accountService;
 
-    public AccountController(AccountService accountService) {
-        this.accountService = accountService;
-    }
 
     @PostMapping
     public ResponseEntity<?> createAccount(@Valid @RequestBody AccountRequest accountRequest) {
@@ -27,9 +29,14 @@ public class AccountController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping
-    public ResponseEntity<AllAccounts> getAllAccounts() {
+    @GetMapping("/all-accounts")
+    public ResponseEntity<?> getAllAccounts() {
         AllAccounts response = accountService.getAllAccounts();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+    @GetMapping("/{accountId}")
+    public ResponseEntity<?> getAccountById(@PathVariable String accountId){
+        AccountResponse response = accountService.getAccountById(accountId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
