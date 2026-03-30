@@ -17,7 +17,7 @@ import java.util.List;
 public class ExpenseController {
     private  final ExpenseService expenseService;
 
-    @PostMapping
+    @PostMapping("/add-expense")
     public ResponseEntity<?> addExpense(@RequestBody ExpenseRequset expenseRequest){
         ExpenseResponse response = expenseService.addExpense(expenseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

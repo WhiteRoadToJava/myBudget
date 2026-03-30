@@ -1,13 +1,19 @@
 package com.mybudget.server.services;
 
+import com.mybudget.server.dto.Transation;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.Expense;
+import com.mybudget.server.modules.Incomse;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.AccountRepository;
+import com.mybudget.server.repositories.ExpenseRepository;
+import com.mybudget.server.repositories.IncomseRepository;
 import com.mybudget.server.util.UserUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,14 +22,14 @@ import java.util.Date;
 import java.util.List;
 
 @Service
-
+@RequiredArgsConstructor
 public class AccountService {
     private final UserUtils userUtils;
     private final AccountRepository accountRepository;
-    public AccountService(UserUtils userUtils, AccountRepository accountRepository) {
-        this.userUtils = userUtils;
-        this.accountRepository = accountRepository;
-    }
+    private final IncomseRepository incomseRepository;
+    private final ExpenseRepository expenseRepository;
+
+
 
     public AccountResponse createAccount (AccountRequest accountRequest){
         User currentUser  = userUtils.getCurrentAuthenticatedUser();
@@ -62,6 +68,18 @@ public class AccountService {
         AllAccounts allAccounts = new AllAccounts(accounts, totalAccounts, String.valueOf(totalBalance));
         return allAccounts;
     }
+
+        public List<Transation> getAllTransationInAccount(Account account){
+            List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
+            List<Expense> expenseList = expenseRepository.findAllByAccount(account);
+            List<Transation> transactions = new ArrayList<>();
+            transactions.addAll(incomseList.stream().map(this::mapIToTransation).toList());
+            transactions.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
+            return transactions;
+        }
+
+
+
 
     private boolean findAccountByName(String accountName, User currentUser){
         return  accountRepository.findByNameAndUser(accountName, currentUser).isPresent();
@@ -112,6 +130,32 @@ public Account updateAccountWithTransfer(Account fromAccount, Account toAccount,
                 account.getType(),
                 account.getBalance(),
                 account.getTotalBalance()
+        );
+    }
+    private Transation mapIToTransation (Incomse incomse){
+        String type = "type";
+        if(incomse.getType() == null){
+            type= "incomse";
+        }else type = incomse.getType();
+        return new Transation(
+                incomse.getId(),
+                incomse.getAmount(),
+                incomse.getCategory(),
+                incomse.getAccount(),
+                type
+        );
+    }
+    private Transation mapExpenseToTranaction(Expense expense) {
+        String type = "type";
+        if (expense.getType() == null) {
+            type = "expense";
+        } else type = expense.getType();
+        return new Transation(
+                expense.getId(),
+                expense.getAmount(),
+                expense.getCategory(),
+                expense.getAccount(),
+                type
         );
     }
 }
