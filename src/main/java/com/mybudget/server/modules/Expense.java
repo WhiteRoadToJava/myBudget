@@ -24,4 +24,5 @@ public class Expense {
     private User user;
     @DBRef
     private Account account;
+    private String type= "expense";
 }

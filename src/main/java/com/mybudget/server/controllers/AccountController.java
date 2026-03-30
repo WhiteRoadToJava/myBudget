@@ -1,5 +1,6 @@
 package com.mybudget.server.controllers;
 
+import com.mybudget.server.dto.Transation;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.modules.Account;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class AccountController {
     public final AccountService accountService;
 
 
-    @PostMapping
+    @PostMapping("/add-account")
     public ResponseEntity<?> createAccount(@Valid @RequestBody AccountRequest accountRequest) {
         AccountResponse response = accountService.createAccount(accountRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -37,6 +38,12 @@ public class AccountController {
     @GetMapping("/{accountId}")
     public ResponseEntity<?> getAccountById(@PathVariable String accountId){
         AccountResponse response = accountService.getAccountById(accountId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/all-transactions")
+    public ResponseEntity<?> getAllTransationInAccount(@RequestBody Account account){
+        List<Transation> response = accountService.getAllTransationInAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
