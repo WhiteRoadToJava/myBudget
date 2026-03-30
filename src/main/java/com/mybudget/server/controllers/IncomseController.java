@@ -1,6 +1,7 @@
 package com.mybudget.server.controllers;
 
 
+import com.mybudget.server.dto.Transation;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.modules.Account;
@@ -19,7 +20,7 @@ public class IncomseController {
     private final IncomseService incomseService;
 
 
-    @PostMapping
+    @PostMapping("/add-incomse")
     public ResponseEntity<?> addIncomse(@RequestBody IncomseRequset incomseRequest){
         IncomseResponse response = incomseService.addInccmse(incomseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

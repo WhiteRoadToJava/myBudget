@@ -11,6 +11,7 @@ import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,8 +21,10 @@ public class ExpenseService {
     private final UserUtils userUtils;
     private final AccountRepository accountRepository;
     private final ExpenseRepository     expenseRepository;
+    private final  AccountService accountService;
 
 
+    @Transactional
     public ExpenseResponse addExpense(ExpenseRequset expenseRequest){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = new Expense();
@@ -38,6 +41,7 @@ public class ExpenseService {
             throw new ResourceNotFoundException("Account not found");
         }
         expense.setAccount(account);
+        accountService.updateTotalBalanaceWithExpense(account, expenseRequest.getAmount());
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }

@@ -1,6 +1,7 @@
 package com.mybudget.server.services;
 
 
+import com.mybudget.server.dto.Transation;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
@@ -48,7 +49,7 @@ public class IncomseService {
 
         public List<IncomseResponse> getAllIncomseByAccount(Account account){
             List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
-            return incomseResponses.stream().map(this::mapToIncomseResponse).toList();
+            return  incomseResponses.stream().map(this::mapToIncomseResponse).toList();
         }
 
 
@@ -62,12 +63,19 @@ public class IncomseService {
 
 
     private  IncomseResponse mapToIncomseResponse(Incomse incomse){
+    String type ;
+    if(incomse.getType() == null) {
+        type = "inocmse";
+    }
+    else  type = incomse.getType();
         return new IncomseResponse(
                 incomse.getId(),
                 incomse.getAmount(),
                 incomse.getCategory(),
                 incomse.getUser(),
-                incomse.getAccount()
+                incomse.getAccount(),
+                type
         );
     }
+
 }
