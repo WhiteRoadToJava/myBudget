@@ -17,6 +17,6 @@ public class IncomseResponse {
     private String category;
     private User user;
     private Account account;
-
+    private String type = "incomse";
 
 }

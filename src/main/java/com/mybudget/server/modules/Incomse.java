@@ -21,4 +21,5 @@ public class Incomse {
     @DBRef
     private Account account;
     private String createdAt;
+    private String type = "incomse";
 }
