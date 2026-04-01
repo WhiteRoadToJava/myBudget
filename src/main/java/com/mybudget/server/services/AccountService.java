@@ -53,6 +53,28 @@ public class AccountService {
         AccountResponse accountResponse = mapToAccountResponse(accountRepository.save(account));
         return accountResponse;
     }
+    public AccountResponse updateAcoount(Account accouunt){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Account existedAccount = accountRepository.findByIdAndUser(accouunt.getId(), currentUser);
+        if(existedAccount == null){
+            throw new ResourceNotFoundException("Account not found");
+        }
+        existedAccount.setName(accouunt.getName());
+        existedAccount.setDescription(accouunt.getDescription());
+        existedAccount.setCurrency(accouunt.getCurrency());
+        existedAccount.setType(accouunt.getType());
+
+        double oldBalance = existedAccount.getBalance();
+        double newBslsnce = accouunt.getBalance();
+        double oldTotalBalance = existedAccount.getTotalBalance();
+        existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBslsnce, oldTotalBalance));
+        existedAccount.setBalance(newBslsnce);
+        return mapToAccountResponse(accountRepository.save(existedAccount));
+    }
+    private Double calculateNewTotal(Double oldBalance, Double newBalance, Double currentTotal) {
+
+        return currentTotal + (newBalance - oldBalance);
+    }
 
 
     public AllAccounts getAllAccounts (){
