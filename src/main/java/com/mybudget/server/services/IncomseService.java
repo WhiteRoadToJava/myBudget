@@ -1,7 +1,6 @@
 package com.mybudget.server.services;
 
 
-import com.mybudget.server.dto.Transation;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
@@ -15,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -68,13 +68,17 @@ public class IncomseService {
         type = "inocmse";
     }
     else  type = incomse.getType();
+    LocalDateTime date = incomse.getCreatedAt();
+    if(incomse.getCreatedAt() == null)
+        date = date.now();
         return new IncomseResponse(
                 incomse.getId(),
                 incomse.getAmount(),
                 incomse.getCategory(),
                 incomse.getUser(),
                 incomse.getAccount(),
-                type
+                type,
+                date
         );
     }
 

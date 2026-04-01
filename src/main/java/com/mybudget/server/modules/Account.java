@@ -2,6 +2,7 @@ package com.mybudget.server.modules;
 
 
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -23,6 +24,7 @@ public class Account {
     private String type;
     @DBRef
     private User user;
+    @CreatedDate
     private String createdAt;
 
 

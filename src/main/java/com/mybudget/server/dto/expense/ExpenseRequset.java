@@ -12,10 +12,8 @@ import java.util.Date;
 @Getter
 @AllArgsConstructor
 public class ExpenseRequset {
-    private  String name;
     private double amount;
     private String category;
-    private Date createdAt;
     private User user;
     private Account account;
 }

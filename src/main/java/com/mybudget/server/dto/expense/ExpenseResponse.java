@@ -6,16 +6,15 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 @Setter
 @Getter
 @AllArgsConstructor
 public class ExpenseResponse {
     private String id;
-    private  String name;
     private double amount;
     private String category;
-    private Date createdAt;
+    private LocalDateTime createdAt;
     private User user;
     private Account account;
 

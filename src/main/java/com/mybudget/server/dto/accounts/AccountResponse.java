@@ -14,4 +14,5 @@ public class AccountResponse {
     private String type;
     private Double balance;
     private Double totalBalance;
+    private String createdAt;
 }
