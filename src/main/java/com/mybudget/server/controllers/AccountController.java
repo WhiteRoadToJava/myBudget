@@ -29,6 +29,11 @@ public class AccountController {
         AccountResponse response = accountService.createAccount(accountRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+@PatchMapping("/update-account")
+    public ResponseEntity<?> updateAccount(@RequestBody Account account){
+        AccountResponse response = accountService.updateAcoount(account);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
     @DeleteMapping("/delete-account/{accountId}")
     public ResponseEntity<?> deleteAccount(@PathVariable String accountId) {
          accountService.deleteAccount(accountId);
