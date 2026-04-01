@@ -25,7 +25,7 @@ public class AccountRequest {
     @NotNull(message = "Balance is required")
     private Double balance;
     private Double totalBalance;
-    private Date createdAt;
+    private String createdAt;
     private User user;
 
 }

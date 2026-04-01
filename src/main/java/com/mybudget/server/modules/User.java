@@ -1,6 +1,7 @@
 package com.mybudget.server.modules;
 
 import jakarta.validation.constraints.Pattern;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -32,6 +33,10 @@ public class User {
     private String password;
 
     private Set<Role> roles;
+    private String firstName;
+    private String lastName;
+    @CreatedDate
+    private String createdAt;
 
     public User() {
     }

@@ -3,10 +3,12 @@ package com.mybudget.server.modules;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 @Getter @Setter
 @NoArgsConstructor
@@ -20,6 +22,7 @@ public class Incomse {
     private User user;
     @DBRef
     private Account account;
-    private String createdAt;
+    @CreatedDate
+    private LocalDateTime createdAt;
     private String type = "incomse";
 }

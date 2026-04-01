@@ -1,6 +1,6 @@
 package com.mybudget.server.services;
 
-import com.mybudget.server.dto.Transation;
+import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,7 +31,6 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final IncomseRepository incomseRepository;
     private final ExpenseRepository expenseRepository;
-
 
 
     public AccountResponse createAccount (AccountRequest accountRequest){
@@ -69,10 +71,10 @@ public class AccountService {
         return allAccounts;
     }
 
-        public List<Transation> getAllTransationInAccount(Account account){
+        public List<Transaction> getAllTransationInAccount(Account account){
             List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
             List<Expense> expenseList = expenseRepository.findAllByAccount(account);
-            List<Transation> transactions = new ArrayList<>();
+            List<Transaction> transactions = new ArrayList<>();
             transactions.addAll(incomseList.stream().map(this::mapIToTransation).toList());
             transactions.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
             return transactions;
@@ -123,39 +125,46 @@ public Account updateAccountWithTransfer(Account fromAccount, Account toAccount,
 
 
     private AccountResponse mapToAccountResponse(Account account) {
+        String date = account.getCreatedAt();
+        if(date == null) date = "2010-10-10";
         return new AccountResponse(
                 account.getId(),
                 account.getName(),
                 account.getCurrency(),
                 account.getType(),
                 account.getBalance(),
-                account.getTotalBalance()
+                account.getTotalBalance(),
+                date
         );
     }
-    private Transation mapIToTransation (Incomse incomse){
+    private Transaction mapIToTransation (Incomse incomse){
         String type = "type";
         if(incomse.getType() == null){
             type= "incomse";
         }else type = incomse.getType();
-        return new Transation(
+
+        return new Transaction(
                 incomse.getId(),
                 incomse.getAmount(),
                 incomse.getCategory(),
                 incomse.getAccount(),
-                type
+                type,
+                incomse.getCreatedAt()
         );
     }
-    private Transation mapExpenseToTranaction(Expense expense) {
+    private Transaction mapExpenseToTranaction(Expense expense) {
         String type = "type";
         if (expense.getType() == null) {
             type = "expense";
         } else type = expense.getType();
-        return new Transation(
+        LocalDateTime date = expense.getCreatedAt();
+        return new Transaction(
                 expense.getId(),
                 expense.getAmount(),
                 expense.getCategory(),
                 expense.getAccount(),
-                type
+                type,
+                date
         );
     }
 }

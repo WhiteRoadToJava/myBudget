@@ -1,5 +1,6 @@
 package com.mybudget.server.modules;
 
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 
@@ -12,4 +13,6 @@ public class Transfer {
     private String toAccountId;
     private Double amount;
     private String description;
+    @CreatedDate
+    private String createdAt;
 }

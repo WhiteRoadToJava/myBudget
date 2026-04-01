@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -28,11 +29,8 @@ public class ExpenseService {
     public ExpenseResponse addExpense(ExpenseRequset expenseRequest){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = new Expense();
-
-        expense.setName(expenseRequest.getName());
         expense.setAmount(expenseRequest.getAmount());
         expense.setCategory(expenseRequest.getCategory());
-        expense.setCreatedAt(expenseRequest.getCreatedAt());
         expense.setUser(currentUser);
 
         String accountId = expenseRequest.getAccount().getId();
@@ -62,7 +60,6 @@ public class ExpenseService {
     private ExpenseResponse mapToExpenseResponse(Expense expense) {
         return new ExpenseResponse(
                 expense.getId(),
-                expense.getName(),
                 expense.getAmount(),
                 expense.getCategory(),
                 expense.getCreatedAt(),

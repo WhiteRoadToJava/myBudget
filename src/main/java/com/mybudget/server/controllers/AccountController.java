@@ -1,6 +1,6 @@
 package com.mybudget.server.controllers;
 
-import com.mybudget.server.dto.Transation;
+import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.modules.Account;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class AccountController {
 
     @PostMapping("/all-transactions")
     public ResponseEntity<?> getAllTransationInAccount(@RequestBody Account account){
-        List<Transation> response = accountService.getAllTransationInAccount(account);
+        List<Transaction> response = accountService.getAllTransationInAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
