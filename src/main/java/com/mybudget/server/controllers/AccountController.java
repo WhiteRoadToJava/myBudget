@@ -34,6 +34,12 @@ public class AccountController {
         AccountResponse response = accountService.updateAcoount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+    @DeleteMapping("/delete-account/{accountId}")
+    public ResponseEntity<?> deleteAccount(@PathVariable String accountId) {
+         accountService.deleteAccount(accountId);
+        return ResponseEntity.status(HttpStatus.OK).body("Account deleted successfully");
+    }
+
     @GetMapping("/all-accounts")
     public ResponseEntity<?> getAllAccounts() {
         AllAccounts response = accountService.getAllAccounts();

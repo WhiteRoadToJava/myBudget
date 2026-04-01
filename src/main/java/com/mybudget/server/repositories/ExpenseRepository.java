@@ -10,5 +10,6 @@ import java.util.List;
 public interface ExpenseRepository extends MongoRepository<Expense, String> {
     List<Expense> findAllByUser(User user);
     List<Expense> findAllByAccount(Account account);
+    void deleteAllByAccount(Account account);
 }
 
