@@ -54,6 +54,19 @@ public class AccountService {
         return accountResponse;
     }
 
+    @Transactional
+    public void deleteAccount (String accountId){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Account account = accountRepository.findByIdAndUser(accountId, currentUser);
+        if(account == null){
+            throw new ResourceNotFoundException("Account not found");
+        }
+       incomseRepository.deleteAllByAccount(account);
+        expenseRepository.deleteAllByAccount(account);
+
+        accountRepository.delete(account);
+    }
+
 
     public AllAccounts getAllAccounts (){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
