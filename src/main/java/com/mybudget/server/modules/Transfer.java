@@ -8,9 +8,9 @@ public class Transfer {
     @Id
     private String id;
     @DBRef
-    private String fromAccountId;
+    private Account fromAccountId;
     @DBRef
-    private String toAccountId;
+    private Account toAccountId;
     private Double amount;
     private String description;
     @CreatedDate
