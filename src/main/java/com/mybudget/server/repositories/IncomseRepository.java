@@ -11,4 +11,5 @@ public interface IncomseRepository extends MongoRepository<Incomse, String> {
 
     List<Incomse> findAllByAccount(Account account);
     List<Incomse> findAllByUser(User user);
+    void deleteAllByAccount(Account account);
 }
