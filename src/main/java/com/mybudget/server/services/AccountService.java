@@ -5,13 +5,11 @@ import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
-import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.Expense;
-import com.mybudget.server.modules.Incomse;
-import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.*;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.repositories.IncomseRepository;
+import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +29,7 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final IncomseRepository incomseRepository;
     private final ExpenseRepository expenseRepository;
+    private final TransferRepository transferRepository;
 
 
     public AccountResponse createAccount (AccountRequest accountRequest){
@@ -75,6 +74,26 @@ public class AccountService {
 
         return currentTotal + (newBalance - oldBalance);
     }
+    public AccountResponse updateTotalBalanceWithReceivedTransfer(Account account, Double amount){
+        String accountId = account.getId();
+        Account updatedAccount = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        Double totalBalance = account.getTotalBalance() + amount;
+        updatedAccount.setTotalBalance(totalBalance);
+
+        return mapToAccountResponse(accountRepository.save(updatedAccount));
+    }
+    public AccountResponse updateTotalBalanceWithSemdTransfer(Account account, Double amount){
+        String accountId = account.getId();
+        Account updatedAccount = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        Double totalBalance = account.getTotalBalance() - amount;
+        updatedAccount.setTotalBalance(totalBalance);
+
+        return mapToAccountResponse(accountRepository.save(updatedAccount));
+    }
 
     @Transactional
     public void deleteAccount (String accountId){
@@ -109,9 +128,12 @@ public class AccountService {
         public List<Transaction> getAllTransationInAccount(Account account){
             List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
             List<Expense> expenseList = expenseRepository.findAllByAccount(account);
+            List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account );
             List<Transaction> transactions = new ArrayList<>();
             transactions.addAll(incomseList.stream().map(this::mapIToTransation).toList());
             transactions.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
+            transactions.addAll(transferList.stream()
+                    .map(t -> mapTransferToTransaction(t, account)).toList());
             return transactions;
         }
 
@@ -200,6 +222,31 @@ public Account updateAccountWithTransfer(Account fromAccount, Account toAccount,
                 expense.getAccount(),
                 type,
                 date
+        );
+    }
+    private Transaction mapTransferToTransaction(Transfer transfer,  Account account){
+        String type = "";
+        Account account1 = new Account();
+        String category = "";
+        Double amount = 0.0;
+        if(transfer.getSourceAccount().getId().equals(account.getId())) {
+            category = "transfer";
+            type= "out-transfer";
+            account1 = transfer.getSourceAccount();
+            amount = transfer.getAmountSent();
+        } else if (transfer.getDestinationAccount().getId().equals(account.getId())) {
+            category = "transfer";
+            type= "in-transfer";
+            account1 = transfer.getDestinationAccount();
+            amount = transfer.getAmountReceived();
+        }
+        return  new Transaction(
+                transfer.getId(),
+                amount,
+                category,
+                account1,
+                type,
+                transfer.getCreatedAt()
         );
     }
 }
