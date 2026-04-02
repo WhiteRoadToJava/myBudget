@@ -41,30 +41,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // CORS config
+                // تفعيل الـ CORS باستخدام الإعدادات المعرفة بالأسفل
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // CSRF, disable in dev
-                // OBS! should not be disabled in production
                 .csrf(csrf -> csrf.disable())
-                // define URL based rules
                 .authorizeHttpRequests(auth -> auth
+                        // سطر مهم جداً: السماح بطلبات OPTIONS لكل المسارات بدون توثيق
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").hasRole("USER")
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/healthy/**").permitAll()
-                        //.requestMatchers("/products/**").permitAll()
-                        // any other requests the user need to be logged
+                        .requestMatchers("/auth/**", "/healthy/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // disable session due to jwt statelessness
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // add jwt filter before standard filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        return  http.build();
+        return http.build();
     }
-
     // cors config
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
