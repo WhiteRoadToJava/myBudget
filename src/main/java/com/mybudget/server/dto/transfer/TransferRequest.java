@@ -20,5 +20,4 @@ public class TransferRequest {
     private double amountReceived ;
 
     private String description;
-    private User user;
 }
