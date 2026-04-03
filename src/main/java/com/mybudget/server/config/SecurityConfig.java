@@ -1,5 +1,6 @@
 package com.mybudget.server.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -59,7 +60,8 @@ public class SecurityConfig {
         return http.build();
     }
 
-
+@Value("${app.frontend.url}")
+private String frontendUrl;
     // cors config
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -70,7 +72,8 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "https://my-budget-frontend.vercel.app",
                 "https://dreamy-cajeta-ce3d15.netlify.app",
-                "https://my-budget-frontend-production.up.railway.app"
+                "https://my-budget-frontend-production.up.railway.app",
+                frontendUrl
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
