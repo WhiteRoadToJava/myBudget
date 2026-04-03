@@ -58,6 +58,8 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
+
+
     // cors config
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -66,8 +68,7 @@ public class SecurityConfig {
         // only allow request from our future react client
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://dreamy-cajeta-ce3d15.netlify.app",
-                "https://my-budget-frontend-production.up.railway.app"
+                "https://dreamy-cajeta-ce3d15.netlify.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
