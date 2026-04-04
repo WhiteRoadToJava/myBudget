@@ -112,7 +112,7 @@ public class AuthController {
 
             // create response object
             AuthResponse authResponse = new AuthResponse(
-                    "Login successful",
+                    jwt,
                     userDetails.getUsername(),
                     userService.findByUsername(userDetails.getUsername()).getRoles()
             );
