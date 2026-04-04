@@ -46,10 +46,16 @@ public class ExpenseService {
     }
 
 
-    public Expense getExpenseById(String expenseId){
+    public ExpenseResponse getExpenseById(String expenseId){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        return expenseRepository.findById(expenseId)
+        Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found or access denied"));
+
+        if(!expense.getUser().getId().equals(currentUser.getId())){
+            throw new ResourceNotFoundException("Expense not found or access denied");
+        } else {
+            return mapToExpenseResponse(expense);
+        }
     }
     public List<ExpenseResponse> getAllExpensesByUser(){
         User user = userUtils.getCurrentAuthenticatedUser();
