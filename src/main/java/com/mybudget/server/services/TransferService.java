@@ -11,6 +11,7 @@ import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +47,44 @@ public class TransferService {
         transfer.setCurrency(sourceAccount.getCurrency());
 
         return  mapToTransferResponse(transferRepository.save(transfer));
+    }
+
+    @Transactional
+    public TransferResponse updateTransfer(String transferId, TransferRequest request){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        // check if transfer exists
+        Transfer existedTransfer = transferRepository.findById(transferId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found"));
+        //  find the account's bodys
+        String sourceAccountId = request.getSourceAccount().getId();
+        String destinationAccountId = request.getDestinationAccount().getId();;
+        Account sourceAccount = accountRepository.findById(sourceAccountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+        Account destinationAccount = accountRepository.findById(destinationAccountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+        // update the account's bodys totalBalances
+        String response = accountService.updateAccountsWithUpadateTransfer(sourceAccount, destinationAccount, existedTransfer, request);
+
+        if(response.equals("success")) {
+            existedTransfer.setAmountSent(request.getAmountSent());
+            existedTransfer.setAmountReceived(request.getAmountReceived());
+            existedTransfer.setExChangeRate(request.getExChangeRate());
+            existedTransfer.setDescription(request.getDescription());
+            return mapToTransferResponse(transferRepository.save(existedTransfer));
+        } else {
+            throw new ResourceNotFoundException("Transfer not found or access denied");
+        }
+    }
+
+    public TransferResponse getTransferById(String transferId){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Transfer transfer = transferRepository.findById(transferId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found or access denied"));
+        if(!transfer.getUser().getId().equals(currentUser.getId())){
+            throw new ResourceNotFoundException("Transfer not found or access denied");
+            } else {
+            return mapToTransferResponse(transfer);
+        }
     }
 
 
