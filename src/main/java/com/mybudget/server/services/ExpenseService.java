@@ -10,6 +10,7 @@ import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,18 @@ public class ExpenseService {
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
 
+
+    public ExpenseResponse getExpenseById(String expenseId){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found or access denied"));
+
+        if(!expense.getUser().getId().equals(currentUser.getId())){
+            throw new ResourceNotFoundException("Expense not found or access denied");
+        } else {
+            return mapToExpenseResponse(expense);
+        }
+    }
     public List<ExpenseResponse> getAllExpensesByUser(){
         User user = userUtils.getCurrentAuthenticatedUser();
         List<Expense> expenses = expenseRepository.findAllByUser(user);
