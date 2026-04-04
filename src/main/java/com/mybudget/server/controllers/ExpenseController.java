@@ -34,4 +34,9 @@ public class ExpenseController {
         List<ExpenseResponse> list = expenseService.getAllExpensesByAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
+    @GetMapping("/find-expense/{expenseId}")
+    public ResponseEntity<?> getExpenseById(@PathVariable String expenseId){
+        ExpenseResponse response = expenseService.getExpenseById(expenseId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 }
