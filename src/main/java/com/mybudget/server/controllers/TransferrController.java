@@ -6,10 +6,7 @@ import com.mybudget.server.services.TransferService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,4 +19,16 @@ public ResponseEntity<?> executeTranfer (@RequestBody TransferRequest request){
         TransferResponse response =  transferService.executeTransfet(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @PatchMapping("/update/{transferId}")
+    public ResponseEntity<?> updateTransfer(@PathVariable String transferId, @RequestBody TransferRequest request){
+        TransferResponse response = transferService.updateTransfer(transferId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+    @GetMapping("/find-transfer/{transferId}")
+    public ResponseEntity<?> getTransferById(@PathVariable String transferId){
+        TransferResponse response = transferService.getTransferById(transferId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 }
