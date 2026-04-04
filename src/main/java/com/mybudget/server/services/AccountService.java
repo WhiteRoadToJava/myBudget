@@ -4,6 +4,7 @@ import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
+import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.repositories.AccountRepository;
@@ -170,13 +171,19 @@ public Account updateTotalBalanceWithIncome(Account account, double amount ){
         account.setTotalBalance(account.getTotalBalance() + amount);
         return accountRepository.save(account);
 }
+
+
 @Transactional
-public Account updateAccountWithTransfer(Account fromAccount, Account toAccount, double amount){
-        fromAccount.setTotalBalance(fromAccount.getTotalBalance() - amount);
-        toAccount.setTotalBalance(toAccount.getTotalBalance() + amount);
-        accountRepository.save(fromAccount);
-        accountRepository.save(toAccount);
-        return fromAccount;
+public String  updateAccountsWithUpadateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request){
+        Double oldAccountSendTotal = accountSend.getTotalBalance();
+        Double oldAccountDestinationTotal = accountDestination.getTotalBalance();
+        Double newAccountSentTotal = oldAccountSendTotal - transfer.getAmountSent() + request.getAmountSent();
+        Double newAccountDestinationTotal = oldAccountDestinationTotal + transfer.getAmountReceived() - request.getAmountReceived();
+        accountSend.setTotalBalance(newAccountSentTotal);
+        accountDestination.setTotalBalance(newAccountDestinationTotal);
+        accountRepository.save(accountSend);
+        accountRepository.save(accountDestination);
+        return "success";
 }
 
 
