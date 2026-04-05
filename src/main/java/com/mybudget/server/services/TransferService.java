@@ -87,6 +87,21 @@ public class TransferService {
         }
     }
 
+    public String deleteTransfer(String transferId){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Transfer transfer = transferRepository.findById(transferId)
+                .orElseThrow(()-> new ResourceNotFoundException("Transfer is not found..."));
+        if (transfer.getUser().getId().equals(currentUser.getId())){
+            String response = accountService.updateAccountsTotalBalanceWithDeleteTransfer(transfer);
+            if (response.equals("success")){
+                transferRepository.delete(transfer);
+            } else {
+                throw new ResourceNotFoundException("Transfer not found or access denied");
+            }
+        }
+        return "Transfer deleted successfully";
+    }
+
 
     private TransferResponse mapToTransferResponse(Transfer transfer) {
         return new TransferResponse(
