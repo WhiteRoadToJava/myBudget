@@ -189,6 +189,11 @@ public Account updateTotalBalanceWithDeleteIncomse(Account account, Double amoun
         account.setTotalBalance(account.getTotalBalance() - amount);
         return accountRepository.save(account);
 }
+@Transactional
+public Account updateTotalBalanceWithDeleteExpense(Account account, Double amount){
+        account.setTotalBalance(account.getTotalBalance() + amount);
+        return accountRepository.save(account);
+}
 
 
 @Transactional

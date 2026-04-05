@@ -28,6 +28,11 @@ public class ExpenseController {
         List<ExpenseResponse> list = expenseService.getAllExpensesByUser();
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
+    @DeleteMapping("/delete-expense/{expenseId}")
+    public ResponseEntity<?> deleteExpense(@PathVariable String expenseId){
+        String response = expenseService.deleteExpense(expenseId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
     @GetMapping("/account")
     public ResponseEntity<?> getAllExpensesByAccount(@RequestBody Account account){
