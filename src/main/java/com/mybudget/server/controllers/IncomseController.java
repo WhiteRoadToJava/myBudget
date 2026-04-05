@@ -24,7 +24,23 @@ public class IncomseController {
         IncomseResponse response = incomseService.addInccmse(incomseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+    @PatchMapping("/update-incomse/{incomseId}")
+    public ResponseEntity<?> updateIncomse(@RequestBody IncomseRequset incomseRequest, @PathVariable String incomseId)   {
+        IncomseResponse response = incomseService.updateIncomse(incomseId, incomseRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
+
+
+
+
+
+
+    @GetMapping("/find-incomse/{incomseId}")
+    public ResponseEntity<?> getIncomseById(@PathVariable String incomseId){
+        IncomseResponse response = incomseService.getIncomseById(incomseId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
     @GetMapping("/account")
     public ResponseEntity<?> getAllIncomseAccount(@RequestBody Account account){
         List<IncomseResponse> list = incomseService.getAllIncomseByAccount(account);

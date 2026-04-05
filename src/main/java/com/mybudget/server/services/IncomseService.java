@@ -45,7 +45,34 @@ public class IncomseService {
 
             return  mapToIncomseResponse(incomseRepository.save(incomse));
         }
+        public IncomseResponse getIncomseById(String incomseId){
+            User currentUser = userUtils.getCurrentAuthenticatedUser();
+            Incomse incomse = incomseRepository.findById(incomseId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Incomse not found or access denied"));
 
+            if(!incomse.getUser().getId().equals(currentUser.getId())){
+                throw new ResourceNotFoundException("Incomse not found or access denied");
+            }
+            else {
+                return mapToIncomseResponse(incomse);
+            }
+        }
+
+        @Transactional
+        public IncomseResponse updateIncomse(String incomseId, IncomseRequset requset){
+            User currentUser = userUtils.getCurrentAuthenticatedUser();
+            Incomse incomse = incomseRepository.findById(incomseId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Incomse not found"));
+            String accountId = requset.getAccount().getId();
+            Account account = accountRepository.findByIdAndUser(accountId, currentUser);
+            accountService.updateTotalBalanceWithUpdateIncome(account, incomse, requset.getAmount());
+            incomse.setAccount(account);
+            if (incomse.getUser().getId().equals(currentUser.getId())){
+                        incomse.setAmount(requset.getAmount());
+                        incomse.setCategory(requset.getCategory());
+                    }
+            return mapToIncomseResponse(incomseRepository.save(incomse));
+        }
 
         public List<IncomseResponse> getAllIncomseByAccount(Account account){
             List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
