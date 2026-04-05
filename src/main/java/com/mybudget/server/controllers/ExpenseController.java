@@ -28,6 +28,13 @@ public class ExpenseController {
         List<ExpenseResponse> list = expenseService.getAllExpensesByUser();
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
+
+    @PatchMapping("/update-expense/{expenseId}")
+    public ResponseEntity<?> updateExpense(@RequestBody ExpenseRequset expenseRequest, @PathVariable String expenseId){
+        ExpenseResponse response = expenseService.updateExpense(expenseId, expenseRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
     @DeleteMapping("/delete-expense/{expenseId}")
     public ResponseEntity<?> deleteExpense(@PathVariable String expenseId){
         String response = expenseService.deleteExpense(expenseId);
