@@ -44,7 +44,19 @@ public class ExpenseService {
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
-
+    @Transactional
+public String  deleteExpense(String expenseId){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
+        if(expense.getUser().getId().equals(currentUser.getId())){
+            accountService.updateTotalBalanceWithDeleteExpense(expense.getAccount(), expense.getAmount());
+            expenseRepository.delete(expense);
+            return "Expense deleted successfully";
+        } else {
+            throw new ResourceNotFoundException("Expense not found or access denied");
+        }
+}
 
     public ExpenseResponse getExpenseById(String expenseId){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
