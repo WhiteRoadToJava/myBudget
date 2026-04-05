@@ -29,6 +29,11 @@ public class IncomseController {
         IncomseResponse response = incomseService.updateIncomse(incomseId, incomseRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+    @DeleteMapping("/delete-incomse/{incomseId}")
+    public ResponseEntity<?> deleteIncomse(@PathVariable String incomseId){
+        String response = incomseService.deleteIncomse(incomseId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
 
 
