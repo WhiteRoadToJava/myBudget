@@ -1,6 +1,8 @@
 package com.mybudget.server.services;
 
 
+import com.mybudget.server.dto.user.UserResponse;
+import com.mybudget.server.util.UserUtils;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,10 +17,13 @@ import java.util.Set;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserUtils userUtils;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserUtils userUtils) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userUtils = userUtils;
     }
 
     // register user
@@ -45,6 +50,16 @@ public class UserService {
     public boolean existsByUsername(String username) {
         return userRepository.findByUsername(username).isPresent();
     }
+
+
+    public UserResponse getUserInfo() {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        return new UserResponse(
+                currentUser.getUsername(),
+                currentUser.getFirstName() + " " + currentUser.getLastName()
+        );
+    }
+
 
 
 
