@@ -30,5 +30,10 @@ public ResponseEntity<?> executeTranfer (@RequestBody TransferRequest request){
         TransferResponse response = transferService.getTransferById(transferId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+    @DeleteMapping("/delete-transfer/{transferId}")
+    public ResponseEntity<?> deleteTransfer(@PathVariable String transferId){
+        String response = transferService.deleteTransfer(transferId);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
 }
