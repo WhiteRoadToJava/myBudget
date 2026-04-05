@@ -45,6 +45,21 @@ public class ExpenseService {
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
     @Transactional
+    public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
+        String accountId = expenseRequest.getAccount().getId();
+        Account account = accountRepository.findByIdAndUser(accountId, currentUser);
+        accountService.updateTotalBalanceWithUpdateExpense(account, expense, expenseRequest.getAmount());
+        expense.setAccount(account);
+        if(expense.getUser().getId().equals(currentUser.getId())){
+            expense.setAmount(expenseRequest.getAmount());
+            expense.setCategory(expenseRequest.getCategory());
+        }
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+    @Transactional
 public String  deleteExpense(String expenseId){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = expenseRepository.findById(expenseId)
