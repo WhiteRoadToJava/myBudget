@@ -73,6 +73,19 @@ public class IncomseService {
                     }
             return mapToIncomseResponse(incomseRepository.save(incomse));
         }
+        @Transactional
+        public String deleteIncomse(String incomseId){
+            User currentUser = userUtils.getCurrentAuthenticatedUser();
+            Incomse incomse = incomseRepository.findById(incomseId)
+                    .orElseThrow(()-> new ResourceNotFoundException("Incomse not found"));
+            if(incomse.getUser().getId().equals(currentUser.getId())){
+                accountService.updateTotalBalanceWithDeleteIncomse(incomse.getAccount(), incomse.getAmount());
+                incomseRepository.delete(incomse);
+                return "Incomse deleted successfully";
+            } else {
+                throw new ResourceNotFoundException("Incomse not found or access denied");
+            }
+        }
 
         public List<IncomseResponse> getAllIncomseByAccount(Account account){
             List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
