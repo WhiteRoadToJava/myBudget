@@ -160,16 +160,18 @@ public Account updateTotalBalanaceWithExpense(Account account, double amount ){
         return accountRepository.save(account);
 }
 
-public Account updateTotalBalanceWithIncome(Account account, double amount ){
-        if(account.getTotalBalance() == null){
+public void updateTotalBalanceWithIncome(Account account, double amount ){
+        if(account != null) {
+        if (account.getTotalBalance() == null) {
             account.setTotalBalance(0.0);
             accountRepository.save(account);
         }
-        if(account.getBalance() == null){
+        if (account.getBalance() == null) {
             throw new ResourceNotFoundException("Balance is null");
         }
         account.setTotalBalance(account.getTotalBalance() + amount);
-        return accountRepository.save(account);
+         accountRepository.save(account);
+    }
 }
 public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
     Double oldTotalbalance = account.getTotalBalance();
@@ -185,31 +187,61 @@ public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expe
         return accountRepository.save(account);
 }
 @Transactional
-public Account updateTotalBalanceWithDeleteIncomse(Account account, Double amount){
-        account.setTotalBalance(account.getTotalBalance() - amount);
-        return accountRepository.save(account);
+public void updateTotalBalanceWithDeleteIncomse(Account account, Double amount){
+        if (account != null) {
+            account.setTotalBalance(account.getTotalBalance() - amount);
+             accountRepository.save(account);
+        }
 }
 @Transactional
-public Account updateTotalBalanceWithDeleteExpense(Account account, Double amount){
-        account.setTotalBalance(account.getTotalBalance() + amount);
-        return accountRepository.save(account);
+public void updateTotalBalanceWithDeleteExpense(Account account, Double amount){
+        if (account != null){
+            account.setTotalBalance(account.getTotalBalance() + amount);
+             accountRepository.save(account);
+        }
 }
 
 
 @Transactional
 public String  updateAccountsWithUpadateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request){
-        Double oldAccountSendTotal = accountSend.getTotalBalance();
-        Double oldAccountDestinationTotal = accountDestination.getTotalBalance();
-        Double newAccountSentTotal = oldAccountSendTotal - transfer.getAmountSent() + request.getAmountSent();
-        Double newAccountDestinationTotal = oldAccountDestinationTotal + transfer.getAmountReceived() - request.getAmountReceived();
-        accountSend.setTotalBalance(newAccountSentTotal);
-        accountDestination.setTotalBalance(newAccountDestinationTotal);
-        accountRepository.save(accountSend);
-        accountRepository.save(accountDestination);
+        if(accountSend != null){
+            Double oldAccountSendTotal = accountSend.getTotalBalance();
+            Double newAccountSentTotal = oldAccountSendTotal + transfer.getAmountSent() - request.getAmountSent();
+            accountSend.setTotalBalance(newAccountSentTotal);
+            accountRepository.save(accountSend);
+
+        }
+        if (accountDestination != null){
+            Double oldAccountDestinationTotal = accountDestination.getTotalBalance();
+            Double newAccountDestinationTotal = oldAccountDestinationTotal - transfer.getAmountReceived() + request.getAmountReceived();
+            accountDestination.setTotalBalance(newAccountDestinationTotal);
+            accountRepository.save(accountDestination);
+        }
         return "success";
 }
 
-
+@Transactional
+public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
+    String sourceAccountId = "";
+    if (transfer.getSourceAccount() != null) {
+        sourceAccountId = transfer.getSourceAccount().getId();
+        accountRepository.findById(sourceAccountId).ifPresent(sourceAccount -> {
+            Double newBalance = sourceAccount.getTotalBalance() + transfer.getAmountSent();
+            sourceAccount.setTotalBalance(newBalance);
+            accountRepository.save(sourceAccount);
+        });
+    }
+    String destinationAccountId = "";
+    if (transfer.getDestinationAccount() != null) {
+        destinationAccountId = transfer.getDestinationAccount().getId();
+        accountRepository.findById(destinationAccountId).ifPresent(destinationAccount -> {
+            Double newBalance = destinationAccount.getTotalBalance() - transfer.getAmountReceived();
+            destinationAccount.setTotalBalance(newBalance);
+            accountRepository.save(destinationAccount);
+        });
+    }
+            return "success";
+}
 
     private AccountResponse mapToAccountResponse(Account account) {
         String date = account.getCreatedAt();
@@ -279,4 +311,6 @@ public String  updateAccountsWithUpadateTransfer(Account accountSend, Account ac
                 transfer.getCreatedAt()
         );
     }
+
+
 }
