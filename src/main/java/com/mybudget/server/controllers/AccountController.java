@@ -51,9 +51,14 @@ public class AccountController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @PostMapping("/all-transactions")
-    public ResponseEntity<?> getAllTransationInAccount(@RequestBody Account account){
-        List<Transaction> response = accountService.getAllTransationInAccount(account);
+    @PostMapping("/allaccount-transactions")
+    public ResponseEntity<?> getAllaccountTransations(@RequestBody Account account){
+        List<Transaction> response = accountService.getAllAccountTransactions(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+    @GetMapping("/all-transactions")
+    public ResponseEntity<?> getAllTransations(){
+        List<Transaction> transactionList = accountService.getAllTransactions();
+        return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 }
