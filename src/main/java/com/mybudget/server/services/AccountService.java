@@ -126,7 +126,7 @@ public class AccountService {
         return allAccounts;
     }
 
-        public List<Transaction> getAllTransationInAccount(Account account){
+        public List<Transaction> getAllAccountTransactions(Account account){
             List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
             List<Expense> expenseList = expenseRepository.findAllByAccount(account);
             List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account );
@@ -136,6 +136,16 @@ public class AccountService {
             transactions.addAll(transferList.stream()
                     .map(t -> mapTransferToTransaction(t, account)).toList());
             return transactions;
+        }
+        public List<Transaction> getAllTransactions (){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        List<Incomse> incomseList = incomseRepository.findAllByUser(currentUser);
+        List<Expense> expenseList = expenseRepository.findAllByUser(currentUser);
+
+        List<Transaction> transactionList = new ArrayList<>();
+        transactionList.addAll(incomseList.stream().map(this::mapIToTransation).toList());
+        transactionList.addAll((expenseList.stream().map(this::mapExpenseToTranaction).toList()));
+        return transactionList;
         }
 
 
