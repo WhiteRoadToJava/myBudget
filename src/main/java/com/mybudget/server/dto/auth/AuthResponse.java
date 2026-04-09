@@ -1,4 +1,4 @@
-package com.mybudget.server.dto;
+package com.mybudget.server.dto.auth;
 
 import java.util.Set;
 
