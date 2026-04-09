@@ -181,8 +181,8 @@ public class AuthController {
 
     @PostMapping("/update-password")
     public ResponseEntity<?> updatePassord(@Valid @RequestBody PasswordRequest requset){
-        String response = authService.updatePassword(requset);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+         authService.updatePassword(requset);
+        return ResponseEntity.ok("Password updated successfully");
     }
 
 
