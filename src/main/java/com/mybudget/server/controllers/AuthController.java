@@ -2,12 +2,14 @@
 package com.mybudget.server.controllers;
 
 
-import com.mybudget.server.dto.AuthRequest;
-import com.mybudget.server.dto.AuthResponse;
+import com.mybudget.server.dto.auth.AuthRequest;
+import com.mybudget.server.dto.auth.AuthResponse;
 import com.mybudget.server.dto.RegisterRequest;
 import com.mybudget.server.dto.RegisterResponse;
+import com.mybudget.server.dto.auth.PasswordRequest;
 import com.mybudget.server.modules.Role;
 import com.mybudget.server.modules.User;
+import com.mybudget.server.services.AuthService;
 import com.mybudget.server.services.UserService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,11 +43,13 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private final AuthService authService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserService userService) {
+    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserService userService, AuthService authService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userService = userService;
+        this.authService = authService;
     }
 
     @PostMapping("/register")
@@ -170,6 +174,16 @@ public class AuthController {
         ));
     }
 
+
+
+
+
+
+    @PostMapping("/update-password")
+    public ResponseEntity<?> updatePassord(@Valid @RequestBody PasswordRequest requset){
+        String response = authService.updatePassword(requset);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
 
 

@@ -1,5 +1,5 @@
 
-package com.mybudget.server.dto;
+package com.mybudget.server.dto.auth;
 
 
 import jakarta.validation.constraints.NotBlank;
