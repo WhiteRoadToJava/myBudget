@@ -18,15 +18,16 @@ public class AuthService {
 
 
 
-    public String updatePassword(PasswordRequest request){
+    public void updatePassword(PasswordRequest request){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
+        if(!request.getNewPassword().equals(request.getConfirmPassword())){
+            throw new ResourceNotFoundException("password is not match");
+        }
 
         if(!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())){
             throw  new ResourceNotFoundException("Password is not correnct...");
         };
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
-
-        return "Password updeted successfully";
     }
 }
