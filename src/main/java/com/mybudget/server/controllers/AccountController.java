@@ -56,7 +56,7 @@ public class AccountController {
         List<Transaction> response = accountService.getAllAccountTransactions(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-    @GetMapping("/all-transactions")
+    @GetMapping("/all-incomse-and-expense-transactions")
     public ResponseEntity<?> getAllTransations(){
         List<Transaction> transactionList = accountService.getAllTransactions();
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
