@@ -35,7 +35,7 @@ public class AccountService {
 
     public AccountResponse createAccount (AccountRequest accountRequest){
         User currentUser  = userUtils.getCurrentAuthenticatedUser();
-        if (findAccountByName(accountRequest.getName() , currentUser)){
+        if (findAccountByNameAndUser(accountRequest.getName() , currentUser)){
             throw new ResourceNotFoundException("Account already exists");
         }
         Date createdAt = new Date();
@@ -151,7 +151,7 @@ public class AccountService {
 
 
 
-    private boolean findAccountByName(String accountName, User currentUser){
+    private boolean findAccountByNameAndUser(String accountName, User currentUser){
         return  accountRepository.findByNameAndUser(accountName, currentUser).isPresent();
     }
     public AccountResponse getAccountById(String accountId){

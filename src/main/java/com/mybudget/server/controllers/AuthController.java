@@ -7,7 +7,7 @@ import com.mybudget.server.dto.auth.AuthResponse;
 import com.mybudget.server.dto.RegisterRequest;
 import com.mybudget.server.dto.RegisterResponse;
 import com.mybudget.server.dto.auth.PasswordRequest;
-import com.mybudget.server.modules.Role;
+import com.mybudget.server.modules.enums.Role;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.services.AuthService;
 import com.mybudget.server.services.UserService;
