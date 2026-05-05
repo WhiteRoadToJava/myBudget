@@ -3,17 +3,17 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.incomse.IncomseRequset;
-import com.mybudget.server.dto.scheduale.SechedualeRequest;
-import com.mybudget.server.dto.scheduale.SechedualeResponse;
+import com.mybudget.server.dto.schedule.ScheduleRequest;
+import com.mybudget.server.dto.schedule.ScheduleResponse;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.Scheduale;
+import com.mybudget.server.modules.Scheduae;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.ScheduleInterval;
 import com.mybudget.server.modules.enums.TransactionType;
 import com.mybudget.server.repositories.AccountRepository;
-import com.mybudget.server.repositories.SechedualeRepository;
+import com.mybudget.server.repositories.ScheduleRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +23,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SchedualeService {
-    private final SechedualeRepository sechedualeRepository;
+public class ScheduleService {
+    private final ScheduleRepository scheduleRepository;
     private final IncomseService incomseService;
     private final ExpenseService expenseService;
     private final TransferService transferService;
@@ -40,7 +39,7 @@ public class SchedualeService {
 
 
 
-    public SechedualeResponse executeSchedule(SechedualeRequest request) {
+    public ScheduleResponse executeSchedule(ScheduleRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         System.out.println(request.getAmountReceived());
         // Fetch source account
@@ -56,7 +55,7 @@ public class SchedualeService {
             destinationAccount = sourceAccount;
         }
         // Build schedule
-        Scheduale schedule = Scheduale.builder()
+        Scheduae schedule = Scheduae.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .sourceAccount(sourceAccount)
@@ -65,11 +64,13 @@ public class SchedualeService {
                 .scheduleIntervals(request.getScheduleIntervals())
                 .amountSend(request.getAmountSend())
                 .nextExecutionDate(request.getNextExecutionDate())
+                .exChangeRate(request.getExChangeRate())
+                .amountReceived(request.getAmountReceived())
                 .isActive(true)
                 .user(currentUser)
                 .build();
 
-        Scheduale saved = sechedualeRepository.save(schedule);
+        Scheduae saved = scheduleRepository.save(schedule);
 
         return mapToResponse(saved);
     }
@@ -82,11 +83,11 @@ public class SchedualeService {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59,59);
 
-        List<Scheduale> dueTodaySchedules = sechedualeRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
+        List<Scheduae> dueTodaySchedules = scheduleRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
         System.out.println(dueTodaySchedules.size());
-        for (Scheduale schedule : dueTodaySchedules) {
+        for (Scheduae schedule : dueTodaySchedules) {
             try {
-                processSechedule(schedule);
+                processSchedule(schedule);
             }catch (Exception e){
                 throw new ResourceNotFoundException("Failed to process schedule id={}, error={}"+  schedule.getId()+ e.getMessage());
             }
@@ -95,39 +96,39 @@ public class SchedualeService {
 
 
 
-private void processSechedule(Scheduale sechedule) {
-    TransactionType type = sechedule.getTransactionTypes().iterator().next();
-    User user = sechedule.getUser();
+private void processSchedule(Scheduae schedule) {
+    TransactionType type = schedule.getTransactionTypes().iterator().next();
+    User user = schedule.getUser();
     switch (type) {
         case INCOMSE -> {
-            IncomseRequset requset = mapToIncomstRequest(sechedule);
+            IncomseRequset requset = mapToIncomstRequest(schedule);
             incomseService.excuteIncomse(requset, user);
-            updateNextExectionDate(sechedule);
+            updateNextExecutionDate(schedule);
         }
         case EXPENSE -> {
-            ExpenseRequset requset = mapToExpenseRequest(sechedule);
+            ExpenseRequset requset = mapToExpenseRequest(schedule);
             expenseService.addExpense(requset, user);
-            updateNextExectionDate(sechedule);
+            updateNextExecutionDate(schedule);
         }
         case TRANSFER -> {
-            TransferRequest request = mapToTransferRequest(sechedule);
+            TransferRequest request = mapToTransferRequest(schedule);
             transferService.excuteTransfer(request, user);
-            updateNextExectionDate(sechedule);
+            updateNextExecutionDate(schedule);
         }
     }
 }
 
-    private void updateNextExectionDate(Scheduale sechedule){
-        ScheduleInterval interval = sechedule.getScheduleIntervals().iterator().next();
+    private void updateNextExecutionDate(Scheduae schedule){
+        ScheduleInterval interval = schedule.getScheduleIntervals().iterator().next();
 
         LocalDateTime next = switch (interval) {
-            case DAILY -> sechedule.getNextExecutionDate().plusDays(1);
-            case WEEKLY -> sechedule.getNextExecutionDate().plusWeeks(1);
-            case MONTHLY -> sechedule.getNextExecutionDate().plusMonths(1);
-            case YEARLY -> sechedule.getNextExecutionDate().plusYears(1);
+            case DAILY -> schedule.getNextExecutionDate().plusDays(1);
+            case WEEKLY -> schedule.getNextExecutionDate().plusWeeks(1);
+            case MONTHLY -> schedule.getNextExecutionDate().plusMonths(1);
+            case YEARLY -> schedule.getNextExecutionDate().plusYears(1);
         };
-        sechedule.setNextExecutionDate(next);
-        sechedualeRepository.save(sechedule);
+        schedule.setNextExecutionDate(next);
+        scheduleRepository.save(schedule);
     }
 
 
@@ -146,14 +147,16 @@ private void processSechedule(Scheduale sechedule) {
 
 
 
-    private SechedualeResponse mapToResponse(Scheduale schedule) {
-        SechedualeResponse response = new SechedualeResponse();
+    private ScheduleResponse mapToResponse(Scheduae schedule) {
+        ScheduleResponse response = new ScheduleResponse();
         response.setId(schedule.getId());
         response.setName(schedule.getName());
         response.setDescription(schedule.getDescription());
         response.setTransactionType(schedule.getTransactionTypes().iterator().next());
         response.setScheduleInterval(schedule.getScheduleIntervals().iterator().next());
-        response.setAmount(schedule.getAmountSend());
+        response.setAmountSend(schedule.getAmountSend());
+        response.setExChangeRate(schedule.getExChangeRate());
+        response.setAmountReceived(schedule.getAmountReceived());
         response.setExecutionDate(schedule.getNextExecutionDate());
         response.setActive(schedule.isActive());
         response.setCreatedAt(schedule.getCreatedAt());
@@ -161,7 +164,7 @@ private void processSechedule(Scheduale sechedule) {
 
         // Map source account
         if (schedule.getSourceAccount() != null) {
-            SechedualeResponse.AccountSummary source = new SechedualeResponse.AccountSummary();
+            ScheduleResponse.AccountSummary source = new ScheduleResponse.AccountSummary();
             source.setId(schedule.getSourceAccount().getId());
             source.setName(schedule.getSourceAccount().getName());
             source.setBalance(schedule.getSourceAccount().getBalance());
@@ -170,7 +173,7 @@ private void processSechedule(Scheduale sechedule) {
 
         // Map destination account
         if (schedule.getDestinationAccount() != null) {
-            SechedualeResponse.AccountSummary destination = new SechedualeResponse.AccountSummary();
+            ScheduleResponse.AccountSummary destination = new ScheduleResponse.AccountSummary();
             destination.setId(schedule.getDestinationAccount().getId());
             destination.setName(schedule.getDestinationAccount().getName());
             destination.setBalance(schedule.getDestinationAccount().getBalance());
@@ -179,7 +182,7 @@ private void processSechedule(Scheduale sechedule) {
 
         // Map user
         if (schedule.getUser() != null) {
-            SechedualeResponse.UserSummary userSummary = new SechedualeResponse.UserSummary();
+            ScheduleResponse.UserSummary userSummary = new ScheduleResponse.UserSummary();
             userSummary.setId(schedule.getUser().getId());
             userSummary.setName(schedule.getUser().getFirstName() + " " + schedule.getUser().getLastName());
             userSummary.setEmail(schedule.getUser().getUsername());
@@ -192,34 +195,34 @@ private void processSechedule(Scheduale sechedule) {
 
 
 
-    private IncomseRequset mapToIncomstRequest(Scheduale secheduale){
+    private IncomseRequset mapToIncomstRequest(Scheduae schedule){
         return new IncomseRequset(
-                secheduale.getAmountSend().doubleValue(),
-                secheduale.getCategory(),
-                secheduale.getUser(),
-                secheduale.getSourceAccount(),
-                secheduale.getDescription()
+                schedule.getAmountSend().doubleValue(),
+                schedule.getCategory(),
+                schedule.getUser(),
+                schedule.getSourceAccount(),
+                schedule.getDescription()
 
         );
     }
-    private ExpenseRequset  mapToExpenseRequest(Scheduale secheduale){
+    private ExpenseRequset  mapToExpenseRequest(Scheduae schedule){
         return new ExpenseRequset(
-                secheduale.getAmountSend().doubleValue(),
-                secheduale.getCategory(),
-                secheduale.getUser(),
-                secheduale.getSourceAccount(),
-                secheduale.getDescription()
+                schedule.getAmountSend().doubleValue(),
+                schedule.getCategory(),
+                schedule.getUser(),
+                schedule.getSourceAccount(),
+                schedule.getDescription()
         );
     }
 
-    private TransferRequest mapToTransferRequest(Scheduale secheduale){
+    private TransferRequest mapToTransferRequest(Scheduae schedule){
         return new TransferRequest(
-                secheduale.getSourceAccount(),
-                secheduale.getDestinationAccount(),
-                secheduale.getAmountSend().doubleValue(),
-                secheduale.getExChangeRate().doubleValue(),
-                secheduale.getAmountReceived().doubleValue(),
-                secheduale.getDescription()
+                schedule.getSourceAccount(),
+                schedule.getDestinationAccount(),
+                schedule.getAmountSend().doubleValue(),
+                schedule.getExChangeRate().doubleValue(),
+                schedule.getAmountReceived().doubleValue(),
+                schedule.getDescription()
         );
     }
 

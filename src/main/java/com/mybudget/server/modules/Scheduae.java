@@ -22,7 +22,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "schedules")
-public class Scheduale {
+public class Scheduae {
     @Id
     private  String id;
     private  String name;
