@@ -12,9 +12,9 @@ import java.util.Date;
 @Setter
 @AllArgsConstructor
 public class IncomseRequset {
-    private String id;
     private double amount;
     private String category;
     private User user;
     private Account account;
+    private  String description;
 }

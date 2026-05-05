@@ -2,7 +2,7 @@ package com.mybudget.server.dto.auth;
 
 import java.util.Set;
 
-import com.mybudget.server.modules.Role;
+import com.mybudget.server.modules.enums.Role;
 
 public class AuthResponse {
     private String jwtToken;
