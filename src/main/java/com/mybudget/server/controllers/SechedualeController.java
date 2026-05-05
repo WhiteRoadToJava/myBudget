@@ -2,7 +2,7 @@ package com.mybudget.server.controllers;
 
 import com.mybudget.server.dto.scheduale.SechedualeRequest;
 import com.mybudget.server.dto.scheduale.SechedualeResponse;
-import com.mybudget.server.services.SechedualeService;
+import com.mybudget.server.services.SchedualeService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/user/schedules")
 public class SechedualeController {
-    private final SechedualeService sechedualeService;
+    private final SchedualeService sechedualeService;
 
 
     @PostMapping("/excute")

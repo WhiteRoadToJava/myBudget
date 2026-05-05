@@ -24,9 +24,34 @@ public class TransferService {
 
 
 
-    public TransferResponse executeTransfet(TransferRequest request){
+    public TransferResponse excuteTransfer(TransferRequest request){
         User user = userUtils.getCurrentAuthenticatedUser();
 
+        Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+        Account destinationAccount = accountRepository.findById(request.getDestinationAccount().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        Double receivedAmount = request.getAmountSent() * request.getExChangeRate();
+
+        Transfer transfer = new Transfer();
+        accountService.updateTotalBalanceWithSemdTransfer(sourceAccount, request.getAmountSent());
+        accountService.updateTotalBalanceWithReceivedTransfer(destinationAccount, receivedAmount);
+        transfer.setUser(user);
+        transfer.setDescription(request.getDescription());
+        transfer.setExChangeRate(request.getExChangeRate());
+        transfer.setAmountSent(request.getAmountSent());
+        transfer.setAmountReceived(receivedAmount);
+        transfer.setSourceAccount(sourceAccount);
+        transfer.setDestinationAccount(destinationAccount);
+        transfer.setCurrency(sourceAccount.getCurrency());
+
+        return  mapToTransferResponse(transferRepository.save(transfer));
+    }
+
+    // This method is used with schedule
+    @Transactional
+    public TransferResponse excuteTransfer(TransferRequest request, User user){
         Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         Account destinationAccount = accountRepository.findById(request.getDestinationAccount().getId())

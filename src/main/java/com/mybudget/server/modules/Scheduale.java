@@ -22,7 +22,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "schedules")
-public class Secheduale {
+public class Scheduale {
     @Id
     private  String id;
     private  String name;
@@ -33,9 +33,12 @@ public class Secheduale {
     private  Account destinationAccount;
     @DBRef
     private  User user;
+    private String category;
     private Set<TransactionType> transactionTypes;
     private  Set<ScheduleInterval> scheduleIntervals;
-    private BigDecimal amount;
+    private BigDecimal amountSend;
+    private BigDecimal exChangeRate;
+    private BigDecimal amountReceived;
     private LocalDateTime nextExecutionDate ;
     private boolean isActive;
     @CreatedDate
