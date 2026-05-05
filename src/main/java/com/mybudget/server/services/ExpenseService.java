@@ -44,6 +44,25 @@ public class ExpenseService {
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
+    // this method is used with schedule
+    @Transactional
+    public ExpenseResponse addExpense(ExpenseRequset requset, User user){
+        Expense expense = new Expense();
+        expense.setAmount(requset.getAmount());
+        expense.setCategory(requset.getCategory());
+        expense.setUser(user);
+
+        String accountId = requset.getAccount().getId();
+        Account account = accountRepository.findByIdAndUser(accountId, user);
+        if(account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        expense.setAccount(account);
+        accountService.updateTotalBalanaceWithExpense(account, requset.getAmount());
+
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+
     @Transactional
     public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
