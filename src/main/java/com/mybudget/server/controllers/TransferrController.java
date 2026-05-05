@@ -16,7 +16,7 @@ public class TransferrController {
 
     @PostMapping("/execute")
 public ResponseEntity<?> executeTranfer (@RequestBody TransferRequest request){
-        TransferResponse response =  transferService.executeTransfet(request);
+        TransferResponse response =  transferService.excuteTransfer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
