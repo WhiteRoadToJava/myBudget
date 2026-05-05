@@ -2,7 +2,7 @@ package com.mybudget.server.dto;
 
 import java.util.Set;
 
-import com.mybudget.server.modules.Role;
+import com.mybudget.server.modules.enums.Role;
 
 public class RegisterResponse {
     private String message;

@@ -45,6 +45,25 @@ public class IncomseService {
 
             return  mapToIncomseResponse(incomseRepository.save(incomse));
         }
+
+    // this method is used with schedule
+    @Transactional
+    public IncomseResponse excuteIncomse(IncomseRequset requset, User user){
+        Incomse incomse = new Incomse();
+        incomse.setAmount(requset.getAmount());
+        incomse.setCategory(requset.getCategory());incomse.setUser(user);
+
+        String accountId = requset.getAccount().getId();
+        Account  account = accountRepository.findByIdAndUser(accountId, user);
+        if(account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        incomse.setAccount(account);
+        accountService.updateTotalBalanceWithIncome(account, requset.getAmount());
+
+        return  mapToIncomseResponse(incomseRepository.save(incomse));
+    }
+
         public IncomseResponse getIncomseById(String incomseId){
             User currentUser = userUtils.getCurrentAuthenticatedUser();
             Incomse incomse = incomseRepository.findById(incomseId)
