@@ -1,4 +1,4 @@
-package com.mybudget.server.dto.scheduale;
+package com.mybudget.server.dto.schedule;
 
 import com.mybudget.server.modules.enums.ScheduleInterval;
 import com.mybudget.server.modules.enums.TransactionType;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SechedualeResponse {
+public class ScheduleResponse {
 private String id;
 private String name;
 private String description;
@@ -23,7 +23,9 @@ private AccountSummary sourceAccount;
 private AccountSummary destinationAccount;
 private TransactionType transactionType;
 private ScheduleInterval scheduleInterval;
-private BigDecimal amount;
+private BigDecimal amountSend;
+private BigDecimal exChangeRate;
+private BigDecimal amountReceived;
 private LocalDateTime executionDate;
 private boolean active;
 private UserSummary createdBy;
