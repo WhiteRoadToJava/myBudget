@@ -5,7 +5,7 @@ import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.transfer.TransferRequest;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
@@ -13,6 +13,11 @@ import com.mybudget.server.repositories.IncomseRepository;
 import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.A;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +37,7 @@ public class AccountService {
     private final ExpenseRepository expenseRepository;
     private final TransferRepository transferRepository;
 
-
+    @Cacheable(value = "accounts")
     public AccountResponse createAccount (AccountRequest accountRequest){
         User currentUser  = userUtils.getCurrentAuthenticatedUser();
         if (findAccountByNameAndUser(accountRequest.getName() , currentUser)){
@@ -53,6 +58,14 @@ public class AccountService {
         AccountResponse accountResponse = mapToAccountResponse(accountRepository.save(account));
         return accountResponse;
     }
+    @Caching(
+            put = {
+                    @CachePut(value = "account", key = "#accouunt.id")
+            },
+            evict = {
+                    @CacheEvict(value = "accounts", allEntries = true)
+            }
+    )
     public AccountResponse updateAcoount(Account accouunt){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account existedAccount = accountRepository.findByIdAndUser(accouunt.getId(), currentUser);
@@ -97,6 +110,12 @@ public class AccountService {
     }
 
     @Transactional
+    @Caching(
+            evict ={
+                    @CacheEvict(value = "accounts", allEntries = true),
+                    @CacheEvict(value = "account", allEntries = true)
+            }
+    )
     public void deleteAccount (String accountId){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
@@ -109,7 +128,7 @@ public class AccountService {
         accountRepository.delete(account);
     }
 
-
+@Cacheable(value = "accounts")
     public AllAccounts getAllAccounts (){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         List<Account> accounts = accountRepository.findAllByUser(currentUser);
@@ -126,6 +145,7 @@ public class AccountService {
         return allAccounts;
     }
 
+    @Cacheable(value = "account", key = "#account.id")
         public List<Transaction> getAllAccountTransactions(Account account){
             List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
             List<Expense> expenseList = expenseRepository.findAllByAccount(account);
@@ -151,6 +171,7 @@ public class AccountService {
 
 
 
+        @Cacheable(value = "account", key = "#accountName")
     private boolean findAccountByNameAndUser(String accountName, User currentUser){
         return  accountRepository.findByNameAndUser(accountName, currentUser).isPresent();
     }
@@ -164,12 +185,26 @@ public class AccountService {
     }
 
 
-
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
 public Account updateTotalBalanaceWithExpense(Account account, double amount ){
         account.setTotalBalance(account.getTotalBalance() - amount);
         return accountRepository.save(account);
 }
-
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
 public void updateTotalBalanceWithIncome(Account account, double amount ){
         if(account != null) {
         if (account.getTotalBalance() == null) {
@@ -183,13 +218,27 @@ public void updateTotalBalanceWithIncome(Account account, double amount ){
          accountRepository.save(account);
     }
 }
-public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+) public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
     Double oldTotalbalance = account.getTotalBalance();
     Double newTotalBalance = oldTotalbalance - incomse.getAmount() + amount;
     account.setTotalBalance(newTotalBalance);
     return accountRepository.save(account);
 }
-@Transactional
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
 public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expense, double amount){
         Double oldTotalbalance = account.getTotalBalance();
         Double newTotalBalance = oldTotalbalance - expense.getAmount() + amount;
@@ -197,13 +246,29 @@ public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expe
         return accountRepository.save(account);
 }
 @Transactional
-public void updateTotalBalanceWithDeleteIncomse(Account account, Double amount){
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
+void updateTotalBalanceWithDeleteIncomse(Account account, Double amount){
         if (account != null) {
             account.setTotalBalance(account.getTotalBalance() - amount);
              accountRepository.save(account);
         }
 }
 @Transactional
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
 public void updateTotalBalanceWithDeleteExpense(Account account, Double amount){
         if (account != null){
             account.setTotalBalance(account.getTotalBalance() + amount);
@@ -213,6 +278,14 @@ public void updateTotalBalanceWithDeleteExpense(Account account, Double amount){
 
 
 @Transactional
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
 public String  updateAccountsWithUpadateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request){
         if(accountSend != null){
             Double oldAccountSendTotal = accountSend.getTotalBalance();
@@ -231,6 +304,14 @@ public String  updateAccountsWithUpadateTransfer(Account accountSend, Account ac
 }
 
 @Transactional
+@Caching(
+        evict = {
+                @CacheEvict(value = "account", allEntries = true)
+        },
+        put = {
+                @CachePut(value = "account", key = "#account.id")
+        }
+)
 public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
     String sourceAccountId = "";
     if (transfer.getSourceAccount() != null) {

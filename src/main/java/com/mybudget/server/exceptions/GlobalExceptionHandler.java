@@ -1,4 +1,4 @@
-package com.mybudget.server.exeptions;
+package com.mybudget.server.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

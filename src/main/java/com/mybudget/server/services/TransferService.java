@@ -2,7 +2,7 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Transfer;
 import com.mybudget.server.modules.User;

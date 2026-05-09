@@ -6,7 +6,7 @@ import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
 import com.mybudget.server.dto.transfer.TransferRequest;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Scheduae;
 import com.mybudget.server.modules.User;
@@ -77,7 +77,7 @@ public class ScheduleService {
 
 
 
-    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 0 8 * * *")
     private void runDailySchedules(){
         System.out.println("Running daily schedules");
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();

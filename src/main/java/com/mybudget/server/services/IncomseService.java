@@ -3,7 +3,7 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Incomse;
 import com.mybudget.server.modules.User;

@@ -2,7 +2,7 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.expense.ExpenseResponse;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
 import com.mybudget.server.modules.User;
@@ -10,11 +10,9 @@ import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 
 @Service

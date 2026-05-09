@@ -1,7 +1,7 @@
 package com.mybudget.server.services;
 
 import com.mybudget.server.dto.auth.PasswordRequest;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.UserRepository;
 import com.mybudget.server.util.UserUtils;

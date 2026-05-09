@@ -1,4 +1,4 @@
-package com.mybudget.server.exeptions;
+package com.mybudget.server.exceptions;
 
 public class UnauthorizedException extends RuntimeException{
     public UnauthorizedException(String message) {
