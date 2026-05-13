@@ -6,10 +6,9 @@ import com.mybudget.server.services.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,5 +21,11 @@ public class SechedualeController {
     public ResponseEntity<ScheduleResponse> executeSchedule(@RequestBody ScheduleRequest request) {
         ScheduleResponse response = sechedualeService.executeSchedule(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/all-schedules")
+    public ResponseEntity<List<ScheduleResponse>> getAllSchedules() {
+        List<ScheduleResponse> response  = sechedualeService.getAllSchedules();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

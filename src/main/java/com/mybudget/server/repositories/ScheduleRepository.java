@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ScheduleRepository extends MongoRepository<Scheduae, String> {
     List<Scheduae> findByNextExecutionDateBetweenAndIsActiveTrue(LocalDateTime start, LocalDateTime end);
+    List<Scheduae> findAllByUser(String userId);
 }
