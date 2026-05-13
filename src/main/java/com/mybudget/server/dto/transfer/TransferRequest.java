@@ -16,8 +16,8 @@ public class TransferRequest {
     private Account destinationAccount;
 
     private Double amountSent;
-    private double exChangeRate;
-    private double amountReceived ;
+    private Double exChangeRate;
+    private Double amountReceived ;
 
     private String description;
 }
