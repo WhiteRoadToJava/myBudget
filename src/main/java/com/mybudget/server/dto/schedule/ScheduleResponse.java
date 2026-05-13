@@ -36,7 +36,7 @@ private LocalDateTime updatedAt;
 public static class AccountSummary {
     private String id;
     private String name;
-    private Double balance;
+    private Double totalBalance;
 }
 
 @Data

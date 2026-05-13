@@ -7,6 +7,7 @@ import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exeptions.UnauthorizedException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Scheduae;
 import com.mybudget.server.modules.User;
@@ -77,14 +78,12 @@ public class ScheduleService {
 
 
 
-    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 0 8 * * *")
     private void runDailySchedules(){
-        System.out.println("Running daily schedules");
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59,59);
 
         List<Scheduae> dueTodaySchedules = scheduleRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
-        System.out.println(dueTodaySchedules.size());
         for (Scheduae schedule : dueTodaySchedules) {
             try {
                 processSchedule(schedule);
@@ -133,6 +132,14 @@ private void processSchedule(Scheduae schedule) {
 
 
 
+    public List<ScheduleResponse> getAllSchedules() {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        if(currentUser == null) throw new UnauthorizedException("User not found");
+        String userId = currentUser.getId();
+        List<Scheduae> schedules = scheduleRepository.findAllByUser(userId);
+        return schedules.stream().map(this::mapToResponse).toList();
+    }
+
 
 
 
@@ -167,7 +174,7 @@ private void processSchedule(Scheduae schedule) {
             ScheduleResponse.AccountSummary source = new ScheduleResponse.AccountSummary();
             source.setId(schedule.getSourceAccount().getId());
             source.setName(schedule.getSourceAccount().getName());
-            source.setBalance(schedule.getSourceAccount().getBalance());
+            source.setTotalBalance(schedule.getSourceAccount().getTotalBalance());
             response.setSourceAccount(source);
         }
 
@@ -176,7 +183,7 @@ private void processSchedule(Scheduae schedule) {
             ScheduleResponse.AccountSummary destination = new ScheduleResponse.AccountSummary();
             destination.setId(schedule.getDestinationAccount().getId());
             destination.setName(schedule.getDestinationAccount().getName());
-            destination.setBalance(schedule.getDestinationAccount().getBalance());
+            destination.setTotalBalance(schedule.getDestinationAccount().getTotalBalance());
             response.setDestinationAccount(destination);
         }
 
