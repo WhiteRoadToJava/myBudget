@@ -1,5 +1,6 @@
 package com.mybudget.server.modules;
 
+import com.mybudget.server.modules.enums.Role;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;

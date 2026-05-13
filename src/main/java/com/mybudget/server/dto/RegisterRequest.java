@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.util.Set;
 
-import com.mybudget.server.modules.Role;
+import com.mybudget.server.modules.enums.Role;
 
 public class RegisterRequest {
     @NotBlank

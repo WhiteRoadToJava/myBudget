@@ -16,4 +16,5 @@ public class ExpenseRequset {
     private String category;
     private User user;
     private Account account;
+    private  String description;
 }
