@@ -19,9 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -110,22 +108,31 @@ public class AccountService {
     }
 
 
-    public AllAccounts getAllAccounts (){
+    public AllAccounts getAllAccounts() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         List<Account> accounts = accountRepository.findAllByUser(currentUser);
         int totalAccounts = accounts.size();
-        double totalBalance = 0.0;
+
+        // ✅ currency → total balance
+        Map<String, Double> totalBalanceByCurrency = new HashMap<>();
+
         for (Account account : accounts) {
             if (account.getTotalBalance() == null) {
                 account.setTotalBalance(0.0);
                 accountRepository.save(account);
             }
-            totalBalance += account.getTotalBalance();
+
+            // ✅ Group and sum by currency
+            totalBalanceByCurrency.merge(
+                    account.getCurrency(),
+                    account.getTotalBalance(),
+                    Double::sum
+            );
         }
-        AllAccounts allAccounts = new AllAccounts(accounts, totalAccounts, String.valueOf(totalBalance));
+
+        AllAccounts allAccounts = new AllAccounts(accounts, totalAccounts, totalBalanceByCurrency);
         return allAccounts;
     }
-
         public List<Transaction> getAllAccountTransactions(Account account){
             List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
             List<Expense> expenseList = expenseRepository.findAllByAccount(account);
