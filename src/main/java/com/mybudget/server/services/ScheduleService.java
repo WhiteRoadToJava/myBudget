@@ -9,7 +9,7 @@ import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.exeptions.UnauthorizedException;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.Scheduae;
+import com.mybudget.server.modules.Schedule;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.ScheduleInterval;
 import com.mybudget.server.modules.enums.TransactionType;
@@ -56,7 +56,7 @@ public class ScheduleService {
             destinationAccount = sourceAccount;
         }
         // Build schedule
-        Scheduae schedule = Scheduae.builder()
+        Schedule schedule = Schedule.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .sourceAccount(sourceAccount)
@@ -71,7 +71,7 @@ public class ScheduleService {
                 .user(currentUser)
                 .build();
 
-        Scheduae saved = scheduleRepository.save(schedule);
+        Schedule saved = scheduleRepository.save(schedule);
 
         return mapToResponse(saved);
     }
@@ -83,8 +83,8 @@ public class ScheduleService {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59,59);
 
-        List<Scheduae> dueTodaySchedules = scheduleRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
-        for (Scheduae schedule : dueTodaySchedules) {
+        List<Schedule> dueTodaySchedules = scheduleRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
+        for (Schedule schedule : dueTodaySchedules) {
             try {
                 processSchedule(schedule);
             }catch (Exception e){
@@ -95,7 +95,7 @@ public class ScheduleService {
 
 
 
-private void processSchedule(Scheduae schedule) {
+private void processSchedule(Schedule schedule) {
     TransactionType type = schedule.getTransactionTypes().iterator().next();
     User user = schedule.getUser();
     switch (type) {
@@ -117,7 +117,7 @@ private void processSchedule(Scheduae schedule) {
     }
 }
 
-    private void updateNextExecutionDate(Scheduae schedule){
+    private void updateNextExecutionDate(Schedule schedule){
         ScheduleInterval interval = schedule.getScheduleIntervals().iterator().next();
 
         LocalDateTime next = switch (interval) {
@@ -136,7 +136,7 @@ private void processSchedule(Scheduae schedule) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         if(currentUser == null) throw new UnauthorizedException("User not found");
         String userId = currentUser.getId();
-        List<Scheduae> schedules = scheduleRepository.findAllByUser(userId);
+        List<Schedule> schedules = scheduleRepository.findAllByUser(userId);
         return schedules.stream().map(this::mapToResponse).toList();
     }
 
@@ -154,7 +154,7 @@ private void processSchedule(Scheduae schedule) {
 
 
 
-    private ScheduleResponse mapToResponse(Scheduae schedule) {
+    private ScheduleResponse mapToResponse(Schedule schedule) {
         ScheduleResponse response = new ScheduleResponse();
         response.setId(schedule.getId());
         response.setName(schedule.getName());
@@ -200,9 +200,20 @@ private void processSchedule(Scheduae schedule) {
     }
 
 
+    public void deleteSchedulae(String scheduleId){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        String userId = currentUser.getId();
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Not Found"));
+        if(userId .equals(schedule.getUser().getId())){
+            scheduleRepository.delete(schedule);
+        }
+    }
 
 
-    private IncomseRequset mapToIncomstRequest(Scheduae schedule){
+
+
+    private IncomseRequset mapToIncomstRequest(Schedule schedule){
         return new IncomseRequset(
                 schedule.getAmountSend().doubleValue(),
                 schedule.getCategory(),
@@ -212,7 +223,7 @@ private void processSchedule(Scheduae schedule) {
 
         );
     }
-    private ExpenseRequset  mapToExpenseRequest(Scheduae schedule){
+    private ExpenseRequset  mapToExpenseRequest(Schedule schedule){
         return new ExpenseRequset(
                 schedule.getAmountSend().doubleValue(),
                 schedule.getCategory(),
@@ -222,7 +233,7 @@ private void processSchedule(Scheduae schedule) {
         );
     }
 
-    private TransferRequest mapToTransferRequest(Scheduae schedule){
+    private TransferRequest mapToTransferRequest(Schedule schedule){
         return new TransferRequest(
                 schedule.getSourceAccount(),
                 schedule.getDestinationAccount(),

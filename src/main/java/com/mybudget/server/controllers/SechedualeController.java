@@ -14,18 +14,24 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/user/schedules")
 public class SechedualeController {
-    private final ScheduleService sechedualeService;
+    private final ScheduleService scheduleService;
 
 
     @PostMapping("/excute")
     public ResponseEntity<ScheduleResponse> executeSchedule(@RequestBody ScheduleRequest request) {
-        ScheduleResponse response = sechedualeService.executeSchedule(request);
+        ScheduleResponse response = scheduleService.executeSchedule(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/all-schedules")
     public ResponseEntity<List<ScheduleResponse>> getAllSchedules() {
-        List<ScheduleResponse> response  = sechedualeService.getAllSchedules();
+        List<ScheduleResponse> response  = scheduleService.getAllSchedules();
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @DeleteMapping("delete-schedule/{scheduleId}")
+        public ResponseEntity<?> delete(@PathVariable String scheduleId ){
+        scheduleService.deleteSchedulae(scheduleId);
+        return  ResponseEntity.status(HttpStatus.OK).body("delete is successfuly");
     }
 }
