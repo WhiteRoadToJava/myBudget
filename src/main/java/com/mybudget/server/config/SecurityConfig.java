@@ -72,9 +72,7 @@ private String frontendUrl;
                 "http://localhost:5173",
                 "https://my-budget-frontend.vercel.app",
                 "https://dreamy-cajeta-ce3d15.netlify.app",
-                "https://my-budget-frontend-*.vercel.app",
-                "https://my-budget-frontend-production.up.railway.app",
-                frontendUrl
+                "https://my-budget-frontend-production.up.railway.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
