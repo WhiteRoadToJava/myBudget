@@ -1,6 +1,7 @@
 package com.mybudget.server.services;
 
 
+import com.mybudget.server.dto.user.UserRequset;
 import com.mybudget.server.dto.user.UserResponse;
 import com.mybudget.server.util.UserUtils;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -56,10 +57,33 @@ public class UserService {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         return new UserResponse(
                 currentUser.getUsername(),
-                currentUser.getFirstName() + " " + currentUser.getLastName()
+                currentUser.getFirstName() + " " + currentUser.getLastName(),
+                currentUser.getPhone()
         );
     }
 
+    public UserResponse updateUser(UserRequset request) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+
+
+        currentUser.setFirstName(request.getFirstName());
+        currentUser.setLastName(request.getLastName());
+        currentUser.setPhone(request.getPhone());
+
+
+
+    return  mapToResponse(userRepository.save(currentUser));
+    }
+
+
+
+    private  UserResponse mapToResponse(User user){
+        return new UserResponse(
+                user.getUsername(),
+                user.getFirstName() + " " + user.getLastName(),
+                user.getPhone()
+        );
+    }
 
 
 
