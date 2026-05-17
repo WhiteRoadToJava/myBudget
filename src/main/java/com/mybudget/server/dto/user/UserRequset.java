@@ -1,14 +1,16 @@
 package com.mybudget.server.dto.user;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponse {
-    private  String username;
-    private  String fullname;
-    private  String phone;
+public class UserRequset {
+    private String firstName;
+    private String lastName;
+    private String phone;
 }
