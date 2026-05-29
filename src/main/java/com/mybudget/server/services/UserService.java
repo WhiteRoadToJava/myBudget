@@ -55,19 +55,15 @@ public class UserService {
 
     public UserResponse getUserInfo() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        return new UserResponse(
-                currentUser.getUsername(),
-                currentUser.getFirstName() + " " + currentUser.getLastName(),
-                currentUser.getPhone()
-        );
+        return mapToResponse(currentUser);
     }
 
     public UserResponse updateUser(UserRequset request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
 
 
-        currentUser.setFirstName(request.getFirstName());
-        currentUser.setLastName(request.getLastName());
+        currentUser.setFirstName(request.getFirstname());
+        currentUser.setLastName(request.getLastname());
         currentUser.setPhone(request.getPhone());
 
 
@@ -81,6 +77,8 @@ public class UserService {
         return new UserResponse(
                 user.getUsername(),
                 user.getFirstName() + " " + user.getLastName(),
+                user.getFirstName(),
+                user.getLastName(),
                 user.getPhone()
         );
     }
