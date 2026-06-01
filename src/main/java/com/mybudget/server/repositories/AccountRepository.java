@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,5 +15,7 @@ public interface AccountRepository extends MongoRepository<Account ,  String> {
     Optional<Account> findByNameAndUser(String name, User user);
     List<Account> findAllByUser(User user);
     Account findByIdAndUser(String id, User user);
+
+    List<Account> findByCreatedAtBetween(LocalDateTime date1, LocalDateTime date2);
 
 }
