@@ -1,4 +1,4 @@
-package com.mybudget.server.controllers;
+package com.mybudget.server.controllers.account;
 
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AllAccounts;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
-import com.mybudget.server.services.AccountService;
+import com.mybudget.server.services.account.AccountService;
 
 import jakarta.validation.Valid;
 
@@ -59,6 +59,12 @@ public class AccountController {
     @GetMapping("/all-incomse-and-expense-transactions")
     public ResponseEntity<?> getAllTransations(){
         List<Transaction> transactionList = accountService.getAllTransactions();
+        return ResponseEntity.status(HttpStatus.OK).body(transactionList);
+    }
+
+    @GetMapping("/all-transactionsbetweenTwoDates/{fromDate}/{toDate}")
+    public ResponseEntity<?> getTransactionsBetweenTwoDates(@PathVariable String fromDate, @PathVariable String toDate){
+        List<Transaction> transactionList = accountService.getTransactionsBetweenTwoDates(fromDate, toDate);
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 }

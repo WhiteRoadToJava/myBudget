@@ -5,6 +5,7 @@ import com.mybudget.server.modules.Incomse;
 import com.mybudget.server.modules.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface IncomseRepository extends MongoRepository<Incomse, String> {
@@ -12,4 +13,7 @@ public interface IncomseRepository extends MongoRepository<Incomse, String> {
     List<Incomse> findAllByAccount(Account account);
     List<Incomse> findAllByUser(User user);
     void deleteAllByAccount(Account account);
+
+    List<Incomse> findByUserAndCreatedAtBetween(User user, LocalDateTime fromDate, LocalDateTime toDate);
+
 }
