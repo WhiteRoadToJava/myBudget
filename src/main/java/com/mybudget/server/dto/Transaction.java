@@ -16,7 +16,8 @@ public class Transaction {
     private String id;
     private double amount;
     private String category;
-    private Account account;
+    private Account sourceAccount;
+    private Account destinationAccount;
     private String type;
     private LocalDateTime createdAt;
 }

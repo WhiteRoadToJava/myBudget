@@ -1,4 +1,4 @@
-package com.mybudget.server.services;
+package com.mybudget.server.services.account;
 
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountRequest;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -260,7 +260,7 @@ public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
             return "success";
 }
 
-    private AccountResponse mapToAccountResponse(Account account) {
+    public AccountResponse mapToAccountResponse(Account account) {
         String date = account.getCreatedAt();
         if(date == null) date = "2010-10-10";
         return new AccountResponse(
@@ -284,6 +284,7 @@ public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
                 incomse.getAmount(),
                 incomse.getCategory(),
                 incomse.getAccount(),
+                null,
                 type,
                 incomse.getCreatedAt()
         );
@@ -299,35 +300,66 @@ public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
                 expense.getAmount(),
                 expense.getCategory(),
                 expense.getAccount(),
+                null,
                 type,
                 date
         );
     }
     private Transaction mapTransferToTransaction(Transfer transfer,  Account account){
         String type = "";
-        Account account1 = new Account();
+        Account sourceAccount = new Account();
+        Account destinationAccount = new Account();
         String category = "";
         Double amount = 0.0;
         if(transfer.getSourceAccount().getId().equals(account.getId())) {
             category = "transfer";
             type= "out-transfer";
-            account1 = transfer.getSourceAccount();
+            sourceAccount = transfer.getSourceAccount();
+            destinationAccount = transfer.getDestinationAccount();
             amount = transfer.getAmountSent();
         } else if (transfer.getDestinationAccount().getId().equals(account.getId())) {
             category = "transfer";
             type= "in-transfer";
-            account1 = transfer.getDestinationAccount();
+            sourceAccount = transfer.getDestinationAccount();
+            destinationAccount = transfer.getSourceAccount();
             amount = transfer.getAmountReceived();
         }
         return  new Transaction(
                 transfer.getId(),
                 amount,
                 category,
-                account1,
+                sourceAccount,
+                destinationAccount,
                 type,
                 transfer.getCreatedAt()
         );
     }
+    public Transaction mapTransferToTransaction(Transfer transfer){
+
+        if(transfer.getSourceAccount() != null){
+       Account sourceAccount = transfer.getSourceAccount();
+       return mapTransferToTransaction(transfer, sourceAccount);
+        }
+        return  null;
+    }
 
 
+
+
+    public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate){
+        // confirm the user is authenticated and heseilf that do the  rappor
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        LocalDateTime date1 = LocalDate.parse(fromDate).atStartOfDay();
+        LocalDateTime date2 = LocalDate.parse(toDate).atStartOfDay();
+        List<Incomse> incomseList = incomseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
+        List<Expense> expenseList = expenseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
+        List<Transfer> transferList = transferRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
+
+        List<Transaction> transactionList = new ArrayList<>();
+        transactionList.addAll(incomseList.stream().map(this::mapIToTransation).toList());
+        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
+        transactionList.addAll(transferList.stream().map(this::mapTransferToTransaction).toList());
+        return transactionList;
+
+    }
 }
