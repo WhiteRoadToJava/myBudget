@@ -7,11 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponse {
-    private  String username;
-    private  String fullname;
-    private String firstname;
-    private String lastname;
-    private  String phone;
+public class UpdateExpireDate {
     private String expireDate;
 }

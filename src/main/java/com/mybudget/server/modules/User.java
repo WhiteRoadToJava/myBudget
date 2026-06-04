@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.Set;
 
 @Data
@@ -37,6 +38,7 @@ public class User {
     private String firstName;
     private String lastName;
     private String phone;
+    private String expireDate;
     @CreatedDate
     private String createdAt;
 

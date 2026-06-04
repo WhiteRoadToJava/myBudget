@@ -12,6 +12,8 @@ import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.repositories.IncomseRepository;
 import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.util.UserUtils;
+import com.mybudget.server.util.mapMappers.AccountMapper;
+import com.mybudget.server.util.mapMappers.UserMappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,9 @@ public class AccountService {
     private final IncomseRepository incomseRepository;
     private final ExpenseRepository expenseRepository;
     private final TransferRepository transferRepository;
+    private final AccountMapper accountMapper;
+    private  final UserMappers userMappers;
+
 
 
     public AccountResponse createAccount (AccountRequest accountRequest){
@@ -48,7 +53,7 @@ public class AccountService {
                 currentUser,
                 createdAt.toString()
         );
-        AccountResponse accountResponse = mapToAccountResponse(accountRepository.save(account));
+        AccountResponse accountResponse = accountMapper.mapToAccountResponse(accountRepository.save(account));
         return accountResponse;
     }
     public AccountResponse updateAcoount(Account accouunt){
@@ -67,7 +72,7 @@ public class AccountService {
         double oldTotalBalance = existedAccount.getTotalBalance();
         existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBslsnce, oldTotalBalance));
         existedAccount.setBalance(newBslsnce);
-        return mapToAccountResponse(accountRepository.save(existedAccount));
+        return accountMapper.mapToAccountResponse(accountRepository.save(existedAccount));
     }
     private Double calculateNewTotal(Double oldBalance, Double newBalance, Double currentTotal) {
 
@@ -81,7 +86,7 @@ public class AccountService {
         Double totalBalance = account.getTotalBalance() + amount;
         updatedAccount.setTotalBalance(totalBalance);
 
-        return mapToAccountResponse(accountRepository.save(updatedAccount));
+        return accountMapper.mapToAccountResponse(accountRepository.save(updatedAccount));
     }
     public AccountResponse updateTotalBalanceWithSemdTransfer(Account account, Double amount){
         String accountId = account.getId();
@@ -91,7 +96,7 @@ public class AccountService {
         Double totalBalance = account.getTotalBalance() - amount;
         updatedAccount.setTotalBalance(totalBalance);
 
-        return mapToAccountResponse(accountRepository.save(updatedAccount));
+        return accountMapper.mapToAccountResponse(accountRepository.save(updatedAccount));
     }
 
     @Transactional
@@ -144,6 +149,7 @@ public class AccountService {
                     .map(t -> mapTransferToTransaction(t, account)).toList());
             return transactions;
         }
+
         public List<Transaction> getAllTransactions (){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         List<Incomse> incomseList = incomseRepository.findAllByUser(currentUser);
@@ -168,6 +174,9 @@ public class AccountService {
             throw new ResourceNotFoundException("Account not found");
         }
         return mapToAccountResponse(account);
+    }
+    private  AccountResponse mapToAccountResponse(Account account){
+        return accountMapper.mapToAccountResponse(account);
     }
 
 
@@ -260,88 +269,6 @@ public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
             return "success";
 }
 
-    public AccountResponse mapToAccountResponse(Account account) {
-        String date = account.getCreatedAt();
-        if(date == null) date = "2010-10-10";
-        return new AccountResponse(
-                account.getId(),
-                account.getName(),
-                account.getCurrency(),
-                account.getType(),
-                account.getBalance(),
-                account.getTotalBalance(),
-                date
-        );
-    }
-    private Transaction mapIToTransation (Incomse incomse){
-        String type = "type";
-        if(incomse.getType() == null){
-            type= "incomse";
-        }else type = incomse.getType();
-
-        return new Transaction(
-                incomse.getId(),
-                incomse.getAmount(),
-                incomse.getCategory(),
-                incomse.getAccount(),
-                null,
-                type,
-                incomse.getCreatedAt()
-        );
-    }
-    private Transaction mapExpenseToTranaction(Expense expense) {
-        String type = "type";
-        if (expense.getType() == null) {
-            type = "expense";
-        } else type = expense.getType();
-        LocalDateTime date = expense.getCreatedAt();
-        return new Transaction(
-                expense.getId(),
-                expense.getAmount(),
-                expense.getCategory(),
-                expense.getAccount(),
-                null,
-                type,
-                date
-        );
-    }
-    private Transaction mapTransferToTransaction(Transfer transfer,  Account account){
-        String type = "";
-        Account sourceAccount = new Account();
-        Account destinationAccount = new Account();
-        String category = "";
-        Double amount = 0.0;
-        if(transfer.getSourceAccount().getId().equals(account.getId())) {
-            category = "transfer";
-            type= "out-transfer";
-            sourceAccount = transfer.getSourceAccount();
-            destinationAccount = transfer.getDestinationAccount();
-            amount = transfer.getAmountSent();
-        } else if (transfer.getDestinationAccount().getId().equals(account.getId())) {
-            category = "transfer";
-            type= "in-transfer";
-            sourceAccount = transfer.getDestinationAccount();
-            destinationAccount = transfer.getSourceAccount();
-            amount = transfer.getAmountReceived();
-        }
-        return  new Transaction(
-                transfer.getId(),
-                amount,
-                category,
-                sourceAccount,
-                destinationAccount,
-                type,
-                transfer.getCreatedAt()
-        );
-    }
-    public Transaction mapTransferToTransaction(Transfer transfer){
-
-        if(transfer.getSourceAccount() != null){
-       Account sourceAccount = transfer.getSourceAccount();
-       return mapTransferToTransaction(transfer, sourceAccount);
-        }
-        return  null;
-    }
 
 
 
@@ -361,5 +288,22 @@ public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
         transactionList.addAll(transferList.stream().map(this::mapTransferToTransaction).toList());
         return transactionList;
 
+    }
+
+
+
+
+
+    private Transaction mapTransferToTransaction(Transfer transfer, Account account){
+        return accountMapper.mapTransferToTransaction(transfer, account);
+    }
+    private Transaction mapExpenseToTranaction(Expense expense){
+        return accountMapper.mapExpenseToTranaction(expense);
+    }
+    private Transaction mapIToTransation (Incomse incomse){
+        return accountMapper.mapIToTransation(incomse);
+    }
+    private Transaction mapTransferToTransaction(Transfer transfer){
+        return accountMapper.mapTransferToTransaction(transfer);
     }
 }
