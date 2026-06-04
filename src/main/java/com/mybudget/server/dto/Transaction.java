@@ -20,4 +20,5 @@ public class Transaction {
     private Account destinationAccount;
     private String type;
     private LocalDateTime createdAt;
+    private  String description;
 }

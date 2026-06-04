@@ -42,7 +42,8 @@ public class AccountMapper {
                 sourceAccount,
                 destinationAccount,
                 type,
-                transfer.getCreatedAt()
+                transfer.getCreatedAt(),
+                transfer.getDescription()
         );
     }
 
@@ -73,7 +74,8 @@ public class AccountMapper {
                 incomse.getAccount(),
                 null,
                 type,
-                incomse.getCreatedAt()
+                incomse.getCreatedAt(),
+                null
         );
     }
     public Transaction mapExpenseToTranaction(Expense expense) {
@@ -89,7 +91,8 @@ public class AccountMapper {
                 expense.getAccount(),
                 null,
                 type,
-                date
+                date,
+                null
         );
     }
 
