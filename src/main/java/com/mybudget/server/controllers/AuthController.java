@@ -14,6 +14,7 @@ import com.mybudget.server.services.UserService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mybudget.server.util.JwtUtil;
+import com.mybudget.server.services.admin.AdminService;
 
 
 
@@ -39,52 +41,16 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private final AuthService authService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserService userService, AuthService authService) {
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-        this.userService = userService;
-        this.authService = authService;
-    }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        // check if username already exists
-        if(userService.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body("Username already exists.");
-        }
 
-        // map the AuthRequest to a User entity
-        User user = new User();
-        user.setUsername(registerRequest.getUsername());
-        user.setPassword(registerRequest.getPassword());
 
-        // assign roles
-        if(registerRequest.getRoles() == null || registerRequest.getRoles().isEmpty()) {
-            user.setRoles(Set.of(Role.USER));
-        } else {
-            user.setRoles(registerRequest.getRoles());
-        }
-
-        // register the user using UserService
-        userService.registerUser(user);
-
-        // create respons object
-        RegisterResponse response = new RegisterResponse(
-                "User registered successfully",
-                user.getUsername(),
-                user.getRoles()
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login (@Valid @RequestBody AuthRequest authRequest, HttpServletResponse response) {
