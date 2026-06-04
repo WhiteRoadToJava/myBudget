@@ -4,6 +4,7 @@ package com.mybudget.server.services;
 import com.mybudget.server.dto.user.UserRequset;
 import com.mybudget.server.dto.user.UserResponse;
 import com.mybudget.server.util.UserUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,35 +12,22 @@ import org.springframework.stereotype.Service;
 import com.mybudget.server.modules.enums.Role;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.UserRepository;
+import com.mybudget.server.util.mapMappers.UserMappers;
 
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserUtils userUtils;
+    private final UserMappers userMappers;
 
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserUtils userUtils) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.userUtils = userUtils;
-    }
 
-    // register user
-    public void registerUser(User user) {
-        // hash password
-        String encodedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(encodedPassword);
 
-        // ensure the user has at least default role USER
-        if(user.getRoles() == null || user.getRoles().isEmpty()) {
-            user.setRoles(Set.of(Role.USER));
-        }
 
-        userRepository.save(user);
-    }
 
     // find user by username
     public User findByUsername(String userName) {
@@ -55,7 +43,7 @@ public class UserService {
 
     public UserResponse getUserInfo() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        return mapToResponse(currentUser);
+        return userMappers.mapToUserResponse(currentUser);
     }
 
     public UserResponse updateUser(UserRequset request) {
@@ -68,19 +56,12 @@ public class UserService {
 
 
 
-    return  mapToResponse(userRepository.save(currentUser));
+    return  userMappers.mapToUserResponse(userRepository.save(currentUser));
     }
 
 
 
-    private  UserResponse mapToResponse(User user){
-        return new UserResponse(
-                user.getUsername(),
-                user.getFirstName() + " " + user.getLastName(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getPhone()
-        );
+
     }
 
 
@@ -100,4 +81,3 @@ public class UserService {
 
 
 
-}
