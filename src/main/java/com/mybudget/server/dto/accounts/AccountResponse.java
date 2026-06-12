@@ -16,6 +16,6 @@ public class AccountResponse {
     private String type;
     private Double balance;
     private Double totalBalance;
-    private AccountStatus status;
+    private Set<AccountStatus> status;
     private String createdAt;
 }

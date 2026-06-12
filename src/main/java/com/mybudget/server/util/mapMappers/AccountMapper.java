@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -53,9 +55,9 @@ public class AccountMapper {
     public AccountResponse mapToAccountResponse(Account account) {
         String date = account.getCreatedAt();
         if(date == null) date = "2010-10-10";
-        AccountStatus status = null;
+        Set<AccountStatus> status = account.getStatus();
         if(account.getStatus() == null){
-            status = AccountStatus.ACTIVE;
+            status = Collections.singleton(AccountStatus.ACTIVE);
         }
         return new AccountResponse(
                 account.getId(),
