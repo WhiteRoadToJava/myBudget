@@ -27,5 +27,5 @@ public class AccountRequest {
     private Double totalBalance;
     private String createdAt;
     private User user;
-
+    private String status = "ACTIVE";
 }

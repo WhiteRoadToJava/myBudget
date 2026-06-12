@@ -1,6 +1,7 @@
 package com.mybudget.server.modules;
 
 
+import com.mybudget.server.modules.enums.AccountStatus;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -9,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -26,6 +28,7 @@ public class Account {
     private User user;
     @CreatedDate
     private String createdAt;
+    private Set<AccountStatus> status;
 
 
     public Account(String name, String description, Double balance, Double totalBalance, String currency, String type,  User currentUser, String createdAt) {
