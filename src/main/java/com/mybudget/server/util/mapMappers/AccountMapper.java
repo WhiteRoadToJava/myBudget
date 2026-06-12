@@ -7,6 +7,7 @@ import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
 import com.mybudget.server.modules.Incomse;
 import com.mybudget.server.modules.Transfer;
+import com.mybudget.server.modules.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +53,10 @@ public class AccountMapper {
     public AccountResponse mapToAccountResponse(Account account) {
         String date = account.getCreatedAt();
         if(date == null) date = "2010-10-10";
+        AccountStatus status = null;
+        if(account.getStatus() == null){
+            status = AccountStatus.ACTIVE;
+        }
         return new AccountResponse(
                 account.getId(),
                 account.getName(),
@@ -59,6 +64,7 @@ public class AccountMapper {
                 account.getType(),
                 account.getBalance(),
                 account.getTotalBalance(),
+                status,
                 date
         );
     }
