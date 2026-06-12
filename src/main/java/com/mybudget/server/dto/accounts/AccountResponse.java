@@ -1,8 +1,10 @@
 package com.mybudget.server.dto.accounts;
 
+import com.mybudget.server.modules.enums.AccountStatus;
 import lombok.*;
 
-import java.util.ArrayList;
+import java.util.Set;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,5 +16,6 @@ public class AccountResponse {
     private String type;
     private Double balance;
     private Double totalBalance;
+    private Set<AccountStatus> status;
     private String createdAt;
 }
