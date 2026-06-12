@@ -4,9 +4,11 @@ import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
+import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
+import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.repositories.IncomseRepository;
@@ -138,6 +140,22 @@ public class AccountService {
         AllAccounts allAccounts = new AllAccounts(accounts, totalAccounts, totalBalanceByCurrency);
         return allAccounts;
     }
+
+
+    public AccountResponse updateAccountStatus(String accountId, UpdateAccountStatus status){
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Account targedAccount = accountRepository.findByIdAndUser(accountId, currentUser);
+
+        targedAccount.setStatus(status.getStatus());
+
+        accountRepository.save(targedAccount);
+        return  mapToAccountResponse(targedAccount);
+    }
+
+
+
+
+
         public List<Transaction> getAllAccountTransactions(Account account){
             List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
             List<Expense> expenseList = expenseRepository.findAllByAccount(account);

@@ -2,7 +2,9 @@ package com.mybudget.server.controllers.account;
 
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AllAccounts;
+import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import com.mybudget.server.services.account.AccountService;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -66,5 +69,13 @@ public class AccountController {
     public ResponseEntity<?> getTransactionsBetweenTwoDates(@PathVariable String fromDate, @PathVariable String toDate){
         List<Transaction> transactionList = accountService.getTransactionsBetweenTwoDates(fromDate, toDate);
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
+    }
+
+
+
+    @PatchMapping("/{accountId}/update-status")
+    public ResponseEntity<?> updateAccountStatus(@PathVariable String accountId, @RequestBody UpdateAccountStatus statusSet){
+        AccountResponse response = accountService.updateAccountStatus(accountId, statusSet);
+        return  ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
