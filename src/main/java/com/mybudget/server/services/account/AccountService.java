@@ -128,6 +128,9 @@ public class AccountService {
                 account.setTotalBalance(0.0);
                 accountRepository.save(account);
             }
+            if(account.getStatus() == null){
+                account.setStatus(Collections.singleton(AccountStatus.ACTIVE));
+            }
 
             // ✅ Group and sum by currency
             totalBalanceByCurrency.merge(
