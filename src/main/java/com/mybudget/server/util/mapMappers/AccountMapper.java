@@ -56,7 +56,7 @@ public class AccountMapper {
         String date = account.getCreatedAt();
         if(date == null) date = "2010-10-10";
         Set<AccountStatus> status = account.getStatus();
-        if(account.getStatus() == null){
+        if(account.getStatus() == null || account.getStatus().isEmpty()){
             status = Collections.singleton(AccountStatus.ACTIVE);
         }
         return new AccountResponse(
