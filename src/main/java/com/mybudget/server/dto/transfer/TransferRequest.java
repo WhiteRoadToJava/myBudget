@@ -1,5 +1,7 @@
 package com.mybudget.server.dto.transfer;
 
+import java.time.LocalDateTime;
+
 import com.mybudget.server.modules.Account;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,4 +19,5 @@ public class TransferRequest {
     private Double amountReceived ;
 
     private String description;
+    private LocalDateTime createdAt;
 }

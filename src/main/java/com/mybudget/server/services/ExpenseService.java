@@ -75,6 +75,7 @@ public class ExpenseService {
             expense.setAmount(expenseRequest.getAmount());
             expense.setCategory(expenseRequest.getCategory());
         }
+        expense.setCreatedAt(expenseRequest.getCreatedAt());
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
     @Transactional
