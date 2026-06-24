@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Setter
@@ -17,4 +18,5 @@ public class ExpenseRequset {
     private User user;
     private Account account;
     private  String description;
+    private LocalDateTime createdAt;
 }

@@ -11,6 +11,9 @@ import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,8 +75,11 @@ public class TransferService {
         transfer.setDestinationAccount(destinationAccount);
         transfer.setCurrency(sourceAccount.getCurrency());
 
+
         return  mapToTransferResponse(transferRepository.save(transfer));
     }
+
+    
 
     @Transactional
     public TransferResponse updateTransfer(String transferId, TransferRequest request){
@@ -96,6 +102,7 @@ public class TransferService {
             existedTransfer.setAmountReceived(request.getAmountReceived());
             existedTransfer.setExChangeRate(request.getExChangeRate());
             existedTransfer.setDescription(request.getDescription());
+            existedTransfer.setCreatedAt(request.getCreatedAt());
             return mapToTransferResponse(transferRepository.save(existedTransfer));
         } else {
             throw new ResourceNotFoundException("Transfer not found or access denied");
