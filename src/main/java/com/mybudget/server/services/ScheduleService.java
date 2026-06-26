@@ -229,7 +229,8 @@ private void processSchedule(Schedule schedule) {
                 schedule.getCategory(),
                 schedule.getUser(),
                 schedule.getSourceAccount(),
-                schedule.getDescription()
+                schedule.getDescription(),
+                schedule.getCreatedAt()
         );
     }
 
@@ -240,7 +241,8 @@ private void processSchedule(Schedule schedule) {
                 schedule.getAmountSend().doubleValue(),
                 schedule.getExChangeRate().doubleValue(),
                 schedule.getAmountReceived().doubleValue(),
-                schedule.getDescription()
+                schedule.getDescription(),
+                schedule.getCreatedAt()
         );
     }
 
