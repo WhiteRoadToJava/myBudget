@@ -220,16 +220,19 @@ private void processSchedule(Schedule schedule) {
                 schedule.getUser(),
                 schedule.getSourceAccount(),
                 schedule.getDescription()
+                
 
         );
     }
+    
     private ExpenseRequset  mapToExpenseRequest(Schedule schedule){
         return new ExpenseRequset(
                 schedule.getAmountSend().doubleValue(),
                 schedule.getCategory(),
                 schedule.getUser(),
                 schedule.getSourceAccount(),
-                schedule.getDescription()
+                schedule.getDescription(),
+                schedule.getCreatedAt()
         );
     }
 
@@ -240,7 +243,8 @@ private void processSchedule(Schedule schedule) {
                 schedule.getAmountSend().doubleValue(),
                 schedule.getExChangeRate().doubleValue(),
                 schedule.getAmountReceived().doubleValue(),
-                schedule.getDescription()
+                schedule.getDescription(),
+                schedule.getCreatedAt()
         );
     }
 

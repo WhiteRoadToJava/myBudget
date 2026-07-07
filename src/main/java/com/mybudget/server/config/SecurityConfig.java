@@ -68,10 +68,10 @@ private String frontendUrl;
         CorsConfiguration configuration = new CorsConfiguration();
 
         // only allow request from our future react client
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:3000",
+                "http://192.168.0.*:3000",
                 "https://my-budget-frontend.vercel.app",
-                "https://dreamy-cajeta-ce3d15.netlify.app",
                 "https://my-budget-frontend-production-271c.up.railway.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
