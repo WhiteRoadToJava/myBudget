@@ -70,6 +70,7 @@ private String frontendUrl;
         // only allow request from our future react client
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
+                "http://localhost:5173",
                 "http://192.168.0.*:3000",
                 "https://my-budget-frontend.vercel.app",
                 "https://my-budget-frontend-production-271c.up.railway.app"
