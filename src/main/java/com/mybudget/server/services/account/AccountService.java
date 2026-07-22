@@ -229,7 +229,7 @@ public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incom
 @Transactional
 public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expense, double amount){
         Double oldTotalbalance = account.getTotalBalance();
-        Double newTotalBalance = oldTotalbalance - expense.getAmount() + amount;
+        Double newTotalBalance = oldTotalbalance + expense.getAmount() - amount;
         account.setTotalBalance(newTotalBalance);
         return accountRepository.save(account);
 }
