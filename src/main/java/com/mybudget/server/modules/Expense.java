@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -27,5 +28,6 @@ public class Expense {
     private User user;
     @DBRef
     private Account account;
+    private Map<String, String> image;
     private String type= "expense";
 }
