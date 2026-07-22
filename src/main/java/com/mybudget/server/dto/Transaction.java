@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 
 
 @Data
@@ -21,4 +22,5 @@ public class Transaction {
     private String type;
     private LocalDateTime createdAt;
     private  String description;
+    private Map<String, String> image;
 }
