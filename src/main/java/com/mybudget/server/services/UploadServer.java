@@ -34,7 +34,7 @@ public class UploadServer {
         Files.createDirectories(targetPath.getParent());
         Files.copy(requestedFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-        String fullUrl = "http://" + serverAddress + ":" + serverPort + "/user/images" + filenme;
+        String fullUrl = "http://" + serverAddress + ":" + serverPort + "/user/images/" + filenme;
 
         Map<String, String> response = new HashMap<>();
         response.put("filename", filenme);

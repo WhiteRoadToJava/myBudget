@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Map;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -17,5 +19,6 @@ public class ExpenseResponse {
     private LocalDateTime createdAt;
     private User user;
     private Account account;
+    private Map<String, String> image;
 
 }
