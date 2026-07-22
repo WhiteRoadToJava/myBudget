@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -25,6 +27,17 @@ public class AccountMapper {
         Account destinationAccount = new Account();
         String category = "";
         Double amount = 0.0;
+
+        Map<String, String> imageUrl = transfer.getImage();
+        Map<String, String> image = new HashMap<>();
+        if (imageUrl != null && imageUrl.get("url") != null) {
+            image.put("url", imageUrl.get("url"));
+            image.put("filename", imageUrl.get("filename"));
+        } else{
+            image.put("url","");
+            image.put("filename", "");
+        }
+
         if(transfer.getSourceAccount().getId().equals(account.getId())) {
             category = "transfer";
             type= "out-transfer";
@@ -46,7 +59,8 @@ public class AccountMapper {
                 destinationAccount,
                 type,
                 transfer.getCreatedAt(),
-                transfer.getDescription()
+                transfer.getDescription(),
+                image
         );
     }
 
@@ -72,6 +86,15 @@ public class AccountMapper {
     }
     public Transaction mapIToTransation (Incomse incomse){
         String type = "type";
+        Map<String, String> imageUrl = incomse.getImage();
+        Map<String, String> image = new HashMap<>();
+        if (imageUrl != null && imageUrl.get("url") != null) {
+            image.put("url", imageUrl.get("url"));
+            image.put("filename", imageUrl.get("filename"));
+        } else{
+            image.put("url","");
+            image.put("filename", "");
+        }
         if(incomse.getType() == null){
             type= "incomse";
         }else type = incomse.getType();
@@ -83,11 +106,21 @@ public class AccountMapper {
                 null,
                 type,
                 incomse.getCreatedAt(),
-                null
+                null,
+                image
         );
     }
     public Transaction mapExpenseToTranaction(Expense expense) {
-        String type = "type";
+        String type;
+        Map<String, String> imageUrl = expense.getImage();
+        Map<String, String> image = new HashMap<>();
+        if (imageUrl != null && imageUrl.get("url") != null) {
+            image.put("url", imageUrl.get("url"));
+            image.put("filename", imageUrl.get("filename"));
+        } else{
+            image.put("url","");
+            image.put("filename", "");
+        }
         if (expense.getType() == null) {
             type = "expense";
         } else type = expense.getType();
@@ -100,7 +133,8 @@ public class AccountMapper {
                 null,
                 type,
                 date,
-                null
+                null,
+                image
         );
     }
 
