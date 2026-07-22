@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 
 @Data
@@ -33,5 +34,5 @@ public class Transfer {
     private String currency;
     private String type = "transfer";
     private double exChangeRate;
-
+    private Map<String, String> image;
 }

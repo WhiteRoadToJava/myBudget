@@ -232,7 +232,8 @@ private void processSchedule(Schedule schedule) {
                 schedule.getUser(),
                 schedule.getSourceAccount(),
                 schedule.getDescription(),
-                schedule.getCreatedAt()
+                schedule.getCreatedAt(),
+                null
         );
     }
 

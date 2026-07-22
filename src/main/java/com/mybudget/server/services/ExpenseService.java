@@ -14,19 +14,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ExpenseService {
     private final UserUtils userUtils;
     private final AccountRepository accountRepository;
-    private final ExpenseRepository     expenseRepository;
+    private final ExpenseRepository expenseRepository;
     private final AccountService accountService;
 
 
     @Transactional
-    public ExpenseResponse addExpense(ExpenseRequset expenseRequest){
+    public ExpenseResponse addExpense(ExpenseRequset expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = new Expense();
         expense.setAmount(expenseRequest.getAmount());
@@ -35,7 +37,7 @@ public class ExpenseService {
 
         String accountId = expenseRequest.getAccount().getId();
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
-        if(account == null) {
+        if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         expense.setAccount(account);
@@ -43,9 +45,10 @@ public class ExpenseService {
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
+
     // this method is used with schedule
     @Transactional
-    public ExpenseResponse addExpense(ExpenseRequset requset, User user){
+    public ExpenseResponse addExpense(ExpenseRequset requset, User user) {
         Expense expense = new Expense();
         expense.setAmount(requset.getAmount());
         expense.setCategory(requset.getCategory());
@@ -53,7 +56,7 @@ public class ExpenseService {
 
         String accountId = requset.getAccount().getId();
         Account account = accountRepository.findByIdAndUser(accountId, user);
-        if(account == null) {
+        if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         expense.setAccount(account);
@@ -63,7 +66,7 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest){
+    public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
@@ -71,59 +74,71 @@ public class ExpenseService {
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
         accountService.updateTotalBalanceWithUpdateExpense(account, expense, expenseRequest.getAmount());
         expense.setAccount(account);
-        if(expense.getUser().getId().equals(currentUser.getId())){
+        if (expense.getUser().getId().equals(currentUser.getId())) {
             expense.setAmount(expenseRequest.getAmount());
             expense.setCategory(expenseRequest.getCategory());
         }
+        expense.setImage(expenseRequest.getImage());
         expense.setCreatedAt(expenseRequest.getCreatedAt());
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
+
     @Transactional
-public String  deleteExpense(String expenseId){
+    public String deleteExpense(String expenseId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
-        if(expense.getUser().getId().equals(currentUser.getId())){
+        if (expense.getUser().getId().equals(currentUser.getId())) {
             accountService.updateTotalBalanceWithDeleteExpense(expense.getAccount(), expense.getAmount());
             expenseRepository.delete(expense);
             return "Expense deleted successfully";
         } else {
             throw new ResourceNotFoundException("Expense not found or access denied");
         }
-}
+    }
 
-    public ExpenseResponse getExpenseById(String expenseId){
+    public ExpenseResponse getExpenseById(String expenseId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found or access denied"));
 
-        if(!expense.getUser().getId().equals(currentUser.getId())){
+        if (!expense.getUser().getId().equals(currentUser.getId())) {
             throw new ResourceNotFoundException("Expense not found or access denied");
         } else {
             return mapToExpenseResponse(expense);
         }
     }
-    public List<ExpenseResponse> getAllExpensesByUser(){
+
+    public List<ExpenseResponse> getAllExpensesByUser() {
         User user = userUtils.getCurrentAuthenticatedUser();
         List<Expense> expenses = expenseRepository.findAllByUser(user);
         return expenses.stream().map(this::mapToExpenseResponse).toList();
     }
 
-    public List<ExpenseResponse> getAllExpensesByAccount(Account account){
+    public List<ExpenseResponse> getAllExpensesByAccount(Account account) {
         List<Expense> expenses = expenseRepository.findAllByAccount(account);
         return expenses.stream().map(this::mapToExpenseResponse).toList();
     }
 
 
-
     private ExpenseResponse mapToExpenseResponse(Expense expense) {
+        Map<String, String> image = expense.getImage();
+        Map<String, String> imageUrl = new HashMap<>();
+        if (image != null && image.get("url") != null) {
+            imageUrl.put("url", image.get("url"));
+            imageUrl.put("filename", image.get("filename"));
+        } else{
+            imageUrl.put("url","");
+            imageUrl.put("filename", "");
+        }
         return new ExpenseResponse(
                 expense.getId(),
                 expense.getAmount(),
                 expense.getCategory(),
                 expense.getCreatedAt(),
                 expense.getUser(),
-                expense.getAccount()
+                expense.getAccount(),
+                imageUrl
         );
     }
 }
