@@ -34,6 +34,7 @@ public class ExpenseService {
         expense.setAmount(expenseRequest.getAmount());
         expense.setCategory(expenseRequest.getCategory());
         expense.setUser(currentUser);
+        expense.setImage(expenseRequest.getImage());
 
         String accountId = expenseRequest.getAccount().getId();
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
