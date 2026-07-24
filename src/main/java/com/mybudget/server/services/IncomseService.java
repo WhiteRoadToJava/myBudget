@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -131,6 +133,15 @@ public class IncomseService {
     LocalDateTime date = incomse.getCreatedAt();
     if(incomse.getCreatedAt() == null)
         date = date.now();
+        Map<String, String> image = incomse.getImage();
+        Map<String, String> imageUrl = new HashMap<>();
+        if (image != null && image.get("url") != null) {
+            imageUrl.put("url", image.get("url"));
+            imageUrl.put("filename", image.get("filename"));
+        } else{
+            imageUrl.put("url","");
+            imageUrl.put("filename", "");
+        }
         return new IncomseResponse(
                 incomse.getId(),
                 incomse.getAmount(),
@@ -138,7 +149,8 @@ public class IncomseService {
                 incomse.getUser(),
                 incomse.getAccount(),
                 type,
-                date
+                date,
+                image
         );
     }
 

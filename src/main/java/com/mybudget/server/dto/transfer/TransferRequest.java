@@ -1,6 +1,7 @@
 package com.mybudget.server.dto.transfer;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import com.mybudget.server.modules.Account;
 import lombok.AllArgsConstructor;
@@ -20,4 +21,5 @@ public class TransferRequest {
 
     private String description;
     private LocalDateTime createdAt;
+    private Map<String, String> image;
 }
