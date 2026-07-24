@@ -92,6 +92,7 @@ public class IncomseService {
             if (incomse.getUser().getId().equals(currentUser.getId())){
                         incomse.setAmount(requset.getAmount());
                         incomse.setCategory(requset.getCategory());
+                        incomse.setImage(requset.getImage());
                     }
             return mapToIncomseResponse(incomseRepository.save(incomse));
         }

@@ -106,6 +106,7 @@ public class TransferService {
             existedTransfer.setExChangeRate(request.getExChangeRate());
             existedTransfer.setDescription(request.getDescription());
             existedTransfer.setCreatedAt(request.getCreatedAt());
+            existedTransfer.setImage(request.getImage());
             return mapToTransferResponse(transferRepository.save(existedTransfer));
         } else {
             throw new ResourceNotFoundException("Transfer not found or access denied");
