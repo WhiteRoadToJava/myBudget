@@ -13,6 +13,8 @@ import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +51,7 @@ public class TransferService {
         transfer.setSourceAccount(sourceAccount);
         transfer.setDestinationAccount(destinationAccount);
         transfer.setCurrency(sourceAccount.getCurrency());
+        transfer.setImage(request.getImage());
 
         return  mapToTransferResponse(transferRepository.save(transfer));
     }
@@ -137,6 +140,15 @@ public class TransferService {
 
 
     private TransferResponse mapToTransferResponse(Transfer transfer) {
+        Map<String, String> image = transfer.getImage();
+        Map<String, String> imageUrl = new HashMap<>();
+        if (image != null && image.get("url") != null) {
+            imageUrl.put("url", image.get("url"));
+            imageUrl.put("filename", image.get("filename"));
+        } else{
+            imageUrl.put("url","");
+            imageUrl.put("filename", "");
+        }
         return new TransferResponse(
                 transfer.getId(),
                 transfer.getSourceAccount(),
@@ -145,7 +157,8 @@ public class TransferService {
                 transfer.getExChangeRate(),
                 transfer.getAmountReceived(),
                 transfer.getDescription(),
-                transfer.getCreatedAt()
+                transfer.getCreatedAt(),
+                transfer.getImage()
         );
     }
 }

@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 
 
 @Getter @Setter
@@ -20,5 +21,6 @@ public class IncomseResponse {
     private Account account;
     private String type = "incomse";
     private LocalDateTime createAt;
+    private Map<String, String> image;
 
 }
