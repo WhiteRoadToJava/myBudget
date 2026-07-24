@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -17,4 +18,5 @@ public class IncomseRequset {
     private User user;
     private Account account;
     private  String description;
+    private Map<String, String> image;
 }

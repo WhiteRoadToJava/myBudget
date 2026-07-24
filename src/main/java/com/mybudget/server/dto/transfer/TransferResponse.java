@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -22,4 +23,5 @@ public class TransferResponse {
 
     private String description;
     private LocalDateTime createdAt;
+    private Map<String, String> image;
 }
