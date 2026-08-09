@@ -2,7 +2,8 @@ package com.mybudget.server.controllers;
 
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
-import com.mybudget.server.services.ScheduleService;
+import com.mybudget.server.dto.schedule.ScheduleuUpdateRequest;
+import com.mybudget.server.services.schedule.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user/schedules")
-public class SechedualeController {
+public class SecheduleController {
     private final ScheduleService scheduleService;
 
 
@@ -33,5 +34,11 @@ public class SechedualeController {
         public ResponseEntity<?> delete(@PathVariable String scheduleId ){
         scheduleService.deleteSchedulae(scheduleId);
         return  ResponseEntity.status(HttpStatus.OK).body("delete is successfuly");
+    }
+
+    @PatchMapping("/{scheduleId}/update-schedule")
+    public ResponseEntity<?> updateSchedule(@PathVariable String scheduleId, @RequestBody ScheduleuUpdateRequest request){
+        ScheduleResponse response = scheduleService.updateSehedule(scheduleId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
