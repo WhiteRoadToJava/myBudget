@@ -1,10 +1,12 @@
-package com.mybudget.server.services;
+package com.mybudget.server.services.schedule;
 
 
+import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
+import com.mybudget.server.dto.schedule.ScheduleuUpdateRequest;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.exeptions.UnauthorizedException;
@@ -15,6 +17,9 @@ import com.mybudget.server.modules.enums.ScheduleInterval;
 import com.mybudget.server.modules.enums.TransactionType;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ScheduleRepository;
+import com.mybudget.server.services.ExpenseService;
+import com.mybudget.server.services.IncomseService;
+import com.mybudget.server.services.TransferService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +40,7 @@ public class ScheduleService {
     private final TransferService transferService;
     private final AccountRepository accountRepository;
     private final UserUtils userUtils;
+    private final ScheduleMapper scheduleMapper;
 
 
 
@@ -74,6 +80,25 @@ public class ScheduleService {
         Schedule saved = scheduleRepository.save(schedule);
 
         return mapToResponse(saved);
+    }
+
+    public ScheduleResponse updateSehedule(String scheduleId, ScheduleuUpdateRequest request ){
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(()-> new ResourceNotFoundException("Schedule is not found."));
+        schedule.setName(request.getName());
+        schedule.setDescription(request.getDescription());
+        schedule.setCategory(request.getCategory());
+        schedule.setScheduleIntervals(request.getScheduleIntervalSet());
+        schedule.setAmountSend(request.getAmountSend());
+        TransactionType transactionType = schedule.getTransactionTypes().iterator().next();
+        if(TransactionType.TRANSFER.equals(transactionType)){
+        schedule.setExChangeRate(request.getExChangeRate());
+        schedule.setAmountReceived(request.getAmountReceived());
+        }
+        schedule.setNextExecutionDate(request.getNextExecutionDate());
+        schedule.setActive(request.isActive());
+        Schedule savedSchedule = scheduleRepository.save(schedule);
+        return mapToResponse(savedSchedule);
     }
 
 
@@ -143,6 +168,9 @@ private void processSchedule(Schedule schedule) {
 
 
 
+private ScheduleResponse mapToResponse(Schedule schedule){
+        return scheduleMapper.mapToResponse(schedule);
+}
 
 
 
@@ -154,50 +182,6 @@ private void processSchedule(Schedule schedule) {
 
 
 
-    private ScheduleResponse mapToResponse(Schedule schedule) {
-        ScheduleResponse response = new ScheduleResponse();
-        response.setId(schedule.getId());
-        response.setName(schedule.getName());
-        response.setDescription(schedule.getDescription());
-        response.setTransactionType(schedule.getTransactionTypes().iterator().next());
-        response.setScheduleInterval(schedule.getScheduleIntervals().iterator().next());
-        response.setAmountSend(schedule.getAmountSend());
-        response.setExChangeRate(schedule.getExChangeRate());
-        response.setAmountReceived(schedule.getAmountReceived());
-        response.setExecutionDate(schedule.getNextExecutionDate());
-        response.setActive(schedule.isActive());
-        response.setCreatedAt(schedule.getCreatedAt());
-        response.setUpdatedAt(schedule.getUpdatedAt());
-
-        // Map source account
-        if (schedule.getSourceAccount() != null) {
-            ScheduleResponse.AccountSummary source = new ScheduleResponse.AccountSummary();
-            source.setId(schedule.getSourceAccount().getId());
-            source.setName(schedule.getSourceAccount().getName());
-            source.setTotalBalance(schedule.getSourceAccount().getTotalBalance());
-            response.setSourceAccount(source);
-        }
-
-        // Map destination account
-        if (schedule.getDestinationAccount() != null) {
-            ScheduleResponse.AccountSummary destination = new ScheduleResponse.AccountSummary();
-            destination.setId(schedule.getDestinationAccount().getId());
-            destination.setName(schedule.getDestinationAccount().getName());
-            destination.setTotalBalance(schedule.getDestinationAccount().getTotalBalance());
-            response.setDestinationAccount(destination);
-        }
-
-        // Map user
-        if (schedule.getUser() != null) {
-            ScheduleResponse.UserSummary userSummary = new ScheduleResponse.UserSummary();
-            userSummary.setId(schedule.getUser().getId());
-            userSummary.setName(schedule.getUser().getFirstName() + " " + schedule.getUser().getLastName());
-            userSummary.setEmail(schedule.getUser().getUsername());
-            response.setCreatedBy(userSummary);
-        }
-
-        return response;
-    }
 
 
     public void deleteSchedulae(String scheduleId){
@@ -214,40 +198,14 @@ private void processSchedule(Schedule schedule) {
 
 
     private IncomseRequset mapToIncomstRequest(Schedule schedule){
-        return new IncomseRequset(
-                schedule.getAmountSend().doubleValue(),
-                schedule.getCategory(),
-                schedule.getUser(),
-                schedule.getSourceAccount(),
-                schedule.getDescription(),
-                null
-
-        );
+        return scheduleMapper.mapToIncomstRequest(schedule);
     }
-    
     private ExpenseRequset  mapToExpenseRequest(Schedule schedule){
-        return new ExpenseRequset(
-                schedule.getAmountSend().doubleValue(),
-                schedule.getCategory(),
-                schedule.getUser(),
-                schedule.getSourceAccount(),
-                schedule.getDescription(),
-                schedule.getCreatedAt(),
-                null
-        );
+        return scheduleMapper.mapToExpenseRequest(schedule);
     }
 
     private TransferRequest mapToTransferRequest(Schedule schedule){
-        return new TransferRequest(
-                schedule.getSourceAccount(),
-                schedule.getDestinationAccount(),
-                schedule.getAmountSend().doubleValue(),
-                schedule.getExChangeRate().doubleValue(),
-                schedule.getAmountReceived().doubleValue(),
-                schedule.getDescription(),
-                schedule.getCreatedAt(),
-                null
-        );
+        return scheduleMapper.mapToTransferRequest(schedule);
     }
 
 

@@ -19,6 +19,7 @@ public class ScheduleResponse {
 private String id;
 private String name;
 private String description;
+private String category;
 private AccountSummary sourceAccount;
 private AccountSummary destinationAccount;
 private TransactionType transactionType;
