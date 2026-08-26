@@ -26,7 +26,7 @@ public class MongoSyncrService {
 
 
 
-    @Scheduled(fixedRate = 3000) // Runs every 5 minutes
+    @Scheduled(fixedRate = 3600000) // Run every hour.
     public void syncAllCollectionsAutomatically() {
         // 1. Automatically fetch ALL existing collection names from the local database
         Set<String> collectionNames = localMongoTemplate.getCollectionNames();
