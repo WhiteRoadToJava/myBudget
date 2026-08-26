@@ -1,41 +1,20 @@
----
-name: 🚀 Pull Request Template
-about: Standardize code changes for MyBudget
-title: '[PR] - '
-labels: enhancement, internal
-assignees: ''
-
----
-
 ## 📝 Summary
-Describe the changes in this PR.
-*(e.g., "Updated AccountService to handle duplicate names and fixed ProtectedRoute casing")*
+Explain the changes you made in this PR. (e.g., "Fixed the Login casing issue and added duplicate account validation in Spring Boot").
 
 ## 🔗 Related Issue
-- Closes # (Link your issue number here)
+Closes # (Add the issue number here, e.g., #1)
 
-## 🛠️ Type of Change
-- [ ] 🐛 **Bug Fix** (Non-breaking change which fixes an issue)
-- [ ] ✨ **New Feature** (Adds functionality to Frontend or Backend)
-- [ ] 🧹 **Refactor** (Code cleanup, folder renaming, or CSS improvements)
-- [ ] 🔒 **Security/Auth** (Changes to Spring Security, JWT, or ProtectedRoutes)
+## 🛠 Type of Change
+- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+- [ ] ✨ New feature (non-breaking change which adds functionality)
+- [ ] 🧹 Refactor (code cleanup or folder renaming)
+- [ ] 🧪 Testing (adding or fixing tests)
 
-## ✅ Critical Checklist
-- [ ] **Casing Check:** I verified that React file names (e.g., `Login.jsx`) match their imports exactly.
-- [ ] **Backend Test:** I tested the API endpoints (Postman/Swagger) and they return correct Status Codes.
-- [ ] **Database:** I checked that MongoDB isn't saving duplicate unique fields (like Account Name).
-- [ ] **Build Check:** I ran `npm run build` or `mvn clean install` locally and it passed.
+## ✅ Checklist Before Requesting Review
+- [ ] **Casing Check:** I have verified that file names (e.g., `Login.jsx`) match their imports exactly.
+- [ ] **Backend Validated:** I have tested the API endpoints with Postman/Swagger.
+- [ ] **No Console Errors:** I checked the browser console for warnings.
+- [ ] **Railway Ready:** I have committed all changes and verified the Build passes.
 
-## 🧪 Testing Proof
-**How did you test this?**
-- [ ] Manual test in Browser
-- [ ] Postman API request
-- [ ] Unit Test (JUnit/Vitest)
-
-> [!TIP]
-> **Paste a screenshot of the successful result or the Terminal output below:**
-> (Drop image here)
-
-## 🌐 Deployment Impact
-- [ ] Requires new Environment Variables (e.g., `JWT_SECRET`) on Railway.
-- [ ] Requires a database cleanup/migration in MongoDB.
+## 📸 Proof (Optional)
+- Add a screenshot of the new UI or a successful API response.
