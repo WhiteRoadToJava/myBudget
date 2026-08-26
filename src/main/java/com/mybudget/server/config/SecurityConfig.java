@@ -50,7 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").hasRole("USER")
-                        .requestMatchers("/auth/**", "/healthy/**").permitAll()
+                        .requestMatchers("/auth/**", "/healthy/**", "/mongo/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
