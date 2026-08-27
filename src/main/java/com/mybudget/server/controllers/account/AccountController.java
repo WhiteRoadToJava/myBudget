@@ -34,7 +34,7 @@ public class AccountController {
     }
 @PatchMapping("/update-account")
     public ResponseEntity<?> updateAccount(@RequestBody Account account){
-        AccountResponse response = accountService.updateAcoount(account);
+        AccountResponse response = accountService.updateAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @DeleteMapping("/delete-account/{accountId}")
@@ -55,12 +55,12 @@ public class AccountController {
     }
 
     @PostMapping("/allaccount-transactions")
-    public ResponseEntity<?> getAllaccountTransations(@RequestBody Account account){
+    public ResponseEntity<?> getAllAccountTransactions(@RequestBody Account account){
         List<Transaction> response = accountService.getAllAccountTransactions(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-    @GetMapping("/all-incomse-and-expense-transactions")
-    public ResponseEntity<?> getAllTransations(){
+    @GetMapping("/all-income-and-expense-transactions")
+    public ResponseEntity<?> getAllTransactions(){
         List<Transaction> transactionList = accountService.getAllTransactions();
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }

@@ -1,8 +1,8 @@
 package com.mybudget.server.services;
 
-import com.mybudget.server.dto.expense.ExpenseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
 import com.mybudget.server.modules.User;
@@ -28,7 +28,7 @@ public class ExpenseService {
 
 
     @Transactional
-    public ExpenseResponse addExpense(ExpenseRequset expenseRequest) {
+    public ExpenseResponse addExpense(ExpenseRequest expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = new Expense();
         expense.setAmount(expenseRequest.getAmount());
@@ -49,25 +49,25 @@ public class ExpenseService {
 
     // this method is used with schedule
     @Transactional
-    public ExpenseResponse addExpense(ExpenseRequset requset, User user) {
+    public ExpenseResponse addExpense(ExpenseRequest request, User user) {
         Expense expense = new Expense();
-        expense.setAmount(requset.getAmount());
-        expense.setCategory(requset.getCategory());
+        expense.setAmount(request.getAmount());
+        expense.setCategory(request.getCategory());
         expense.setUser(user);
 
-        String accountId = requset.getAccount().getId();
+        String accountId = request.getAccount().getId();
         Account account = accountRepository.findByIdAndUser(accountId, user);
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         expense.setAccount(account);
-        accountService.updateTotalBalanaceWithExpense(account, requset.getAmount());
+        accountService.updateTotalBalanaceWithExpense(account, request.getAmount());
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
 
     @Transactional
-    public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest) {
+    public ExpenseResponse updateExpense(String expenseId, ExpenseRequest expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));

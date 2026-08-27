@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.security.core.Authentication;
 
-import com.mybudget.server.exeptions.UnauthorizedException;
+import com.mybudget.server.exceptions.UnauthorizedException;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.UserRepository;
 @Component

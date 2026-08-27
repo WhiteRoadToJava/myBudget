@@ -1,7 +1,7 @@
 package com.mybudget.server.services.schedule;
 
-import com.mybudget.server.dto.expense.ExpenseRequset;
-import com.mybudget.server.dto.incomse.IncomseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
+import com.mybudget.server.dto.income.IncomeRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.modules.Schedule;
@@ -57,8 +57,8 @@ public class ScheduleMapper {
         return response;
     }
 
-    public IncomseRequset mapToIncomstRequest(Schedule schedule){
-        return new IncomseRequset(
+    public IncomeRequest mapToIncomstRequest(Schedule schedule){
+        return new IncomeRequest(
                 schedule.getAmountSend().doubleValue(),
                 schedule.getCategory(),
                 schedule.getUser(),
@@ -68,8 +68,8 @@ public class ScheduleMapper {
 
         );
     }
-    public ExpenseRequset mapToExpenseRequest(Schedule schedule){
-        return new ExpenseRequset(
+    public ExpenseRequest mapToExpenseRequest(Schedule schedule){
+        return new ExpenseRequest(
                 schedule.getAmountSend().doubleValue(),
                 schedule.getCategory(),
                 schedule.getUser(),

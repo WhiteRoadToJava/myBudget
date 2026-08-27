@@ -9,12 +9,13 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Map;
 
 @Getter @Setter
 @NoArgsConstructor
 @Document(collection = "incomes")
-public class Incomse {
+public class Income {
     @Id
     private String id;
     private double amount;
@@ -25,6 +26,6 @@ public class Incomse {
     private Account account;
     @CreatedDate
     private LocalDateTime createdAt;
-    private String type = "incomse";
+    private String type = "income";
     private Map<String, String> image;
 }

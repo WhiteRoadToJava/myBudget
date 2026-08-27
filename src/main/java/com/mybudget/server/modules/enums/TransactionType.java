@@ -1,7 +1,7 @@
 package com.mybudget.server.modules.enums;
 
 public enum TransactionType {
-    INCOMSE,
+    INCOME,
     EXPENSE,
     TRANSFER
 }

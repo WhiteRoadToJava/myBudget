@@ -2,14 +2,14 @@ package com.mybudget.server.services.schedule;
 
 
 import com.mybudget.server.dto.Transaction;
-import com.mybudget.server.dto.expense.ExpenseRequset;
-import com.mybudget.server.dto.incomse.IncomseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
+import com.mybudget.server.dto.income.IncomeRequest;
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
-import com.mybudget.server.dto.schedule.ScheduleuUpdateRequest;
+import com.mybudget.server.dto.schedule.ScheduleUpdateRequest;
 import com.mybudget.server.dto.transfer.TransferRequest;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
-import com.mybudget.server.exeptions.UnauthorizedException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.UnauthorizedException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Schedule;
 import com.mybudget.server.modules.User;
@@ -18,7 +18,7 @@ import com.mybudget.server.modules.enums.TransactionType;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ScheduleRepository;
 import com.mybudget.server.services.ExpenseService;
-import com.mybudget.server.services.IncomseService;
+import com.mybudget.server.services.IncomeService;
 import com.mybudget.server.services.TransferService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ import java.util.List;
 @Slf4j
 public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
-    private final IncomseService incomseService;
+    private final IncomeService incomeService;
     private final ExpenseService expenseService;
     private final TransferService transferService;
     private final AccountRepository accountRepository;
@@ -82,7 +82,7 @@ public class ScheduleService {
         return mapToResponse(saved);
     }
 
-    public ScheduleResponse updateSehedule(String scheduleId, ScheduleuUpdateRequest request ){
+    public ScheduleResponse updateSchedule(String scheduleId, ScheduleUpdateRequest request ){
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(()-> new ResourceNotFoundException("Schedule is not found."));
         schedule.setName(request.getName());
@@ -124,19 +124,19 @@ private void processSchedule(Schedule schedule) {
     TransactionType type = schedule.getTransactionTypes().iterator().next();
     User user = schedule.getUser();
     switch (type) {
-        case INCOMSE -> {
-            IncomseRequset requset = mapToIncomstRequest(schedule);
-            incomseService.excuteIncomse(requset, user);
+        case INCOME -> {
+            IncomeRequest request = mapToIncomstRequest(schedule);
+            incomeService.executeIncome(request, user);
             updateNextExecutionDate(schedule);
         }
         case EXPENSE -> {
-            ExpenseRequset requset = mapToExpenseRequest(schedule);
-            expenseService.addExpense(requset, user);
+            ExpenseRequest request = mapToExpenseRequest(schedule);
+            expenseService.addExpense(request, user);
             updateNextExecutionDate(schedule);
         }
         case TRANSFER -> {
             TransferRequest request = mapToTransferRequest(schedule);
-            transferService.excuteTransfer(request, user);
+            transferService.executeTransfer(request, user);
             updateNextExecutionDate(schedule);
         }
     }
@@ -184,7 +184,7 @@ private ScheduleResponse mapToResponse(Schedule schedule){
 
 
 
-    public void deleteSchedulae(String scheduleId){
+    public void deleteSchedule(String scheduleId){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         String userId = currentUser.getId();
         Schedule schedule = scheduleRepository.findById(scheduleId)
@@ -197,10 +197,10 @@ private ScheduleResponse mapToResponse(Schedule schedule){
 
 
 
-    private IncomseRequset mapToIncomstRequest(Schedule schedule){
+    private IncomeRequest mapToIncomstRequest(Schedule schedule){
         return scheduleMapper.mapToIncomstRequest(schedule);
     }
-    private ExpenseRequset  mapToExpenseRequest(Schedule schedule){
+    private ExpenseRequest  mapToExpenseRequest(Schedule schedule){
         return scheduleMapper.mapToExpenseRequest(schedule);
     }
 

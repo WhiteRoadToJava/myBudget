@@ -1,7 +1,7 @@
 package com.mybudget.server.services;
 
 
-import com.mybudget.server.dto.user.UserRequset;
+import com.mybudget.server.dto.user.UserRequest;
 import com.mybudget.server.dto.user.UserResponse;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ public class UserService {
         return userMappers.mapToUserResponse(currentUser);
     }
 
-    public UserResponse updateUser(UserRequset request) {
+    public UserResponse updateUser(UserRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
 
 

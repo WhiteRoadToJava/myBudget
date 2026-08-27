@@ -2,7 +2,7 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Transfer;
 import com.mybudget.server.modules.User;
@@ -30,7 +30,7 @@ public class TransferService {
 
 
 
-    public TransferResponse excuteTransfer(TransferRequest request){
+    public TransferResponse executeTransfer(TransferRequest request){
         User user = userUtils.getCurrentAuthenticatedUser();
 
         Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
@@ -58,7 +58,7 @@ public class TransferService {
 
     // This method is used with schedule
     @Transactional
-    public TransferResponse excuteTransfer(TransferRequest request, User user){
+    public TransferResponse executeTransfer(TransferRequest request, User user){
         Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         Account destinationAccount = accountRepository.findById(request.getDestinationAccount().getId())

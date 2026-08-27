@@ -5,7 +5,7 @@ import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
-import com.mybudget.server.modules.Incomse;
+import com.mybudget.server.modules.Income;
 import com.mybudget.server.modules.Transfer;
 import com.mybudget.server.modules.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
@@ -84,9 +84,9 @@ public class AccountMapper {
                 date
         );
     }
-    public Transaction mapIToTransation (Incomse incomse){
+    public Transaction mapIncomeToTransaction (Income income){
         String type = "type";
-        Map<String, String> imageUrl = incomse.getImage();
+        Map<String, String> imageUrl = income.getImage();
         Map<String, String> image = new HashMap<>();
         if (imageUrl != null && imageUrl.get("url") != null) {
             image.put("url", imageUrl.get("url"));
@@ -95,22 +95,22 @@ public class AccountMapper {
             image.put("url","");
             image.put("filename", "");
         }
-        if(incomse.getType() == null){
-            type= "incomse";
-        }else type = incomse.getType();
+        if(income.getType() == null){
+            type= "income";
+        }else type = income.getType();
         return new Transaction(
-                incomse.getId(),
-                incomse.getAmount(),
-                incomse.getCategory(),
-                incomse.getAccount(),
+                income.getId(),
+                income.getAmount(),
+                income.getCategory(),
+                income.getAccount(),
                 null,
                 type,
-                incomse.getCreatedAt(),
+                income.getCreatedAt(),
                 null,
                 image
         );
     }
-    public Transaction mapExpenseToTranaction(Expense expense) {
+    public Transaction mapExpenseToTransaction(Expense expense) {
         String type;
         Map<String, String> imageUrl = expense.getImage();
         Map<String, String> image = new HashMap<>();

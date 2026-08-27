@@ -2,8 +2,8 @@ package com.mybudget.server.services.admin;
 
 import com.mybudget.server.dto.user.UpdateExpireDate;
 import com.mybudget.server.dto.user.UserResponse;
-import com.mybudget.server.exeptions.ResourceNotFoundException;
-import com.mybudget.server.exeptions.UnauthorizedException;
+import com.mybudget.server.exceptions.ResourceNotFoundException;
+import com.mybudget.server.exceptions.UnauthorizedException;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.Role;
 import com.mybudget.server.repositories.UserRepository;
