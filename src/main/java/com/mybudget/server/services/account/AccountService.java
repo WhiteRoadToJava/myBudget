@@ -34,13 +34,12 @@ public class AccountService {
     private final ExpenseRepository expenseRepository;
     private final TransferRepository transferRepository;
     private final AccountMapper accountMapper;
-    private  final UserMappers userMappers;
+    private final UserMappers userMappers;
 
 
-
-    public AccountResponse createAccount (AccountRequest accountRequest){
-        User currentUser  = userUtils.getCurrentAuthenticatedUser();
-        if (findAccountByNameAndUser(accountRequest.getName() , currentUser)){
+    public AccountResponse createAccount(AccountRequest accountRequest) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        if (findAccountByNameAndUser(accountRequest.getName(), currentUser)) {
             throw new ResourceNotFoundException("Account already exists");
         }
         Date createdAt = new Date();
@@ -58,10 +57,11 @@ public class AccountService {
         AccountResponse accountResponse = accountMapper.mapToAccountResponse(accountRepository.save(account));
         return accountResponse;
     }
-    public AccountResponse updateAcoount(Account accouunt){
+
+    public AccountResponse updateAcoount(Account accouunt) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account existedAccount = accountRepository.findByIdAndUser(accouunt.getId(), currentUser);
-        if(existedAccount == null){
+        if (existedAccount == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         existedAccount.setName(accouunt.getName());
@@ -76,11 +76,13 @@ public class AccountService {
         existedAccount.setBalance(newBslsnce);
         return accountMapper.mapToAccountResponse(accountRepository.save(existedAccount));
     }
+
     private Double calculateNewTotal(Double oldBalance, Double newBalance, Double currentTotal) {
 
         return currentTotal + (newBalance - oldBalance);
     }
-    public AccountResponse updateTotalBalanceWithReceivedTransfer(Account account, Double amount){
+
+    public AccountResponse updateTotalBalanceWithReceivedTransfer(Account account, Double amount) {
         String accountId = account.getId();
         Account updatedAccount = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
@@ -90,7 +92,8 @@ public class AccountService {
 
         return accountMapper.mapToAccountResponse(accountRepository.save(updatedAccount));
     }
-    public AccountResponse updateTotalBalanceWithSemdTransfer(Account account, Double amount){
+
+    public AccountResponse updateTotalBalanceWithSemdTransfer(Account account, Double amount) {
         String accountId = account.getId();
         Account updatedAccount = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
@@ -102,13 +105,13 @@ public class AccountService {
     }
 
     @Transactional
-    public void deleteAccount (String accountId){
+    public void deleteAccount(String accountId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
-        if(account == null){
+        if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
-       incomseRepository.deleteAllByAccount(account);
+        incomseRepository.deleteAllByAccount(account);
         expenseRepository.deleteAllByAccount(account);
 
         accountRepository.delete(account);
@@ -128,7 +131,7 @@ public class AccountService {
                 account.setTotalBalance(0.0);
                 accountRepository.save(account);
             }
-            if(account.getStatus() == null){
+            if (account.getStatus() == null) {
                 account.setStatus(Collections.singleton(AccountStatus.ACTIVE));
             }
 
@@ -145,33 +148,44 @@ public class AccountService {
     }
 
 
-    public AccountResponse updateAccountStatus(String accountId, UpdateAccountStatus status){
+    public AccountResponse updateAccountStatus(String accountId, UpdateAccountStatus status) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account targedAccount = accountRepository.findByIdAndUser(accountId, currentUser);
 
         targedAccount.setStatus(status.getStatus());
 
         accountRepository.save(targedAccount);
-        return  mapToAccountResponse(targedAccount);
+        return mapToAccountResponse(targedAccount);
     }
 
 
+    public List<Transaction> getAllAccountTransactions(Account account) {
+        List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
+        List<Expense> expenseList = expenseRepository.findAllByAccount(account);
+        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account);
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.addAll(incomseList.stream().map(this::mapIToTransation).toList());
+        transactions.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
+        transactions.addAll(transferList.stream()
+                .map(t -> mapTransferToTransaction(t, account)).toList());
+        return transactions;
+    }
 
+    public List<Transaction> getUserAllTransaction() {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        List<Incomse> incomses = incomseRepository.findAllByUser(currentUser);
+        List<Expense> expenses = expenseRepository.findAllByUser(currentUser);
+        List<Transfer> transfers = transferRepository.findAllByUser(currentUser.getId());
 
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.addAll(incomses.stream().map(this::mapIToTransation).toList());
+        transactions.addAll(expenses.stream().map(this::mapExpenseToTranaction).toList());
+        transactions.addAll(transfers.stream().map(this::mapTransferToTransaction).toList());
 
-        public List<Transaction> getAllAccountTransactions(Account account){
-            List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
-            List<Expense> expenseList = expenseRepository.findAllByAccount(account);
-            List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account );
-            List<Transaction> transactions = new ArrayList<>();
-            transactions.addAll(incomseList.stream().map(this::mapIToTransation).toList());
-            transactions.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
-            transactions.addAll(transferList.stream()
-                    .map(t -> mapTransferToTransaction(t, account)).toList());
-            return transactions;
-        }
+        return transactions;
+    }
 
-        public List<Transaction> getAllTransactions (){
+    public List<Transaction> getAllIncomseExpenseTransactins() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         List<Incomse> incomseList = incomseRepository.findAllByUser(currentUser);
         List<Expense> expenseList = expenseRepository.findAllByUser(currentUser);
@@ -180,121 +194,121 @@ public class AccountService {
         transactionList.addAll(incomseList.stream().map(this::mapIToTransation).toList());
         transactionList.addAll((expenseList.stream().map(this::mapExpenseToTranaction).toList()));
         return transactionList;
-        }
-
-
-
-
-    private boolean findAccountByNameAndUser(String accountName, User currentUser){
-        return  accountRepository.findByNameAndUser(accountName, currentUser).isPresent();
     }
-    public AccountResponse getAccountById(String accountId){
+
+
+    private boolean findAccountByNameAndUser(String accountName, User currentUser) {
+        return accountRepository.findByNameAndUser(accountName, currentUser).isPresent();
+    }
+
+    public AccountResponse getAccountById(String accountId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
-        if(account == null){
+        if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         return mapToAccountResponse(account);
     }
-    private  AccountResponse mapToAccountResponse(Account account){
+
+    private AccountResponse mapToAccountResponse(Account account) {
         return accountMapper.mapToAccountResponse(account);
     }
 
 
-
-public Account updateTotalBalanaceWithExpense(Account account, double amount ){
+    public Account updateTotalBalanaceWithExpense(Account account, double amount) {
         account.setTotalBalance(account.getTotalBalance() - amount);
         return accountRepository.save(account);
-}
+    }
 
-public void updateTotalBalanceWithIncome(Account account, double amount ){
-        if(account != null) {
-        if (account.getTotalBalance() == null) {
-            account.setTotalBalance(0.0);
+    public void updateTotalBalanceWithIncome(Account account, double amount) {
+        if (account != null) {
+            if (account.getTotalBalance() == null) {
+                account.setTotalBalance(0.0);
+                accountRepository.save(account);
+            }
+            if (account.getBalance() == null) {
+                throw new ResourceNotFoundException("Balance is null");
+            }
+            account.setTotalBalance(account.getTotalBalance() + amount);
             accountRepository.save(account);
         }
-        if (account.getBalance() == null) {
-            throw new ResourceNotFoundException("Balance is null");
-        }
-        account.setTotalBalance(account.getTotalBalance() + amount);
-         accountRepository.save(account);
     }
-}
-public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
-    Double oldTotalbalance = account.getTotalBalance();
-    Double newTotalBalance = oldTotalbalance - incomse.getAmount() + amount;
-    account.setTotalBalance(newTotalBalance);
-    return accountRepository.save(account);
-}
-@Transactional
-public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expense, double amount){
+
+    public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
+        Double oldTotalbalance = account.getTotalBalance();
+        Double newTotalBalance = oldTotalbalance - incomse.getAmount() + amount;
+        account.setTotalBalance(newTotalBalance);
+        return accountRepository.save(account);
+    }
+
+    @Transactional
+    public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expense, double amount) {
         Double oldTotalbalance = account.getTotalBalance();
         Double newTotalBalance = oldTotalbalance + expense.getAmount() - amount;
         account.setTotalBalance(newTotalBalance);
         return accountRepository.save(account);
-}
-@Transactional
-public void updateTotalBalanceWithDeleteIncomse(Account account, Double amount){
+    }
+
+    @Transactional
+    public void updateTotalBalanceWithDeleteIncomse(Account account, Double amount) {
         if (account != null) {
             account.setTotalBalance(account.getTotalBalance() - amount);
-             accountRepository.save(account);
+            accountRepository.save(account);
         }
-}
-@Transactional
-public void updateTotalBalanceWithDeleteExpense(Account account, Double amount){
-        if (account != null){
+    }
+
+    @Transactional
+    public void updateTotalBalanceWithDeleteExpense(Account account, Double amount) {
+        if (account != null) {
             account.setTotalBalance(account.getTotalBalance() + amount);
-             accountRepository.save(account);
+            accountRepository.save(account);
         }
-}
+    }
 
 
-@Transactional
-public String  updateAccountsWithUpadateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request){
-        if(accountSend != null){
+    @Transactional
+    public String updateAccountsWithUpadateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request) {
+        if (accountSend != null) {
             Double oldAccountSendTotal = accountSend.getTotalBalance();
             Double newAccountSentTotal = oldAccountSendTotal + transfer.getAmountSent() - request.getAmountSent();
             accountSend.setTotalBalance(newAccountSentTotal);
             accountRepository.save(accountSend);
 
         }
-        if (accountDestination != null){
+        if (accountDestination != null) {
             Double oldAccountDestinationTotal = accountDestination.getTotalBalance();
             Double newAccountDestinationTotal = oldAccountDestinationTotal - transfer.getAmountReceived() + request.getAmountReceived();
             accountDestination.setTotalBalance(newAccountDestinationTotal);
             accountRepository.save(accountDestination);
         }
         return "success";
-}
-
-@Transactional
-public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
-    String sourceAccountId = "";
-    if (transfer.getSourceAccount() != null) {
-        sourceAccountId = transfer.getSourceAccount().getId();
-        accountRepository.findById(sourceAccountId).ifPresent(sourceAccount -> {
-            Double newBalance = sourceAccount.getTotalBalance() + transfer.getAmountSent();
-            sourceAccount.setTotalBalance(newBalance);
-            accountRepository.save(sourceAccount);
-        });
     }
-    String destinationAccountId = "";
-    if (transfer.getDestinationAccount() != null) {
-        destinationAccountId = transfer.getDestinationAccount().getId();
-        accountRepository.findById(destinationAccountId).ifPresent(destinationAccount -> {
-            Double newBalance = destinationAccount.getTotalBalance() - transfer.getAmountReceived();
-            destinationAccount.setTotalBalance(newBalance);
-            accountRepository.save(destinationAccount);
-        });
+
+    @Transactional
+    public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
+        String sourceAccountId = "";
+        if (transfer.getSourceAccount() != null) {
+            sourceAccountId = transfer.getSourceAccount().getId();
+            accountRepository.findById(sourceAccountId).ifPresent(sourceAccount -> {
+                Double newBalance = sourceAccount.getTotalBalance() + transfer.getAmountSent();
+                sourceAccount.setTotalBalance(newBalance);
+                accountRepository.save(sourceAccount);
+            });
+        }
+        String destinationAccountId = "";
+        if (transfer.getDestinationAccount() != null) {
+            destinationAccountId = transfer.getDestinationAccount().getId();
+            accountRepository.findById(destinationAccountId).ifPresent(destinationAccount -> {
+                Double newBalance = destinationAccount.getTotalBalance() - transfer.getAmountReceived();
+                destinationAccount.setTotalBalance(newBalance);
+                accountRepository.save(destinationAccount);
+            });
+        }
+        return "success";
     }
-            return "success";
-}
 
 
-
-
-
-    public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate){
+    public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
         // confirm the user is authenticated and heseilf that do the  rappor
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         LocalDateTime date1 = LocalDate.parse(fromDate).atStartOfDay();
@@ -312,19 +326,19 @@ public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
     }
 
 
-
-
-
-    private Transaction mapTransferToTransaction(Transfer transfer, Account account){
+    private Transaction mapTransferToTransaction(Transfer transfer, Account account) {
         return accountMapper.mapTransferToTransaction(transfer, account);
     }
-    private Transaction mapExpenseToTranaction(Expense expense){
+
+    private Transaction mapExpenseToTranaction(Expense expense) {
         return accountMapper.mapExpenseToTranaction(expense);
     }
-    private Transaction mapIToTransation (Incomse incomse){
+
+    private Transaction mapIToTransation(Incomse incomse) {
         return accountMapper.mapIToTransation(incomse);
     }
-    private Transaction mapTransferToTransaction(Transfer transfer){
+
+    private Transaction mapTransferToTransaction(Transfer transfer) {
         return accountMapper.mapTransferToTransaction(transfer);
     }
 }
