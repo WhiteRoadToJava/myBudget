@@ -61,7 +61,7 @@ public class AccountController {
     }
     @GetMapping("/all-incomse-and-expense-transactions")
     public ResponseEntity<?> getAllTransations(){
-        List<Transaction> transactionList = accountService.getAllTransactions();
+        List<Transaction> transactionList = accountService.getAllIncomseExpenseTransactins();
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 
@@ -77,5 +77,12 @@ public class AccountController {
     public ResponseEntity<?> updateAccountStatus(@PathVariable String accountId, @RequestBody UpdateAccountStatus statusSet){
         AccountResponse response = accountService.updateAccountStatus(accountId, statusSet);
         return  ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+
+    @GetMapping("/user-all-transactions")
+    public ResponseEntity<?> getAllUserTransactions(){
+        List<Transaction> transactions = accountService.getUserAllTransaction();
+        return  ResponseEntity.status(HttpStatus.OK).body(transactions);
     }
 }
