@@ -51,4 +51,12 @@ public class User {
         this.roles = roles;
     }
 
+    public User(String username, String password, String firstName, String lastName, String phone, String expireDate) {
+        this.password = password;
+        this.username = username;
+        this.lastName = lastName;
+        this.firstName = firstName;
+        this.phone = phone;
+        this.expireDate = expireDate;
+    }
 }
