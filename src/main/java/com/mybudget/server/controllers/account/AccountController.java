@@ -21,7 +21,7 @@ import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/accounts")
+@RequestMapping("/api/user/accounts")
 public class AccountController {
 
     public final AccountService accountService;
