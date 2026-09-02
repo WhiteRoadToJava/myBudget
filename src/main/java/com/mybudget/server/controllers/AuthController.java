@@ -40,7 +40,7 @@ import com.mybudget.server.services.admin.AdminService;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthenticationManager authenticationManager;

@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/total-balance")
+@RequestMapping("api/user/total-balance")
 public class TotalBalanceController {
     private final TotalBalanceService totalBalanceService;
 
