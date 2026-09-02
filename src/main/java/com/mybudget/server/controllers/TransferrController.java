@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/transfer")
+@RequestMapping("/api/user/transfer")
 public class TransferrController {
     private final TransferService transferService;
 

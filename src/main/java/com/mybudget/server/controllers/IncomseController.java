@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/incomse")
+@RequestMapping("api/user/incomse")
 public class IncomseController {
     private final IncomseService incomseService;
 

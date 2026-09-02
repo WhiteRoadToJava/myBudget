@@ -42,15 +42,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // تفعيل الـ CORS باستخدام الإعدادات المعرفة بالأسفل
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // سطر مهم جداً: السماح بطلبات OPTIONS لكل المسارات بدون توثيق
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasRole("USER")
-                        .requestMatchers("/auth/**", "/healthy/**", "/mongo/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/api/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/user/**").hasRole("USER")
+                        .requestMatchers("/api/auth/**", "/api/healthy/**", "/api/mongo/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -70,7 +68,9 @@ private String frontendUrl;
         // only allow request from our future react client
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
+                "http://localhost",
                 "http://192.168.0.*:5173",
+                "http://192.168.0.*",
                 "https://my-budget-frontend.vercel.app",
                 "https://my-budget-frontend-production-271c.up.railway.app"
         ));

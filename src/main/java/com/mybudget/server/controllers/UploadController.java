@@ -13,7 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/upload")
+@RequestMapping("/api/user/upload")
 public class UploadController {
 
     private final UploadServer uploadServer;
