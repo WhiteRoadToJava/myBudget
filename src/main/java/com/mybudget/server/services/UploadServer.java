@@ -27,6 +27,8 @@ public class UploadServer {
     @Value("${server.port:8080}")
     private String serverPort;
 
+    @Value("${imageUplodedUrl}")
+    private String imageUplodedUrl;
 
     public Map<String, String> uploadimage(MultipartFile requestedFile) throws IOException {
         String filenme = UUID.randomUUID() + "_" + StringUtils.cleanPath((requestedFile.getOriginalFilename()));
@@ -34,7 +36,7 @@ public class UploadServer {
         Files.createDirectories(targetPath.getParent());
         Files.copy(requestedFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-        String fullUrl = "http://" + "192.168.0.112" + ":" + serverPort + "/user/images/" + filenme;
+        String fullUrl = imageUplodedUrl + "/user/images/" + filenme;
 
         Map<String, String> response = new HashMap<>();
         response.put("filename", filenme);
