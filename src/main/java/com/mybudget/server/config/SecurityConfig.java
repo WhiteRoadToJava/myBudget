@@ -71,8 +71,9 @@ private String frontendUrl;
                 "http://localhost",
                 "http://192.168.0.*:5173",
                 "http://192.168.0.*",
-                "https://my-budget-frontend.vercel.app",
-                "https://my-budget-frontend-production-271c.up.railway.app"
+                "https://*.trycloudflare.com",
+                "https://mybudget.win",
+                "https://www.mybudget.win"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
