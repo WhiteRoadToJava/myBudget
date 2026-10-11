@@ -1,6 +1,7 @@
 package com.mybudget.server.filter;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +95,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request){
         String path = request.getServletPath();
 
-        return path.startsWith("/auth/login") || path.equals("/login");
+        return PUBLIC_PATHS.contains(request.getServletPath());
     }
+
+
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/activate",
+            "/api/auth/resend-password",
+            "/api/auth/reset-password"
+    );
 }
