@@ -18,15 +18,20 @@ public class MultipleMongoConfig {
      @Value("${spring.data.mongodb.atlas.uri}")
      private String atlasUrl;
 
-    @Primary
-     @Bean(name = "mongoTemplate")
-     public MongoTemplate localMongoTemplate(){
-        return new MongoTemplate(new SimpleMongoClientDatabaseFactory(MongoClients.create(localUrl),"myBudget_db"));
-    }
+     @Value("${app.mongodb.local.database:myBudget_db}")
+     private String localDb;
 
-    @Bean(name ="atlasMongoTemplate")
-     public MongoTemplate atlasMongoTemplate(){
-        return  new MongoTemplate(new SimpleMongoClientDatabaseFactory(MongoClients.create(atlasUrl),"mybudget"));
-    }
-    
+     @Value("${app.mongodb.atlas.database:mybudget}")
+     private String atlasDb;
+
+     @Primary
+     @Bean(name = "mongoTemplate")
+     public MongoTemplate localMongoTemplate() {
+         return new MongoTemplate(new SimpleMongoClientDatabaseFactory(MongoClients.create(localUrl), localDb));
+     }
+
+     @Bean(name = "atlasMongoTemplate")
+     public MongoTemplate atlasMongoTemplate() {
+         return new MongoTemplate(new SimpleMongoClientDatabaseFactory(MongoClients.create(atlasUrl), atlasDb));
+     }
 }
