@@ -3,6 +3,7 @@ package com.mybudget.server.services.mongo;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -25,9 +26,12 @@ public class MongoSyncrService {
     }
 
 
-
+    @Value("${app.sync.enabled")
+    private boolean syncEnable;
     @Scheduled(fixedRate = 3600000) // Run every hour.
     public void syncAllCollectionsAutomatically() {
+
+        if(!syncEnable) return;
         // 1. Automatically fetch ALL existing collection names from the local database
         Set<String> collectionNames = localMongoTemplate.getCollectionNames();
 
