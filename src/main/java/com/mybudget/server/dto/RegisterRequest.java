@@ -7,12 +7,17 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
 
 import com.mybudget.server.modules.enums.Role;
+import jakarta.validation.constraints.Pattern;
 import lombok.NoArgsConstructor;
 
 
 
 public class RegisterRequest {
     @NotBlank
+    @Pattern(
+            regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+            message = "Invalid email format"
+    )
     private String username;
     @NotBlank
     private String password;
@@ -21,6 +26,7 @@ public class RegisterRequest {
     private String lastName;
     private String phone;
     private String expireDate;
+    private String language;
 
     public RegisterRequest(){
 
@@ -87,5 +93,12 @@ public class RegisterRequest {
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
+    }
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 }
