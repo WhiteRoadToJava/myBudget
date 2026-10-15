@@ -41,6 +41,8 @@ public class User {
     private String expireDate;
     @CreatedDate
     private String createdAt;
+    // null = legacy account (treated as enabled), false = waiting for email activation, true = active
+    private Boolean enabled;
 
     public User() {
     }
