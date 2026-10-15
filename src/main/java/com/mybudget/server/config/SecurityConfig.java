@@ -45,10 +45,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/mongo/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/**").hasRole("USER")
-                        .requestMatchers("/api/auth/**", "/api/healthy/**", "/api/mongo/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/healthy/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

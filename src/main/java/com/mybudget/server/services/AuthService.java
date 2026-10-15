@@ -34,6 +34,12 @@ public class AuthService {
     }
 
 
+    public boolean passwordMatches(String username, String rawPassword){
+        return userRepository.findByUsername(username)
+                .map(u-> passwordEncoder.matches(rawPassword, u.getPassword()))
+                .orElse(false);
+    }
+
     public void updatePassword(PasswordRequest request){
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         if(!request.getNewPassword().equals(request.getConfirmPassword())){
@@ -41,7 +47,7 @@ public class AuthService {
         }
 
         if(!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())){
-            throw  new ResourceNotFoundException("Password is not correnct...");
+            throw  new ResourceNotFoundException("Password is not correct...");
         };
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
