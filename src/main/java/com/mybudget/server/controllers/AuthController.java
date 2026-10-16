@@ -5,17 +5,17 @@ package com.mybudget.server.controllers;
 import com.mybudget.server.dto.auth.*;
 import com.mybudget.server.dto.RegisterRequest;
 import com.mybudget.server.dto.RegisterResponse;
-import com.mybudget.server.dto.user.UserRequset;
+import com.mybudget.server.dto.auth.password.ResetPasswordRequest;
 import com.mybudget.server.modules.enums.Role;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.services.AccountVerificationService;
 import com.mybudget.server.services.AuthService;
 import com.mybudget.server.services.UserService;
 
+import com.mybudget.server.services.auth.PasswordResetService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mybudget.server.util.JwtUtil;
-import com.mybudget.server.services.admin.AdminService;
 
 
 import java.util.Map;
@@ -50,7 +49,7 @@ public class AuthController {
     private final UserService userService;
     private final AuthService authService;
     private final AccountVerificationService accountVerificationService;
-
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -216,5 +215,18 @@ public class AuthController {
                 registerRequest.getPhone(),
                 registerRequest.getExpireDate()
         );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody EmailRequest request) {
+        passwordResetService.requestReset(request.getUsername(), request.getLanguage());
+        return ResponseEntity.ok(Map.of("message",
+                "If an account exists for this email, a reset link has been sent"));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
     }
 }
