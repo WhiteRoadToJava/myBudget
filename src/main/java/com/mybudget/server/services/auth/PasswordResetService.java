@@ -18,13 +18,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
 
 
 @Service
 @RequiredArgsConstructor
 public class PasswordResetService {
     private static final Duration REST_TTL = Duration.ofHours(1);
-    private static final Duration rESEND_COOLDOWN = Duration.ofSeconds(60);
+    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
 
     private final TokenService tokenService;
     private final EmailService emailService;
@@ -38,7 +39,7 @@ public class PasswordResetService {
 
     public void requestReset(String username, String language) {
         userRepository.findByUsername(username)
-                .filter(u -> !tokenService.issuedWithin(u.getUsername(), TokenType.PASSWORD_RESET, rESEND_COOLDOWN))
+                .filter(u -> !tokenService.issuedWithin(u.getUsername(), TokenType.PASSWORD_RESET, RESEND_COOLDOWN))
                 .ifPresent(u -> {
                     String token = tokenService.createToken(u.getUsername(), TokenType.PASSWORD_RESET, REST_TTL);
                     String link = frontendUrl.replaceAll("/+$", "") + "/auth/reset-password?token=" + token;
@@ -58,6 +59,7 @@ public class PasswordResetService {
                 .orElseThrow(() -> new InvalidTokenException(Reason.TOKEN_INVALID));
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordCreatedAt(Instant.now());
         if (Boolean.FALSE.equals(user.getEnabled())) {
             user.setEnabled(true);
         }

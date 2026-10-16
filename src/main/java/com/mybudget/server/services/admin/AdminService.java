@@ -3,19 +3,16 @@ package com.mybudget.server.services.admin;
 import com.mybudget.server.dto.user.UpdateExpireDate;
 import com.mybudget.server.dto.user.UserResponse;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
-import com.mybudget.server.exeptions.UnauthorizedException;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.Role;
 import com.mybudget.server.repositories.UserRepository;
 import com.mybudget.server.util.UserUtils;
-import com.mybudget.server.util.mapMappers.UserMappers;
+import com.mybudget.server.mapMappers.UserMappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.naming.AuthenticationException;
-import java.util.Date;
 import java.util.Set;
 
 @Service

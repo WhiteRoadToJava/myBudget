@@ -69,4 +69,8 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody();
     }
+
+    public Date extractIssueAt(String token) {
+        return extractAllClaims(token).getIssuedAt();
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 
@@ -43,6 +44,7 @@ public class User {
     private String createdAt;
     // null = legacy account (treated as enabled), false = waiting for email activation, true = active
     private Boolean enabled;
+    private Instant passwordCreatedAt;
 
     public User() {
     }
