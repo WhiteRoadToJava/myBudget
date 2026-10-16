@@ -1,4 +1,4 @@
-package com.mybudget.server.util.mapMappers;
+package com.mybudget.server.mapMappers;
 
 import com.mybudget.server.dto.user.UserResponse;
 import com.mybudget.server.modules.User;

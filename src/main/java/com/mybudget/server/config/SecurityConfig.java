@@ -1,5 +1,6 @@
 package com.mybudget.server.config;
 
+import com.mybudget.server.filter.RelateLimitFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,11 +55,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .addFilterBefore(new RelateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
-@Value("${app.frontend.url}")
+@Value("${app.frontend.url:http://192.168.0.*:5173}")
 private String frontendUrl;
     // cors config
     @Bean
@@ -67,13 +69,7 @@ private String frontendUrl;
 
         // only allow request from our future react client
         configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",
-                "http://localhost",
-                "http://192.168.0.*:5173",
-                "http://192.168.0.*",
-                "https://*.trycloudflare.com",
-                "https://mybudget.win",
-                "https://www.mybudget.win"
+                frontendUrl
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
