@@ -26,7 +26,7 @@ public class Debt {
     private String name;
     private String counterparty;
     private DebtDirection direction;
-    private String current;
+    private String currency;
     private double annualRate;
     private InterestCompounding compounding = InterestCompounding.NONE;
     private LocalDate startDate;
