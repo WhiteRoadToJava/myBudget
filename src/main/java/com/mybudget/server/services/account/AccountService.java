@@ -9,6 +9,7 @@ import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
+import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.repositories.IncomseRepository;
@@ -341,4 +342,22 @@ public class AccountService {
     private Transaction mapTransferToTransaction(Transfer transfer) {
         return accountMapper.mapTransferToTransaction(transfer);
     }
-}
+
+
+
+
+
+    public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {
+        double current = account.getTotalBalance() == null ? 0.0: account.getTotalBalance();
+        double change = cashFlow == CashFlow.IN ? amount : -amount;
+        account.setTotalBalance(roundToCents(current + change));
+    }
+
+    public void revertCashFlow(Account account, CashFlow cashFlow, double amount) {
+        applyCashFlow(account, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
+    }
+
+    private double roundToCents(double value) {
+        return Math.round(value * 100.0) /100.0;
+    }
+ }

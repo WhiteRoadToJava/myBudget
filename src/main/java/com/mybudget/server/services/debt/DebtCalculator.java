@@ -30,7 +30,10 @@ public final class DebtCalculator {
     private DebtCalculator() {
     }
 
-    public record Movement(DebtMovementType type, LocalDate date, BigDecimal amount) {
+    public record Movement(String ref, DebtMovementType type, LocalDate date, BigDecimal amount) {
+        public Movement(DebtMovementType type, LocalDate date, BigDecimal amount){
+            this(null, type, date, amount);
+        }
     }
 
     /** How one movement was split: for a repayment, how much went to interest and how much to principal. */
@@ -75,7 +78,7 @@ public final class DebtCalculator {
                         + " is before the start date of the debt (" + startDate + ")");
             }
             if (!movement.date().isAfter(asOf)) { // movements after asOf have not happened yet
-                sorted.add(new Movement(movement.type(), movement.date(), money(movement.amount())));
+                sorted.add(new Movement(movement.ref, movement.type(), movement.date(), money(movement.amount())));
             }
         }
         sorted.sort(Comparator
