@@ -22,8 +22,12 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -103,7 +107,9 @@ public class DebtService {
     //----------------------------------------------
 
 
+public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest request){
 
+}
 
 
 
@@ -134,7 +140,7 @@ public class DebtService {
         debt.setAnnualRate(request.getAnnualRate());
         debt.setCompounding(request.getCompounding());
         debt.setStartDate(request.getStartDate());
-        debt.setCountInflowAsIncome(request.isCountInflowsIncome());
+        debt.setCountInflowsAsIncome(request.isCountInflowsIncome());
         debt.setCountOutflowAsExpense(request.isCountOutflowsExpense());
         debt.setName(request.getNote());
     }
@@ -148,24 +154,27 @@ public class DebtService {
         }
     }
 
-    private void validateDebtRequest(DebtMovementRequest request) {
-        if (request.getMovementType() == null){
-            throw new IllegalArgumentException("The movement type is required (DISBURSEMENT or REPAYMENT)");
+    private void validateDebtRequest(DebtRequest request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new IllegalArgumentException("The name of the debt is required");
         }
-        if (Double.isNaN(request.getAmount()) || Double.isFinite(request.getAmount()) || toMoney(request.getAmount() <=0)){
-            throw new IllegalArgumentException("The amount must be greater than zero");
+        if (request.getDirection() == null) {
+            throw new IllegalArgumentException("The direction is required (OWED_BY_ME or OWED_TO_ME)");
         }
-        if (request.getDate() == null){
-            throw new IllegalArgumentException("The date is required");
+        if (request.getCurrency() == null || request.getCurrency().isBlank()) {
+            throw new IllegalArgumentException("The currency is required");
         }
-        if (request.getDate().isAfter(LocalDate.now())){
-            // money that has not moved yet must not change the accounts now (scheduled payments come later)
-            throw new IllegalArgumentException("The date can not be in the future");
+        if (Double.isNaN(request.getAnnualRate()) || request.getAnnualRate() < 0 || request.getAnnualRate() > 100) {
+            throw new IllegalArgumentException("The interest rate must be between 0 and 100");
         }
-        if (request.getAccountId() == null || request.getAccountId().isBlank()){
-            throw new IllegalArgumentException("The account is required");
+        if (request.getStartDate() == null) {
+            throw new IllegalArgumentException("The start date is required");
+        }
+        if (request.getStartDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("The start date can not be in the future");
         }
     }
+
     private void validateMovementRequest(DebtMovementRequest request) {
         if (request.getMovementType() == null) {
             throw new IllegalArgumentException("The movement type is required (DISBURSEMENT or REPAYMENT)");
@@ -227,9 +236,45 @@ public class DebtService {
                 debt.getAnnualRate(),
                 debt.getCompounding(),
                 debt.getStartDate(),
-                debt.isCountInflowAsIncome(),
+                debt.isCountInflowsAsIncome(),
                 debt.isCountOutflowAsExpense(),
                 debt.getNote(),
                 summary);
+    }
+
+    private LocalDateTime dateTimeOf(LocalDate date) {
+        return date.equals(LocalDate.now()) ? LocalDateTime.now() : date.atTime(LocalTime.NOON);
+    }
+
+    private DebtDetailsResponse detailsOf(Debt debt) {
+        List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt);
+        DebtCalculator.Result result = calculate(debt, movements);
+
+        Map<String, DebtCalculator.Line> linesById = new HashMap<>();
+        for (DebtCalculator.Line line : result.lines()){
+            linesById.put(line.movement().ref(), line);
+        }
+
+        List<DebtMovementResponse> responses = new ArrayList<>();
+        for (DebtMovement movement : movements) {
+            responses.add(toMovementResponse(debt, movement, linesById.get(movement.getId())));
+        }
+        return new DebtDetailsResponse(toDebtResponse(debt, result), responses);
+    }
+
+    private DebtMovementResponse toMovementResponse(Debt debt, DebtMovement movement, DebtCalculator.Line line) {
+        Account account = movement.getAccount();
+        return new DebtMovementResponse(
+                movement.getId(),
+                movement.getMovementType(),
+                debt.getDirection().cashFlowOf(movement.getMovementType()),
+                movement.getAmount(),
+                movement.getDate(),
+                account == null ? null : account.getId(),
+                account == null ? null : account.getName(),
+                movement.getDescription(),
+                line == null ? 0.0 : line.interestPart().doubleValue(),
+                line == null ? 0.0 : line.principalPart().doubleValue(),
+                movement.getMirroredTransactionId() != null);
     }
 }

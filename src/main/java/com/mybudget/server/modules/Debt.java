@@ -30,9 +30,8 @@ public class Debt {
     private double annualRate;
     private InterestCompounding compounding = InterestCompounding.NONE;
     private LocalDate startDate;
-
-    private boolean countInflowAsIncome;
-    private boolean countOutflowAsExpense;
+    private boolean isCountInflowsAsIncome;
+    private boolean isCountOutflowAsExpense;
 
     private String note;
     @CreatedDate
