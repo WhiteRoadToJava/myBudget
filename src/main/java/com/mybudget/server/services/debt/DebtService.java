@@ -3,11 +3,9 @@ package com.mybudget.server.services.debt;
 
 import com.mybudget.server.dto.debt.*;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
-import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.Debt;
-import com.mybudget.server.modules.DebtMovement;
-import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
+import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.DebtRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
@@ -43,23 +41,22 @@ public class DebtService {
     private final ExpenseRepository expenseRepository;
 
 
-
-    public DebtResponse createDebt (DebtRequest request) {
+    public DebtResponse createDebt(DebtRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
         validateDebtRequest(request);
 
         Debt debt = new Debt();
         debt.setUser(user);
         applySettings(debt, request);
-        Debt saved ? debtRepository.save(debt);
+        Debt saved = debtRepository.save(debt);
 
-        return toDebtRessonse(saved, calculate(saved, List.of()));
+        return toDebtResponse(saved, calculate(saved, List.of()));
     }
 
     public List<DebtResponse> getAllDebts() {
         User user = userUtils.getCurrentAuthenticatedUser();
         List<DebtResponse> responses = new ArrayList<>();
-        for (Debt debt : debtRepository.findByUserOrderByStartDateDesc(user)){
+        for (Debt debt : debtRepository.findByUserOrderByStartDateDesc(user)) {
             List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt);
             responses.add(toDebtResponse(debt, calculate(debt, movements)));
         }
@@ -71,30 +68,31 @@ public class DebtService {
         return detailsOf(findDebt(debtId, user));
     }
 
-    public DebtResponse updateDebt(String debtId, DebtRequest request){
+    public DebtResponse updateDebt(String debtId, DebtRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
         Debt debt = findDebt(debtId, user);
+        validateDebtRequest(request);
 
         List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt);
-        if (!movements.isEmpty()){
-            if (request.getDirection() != debt.getDirection()){
+        if (!movements.isEmpty()) {
+            if (request.getDirection() != debt.getDirection()) {
                 throw new IllegalArgumentException("The direction can not be changed after movements were added");
             }
-            if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())){
+            if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())) {
                 throw new IllegalArgumentException("The currency can not be changed after movements were added");
             }
         }
         applySettings(debt, request);
         DebtCalculator.Result result = calculate(debt, movements);
 
-        return toDebtResponse(debtRepository.save(debt, result));
+        return toDebtResponse(debtRepository.save(debt), result);
     }
 
     public String deleteDebt(String deptId) {
         User user = userUtils.getCurrentAuthenticatedUser();
         Debt debt = findDebt(deptId, user);
 
-        if (!debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt).isEmpty()){
+        if (!debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt).isEmpty()) {
             throw new IllegalArgumentException(
                     "Delete the movements of the debt first, so the money in your accounts is put back");
         }
@@ -103,36 +101,80 @@ public class DebtService {
     }
 
 
-
     //----------------------------------------------
 
 
-public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest request){
-
-}
-
-
-
+    public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest request) {
+        User user = userUtils.getCurrentAuthenticatedUser();
+        Debt debt = findDebt(debtId, user);
+        validateMovementRequest(request);
 
 
+        Account account = accountRepository.findByIdAndUser(request.getAccountId(), user);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        checkAccountCanBeUsed(debt, account);
+
+        DebtMovement movement = new DebtMovement();
+        movement.setDebt(debt);
+        movement.setUser(user);
+        movement.setAccount(account);
+        movement.setMovementType(request.getMovementType());
+        movement.setAmount(toMoney(request.getAmount()));
+        movement.setDate(request.getDate());
+        movement.setDescription(request.getDescription());
+
+        List<DebtMovement> history = new ArrayList<>(debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt));
+        history.add(movement);
+        calculate(debt, history);
+
+        CashFlow cashFlow = debt.getDirection().cashFlowOf(movement.getMovementType());
+        accountService.applyCashFlow(account, cashFlow, movement.getAmount());
+        try {
+            createIncomeOrExpenseIfRequested(debt, movement, cashFlow);
+            debtMovementRepository.save(movement);
+        } catch (RuntimeException e) {
+            deleteIncomeOrExpense(movement);
+            accountService.revertCashFlow(account, cashFlow, movement.getAmount());
+            throw e;
+        }
+        return detailsOf(debt);
+    }
+
+    public DebtDetailsResponse deleteMovement(String debtId, String movementId) {
+        User user = userUtils.getCurrentAuthenticatedUser();
+        Debt debt = findDebt(debtId, user);
+        DebtMovement movement = debtMovementRepository.findByIdAndDebt(movementId, debt)
+                .orElseThrow(() -> new ResourceNotFoundException("Movement is not founded"));
+
+        List<DebtMovement> remaining = new ArrayList<>();
+        for (DebtMovement other : debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt)) {
+            if (other.getId().equals(movement.getId())) {
+                remaining.add(other);
+            }
+        }
+        calculate(debt, remaining);
+
+        Account account = movement.getAccount();
+        if (account != null) {
+            CashFlow cashFlow = debt.getDirection().cashFlowOf(movement.getMovementType());
+            accountService.revertCashFlow(account, cashFlow, movement.getAmount());
+        }
+        deleteIncomeOrExpense(movement);
+        debtMovementRepository.delete(movement);
+
+        return detailsOf(debt);
+    }
 
 
-
-
-
-
-
-
-
-
-
-
-//-------------------------------------------------------
-    private Debt findDebt(String debtId, User user){
+    //-------------------------------------------------------
+    private Debt findDebt(String debtId, User user) {
         return debtRepository.findByIdAndUser(debtId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found"));
     }
-    private void applySettings(Debt debt, DebtRequest request){
+
+    private void applySettings(Debt debt, DebtRequest request) {
         debt.setName(request.getName().trim());
         debt.setCounterparty(request.getCounterparty());
         debt.setDirection(request.getDirection());
@@ -141,14 +183,15 @@ public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest reques
         debt.setCompounding(request.getCompounding());
         debt.setStartDate(request.getStartDate());
         debt.setCountInflowsAsIncome(request.isCountInflowsIncome());
-        debt.setCountOutflowAsExpense(request.isCountOutflowsExpense());
-        debt.setName(request.getNote());
+        debt.setCountOutflowsAsExpense(request.isCountOutflowsExpense());
+        debt.setNote(request.getNote());
     }
-    private void checkAccountCanBeUsed(Debt debt, Account account){
-        if (account.getStatus() != null && account.getStatus().contains(AccountStatus.ARCHIVED)){
+
+    private void checkAccountCanBeUsed(Debt debt, Account account) {
+        if (account.getStatus() != null && account.getStatus().contains(AccountStatus.ARCHIVED)) {
             throw new IllegalArgumentException("The account is archived");
         }
-        if (account.getCurrency() == null || !account.getCurrency().equalsIgnoreCase(debt.getCurrency())){
+        if (account.getCurrency() == null || !account.getCurrency().equalsIgnoreCase(debt.getCurrency())) {
             throw new IllegalArgumentException("The currency of the account (" + account.getCurrency()
                     + ") must be the same as the currency of the debt (" + debt.getCurrency() + ")");
         }
@@ -194,9 +237,9 @@ public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest reques
         }
     }
 
-    private DebtCalculator.Result  calculate(Debt debt, List<DebtMovement> movements){
+    private DebtCalculator.Result calculate(Debt debt, List<DebtMovement> movements) {
         List<DebtCalculator.Movement> input = new ArrayList<>();
-        for (DebtMovement movement : movements){
+        for (DebtMovement movement : movements) {
             input.add(new DebtCalculator.Movement(
                     movement.getId(),
                     movement.getMovementType(),
@@ -212,12 +255,12 @@ public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest reques
         );
     }
 
-    private double toMoney(double value){
+    private double toMoney(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
 
-    private DebtResponse toDebtResponse(Debt debt, DebtCalculator.Result result){
+    private DebtResponse toDebtResponse(Debt debt, DebtCalculator.Result result) {
         DebtSummeryResponse summary = new DebtSummeryResponse(
                 result.principal().doubleValue(),
                 result.accruedInterest().doubleValue(),
@@ -237,7 +280,7 @@ public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest reques
                 debt.getCompounding(),
                 debt.getStartDate(),
                 debt.isCountInflowsAsIncome(),
-                debt.isCountOutflowAsExpense(),
+                debt.isCountOutflowsAsExpense(),
                 debt.getNote(),
                 summary);
     }
@@ -251,7 +294,7 @@ public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest reques
         DebtCalculator.Result result = calculate(debt, movements);
 
         Map<String, DebtCalculator.Line> linesById = new HashMap<>();
-        for (DebtCalculator.Line line : result.lines()){
+        for (DebtCalculator.Line line : result.lines()) {
             linesById.put(line.movement().ref(), line);
         }
 
@@ -276,5 +319,47 @@ public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest reques
                 line == null ? 0.0 : line.interestPart().doubleValue(),
                 line == null ? 0.0 : line.principalPart().doubleValue(),
                 movement.getMirroredTransactionId() != null);
+    }
+
+    private void createIncomeOrExpenseIfRequested(Debt debt, DebtMovement movement, CashFlow cashFlow){
+        LocalDateTime when = dateTimeOf(movement.getDate());
+
+
+        if (cashFlow == CashFlow.IN && debt.isCountInflowsAsIncome()) {
+            Incomse incomse = new Incomse();
+            incomse.setAmount(movement.getAmount());
+            incomse.setCategory(DEBT_CATEGORY);
+            incomse.setUser(movement.getUser());
+            incomse.setAccount(movement.getAccount());
+            incomse = incomseRepository.save(incomse);
+            // auditing stamps "now" on the first save, so the real date is set with a second save
+            incomse.setCreatedAt(when);
+            incomse = incomseRepository.save(incomse);
+            movement.setMirroredTransactionId(incomse.getId());
+            movement.setMirroredTransactionType("incomse");
+
+        } else if (cashFlow == CashFlow.OUT && debt.isCountOutflowsAsExpense()) {
+            Expense expense = new Expense();
+            expense.setAmount(movement.getAmount());
+            expense.setCategory(DEBT_CATEGORY);
+            expense.setUser(movement.getUser());
+            expense.setAccount(movement.getAccount());
+            expense = expenseRepository.save(expense);
+            expense.setCreatedAt(when);
+            expense = expenseRepository.save(expense);
+            movement.setMirroredTransactionId(expense.getId());
+            movement.setMirroredTransactionType("expense");
+        }
+    }
+
+
+    private void deleteIncomeOrExpense(DebtMovement movement){
+        String id = movement.getMirroredTransactionId();
+        if (id == null){
+            return;
+        }
+        if ("incomse".equals(movement.getMirroredTransactionType())){
+            incomseRepository.deleteById(id);
+        }else expenseRepository.deleteById(id);
     }
 }
