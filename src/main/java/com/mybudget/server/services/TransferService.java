@@ -25,12 +25,10 @@ public class TransferService {
     private final AccountRepository accountRepository;
     private final UserUtils userUtils;
     private final TransferRepository transferRepository;
-    private  final AccountService accountService;
+    private final AccountService accountService;
 
 
-
-
-    public TransferResponse excuteTransfer(TransferRequest request){
+    public TransferResponse excuteTransfer(TransferRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
 
         Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
@@ -53,12 +51,12 @@ public class TransferService {
         transfer.setCurrency(sourceAccount.getCurrency());
         transfer.setImage(request.getImage());
 
-        return  mapToTransferResponse(transferRepository.save(transfer));
+        return mapToTransferResponse(transferRepository.save(transfer));
     }
 
     // This method is used with schedule
     @Transactional
-    public TransferResponse excuteTransfer(TransferRequest request, User user){
+    public TransferResponse excuteTransfer(TransferRequest request, User user) {
         Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         Account destinationAccount = accountRepository.findById(request.getDestinationAccount().getId())
@@ -79,28 +77,28 @@ public class TransferService {
         transfer.setCurrency(sourceAccount.getCurrency());
 
 
-        return  mapToTransferResponse(transferRepository.save(transfer));
+        return mapToTransferResponse(transferRepository.save(transfer));
     }
 
-    
 
     @Transactional
-    public TransferResponse updateTransfer(String transferId, TransferRequest request){
+    public TransferResponse updateTransfer(String transferId, TransferRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         // check if transfer exists
         Transfer existedTransfer = transferRepository.findById(transferId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transfer not found"));
         //  find the account's bodys
         String sourceAccountId = request.getSourceAccount().getId();
-        String destinationAccountId = request.getDestinationAccount().getId();;
+        String destinationAccountId = request.getDestinationAccount().getId();
+        ;
         Account sourceAccount = accountRepository.findById(sourceAccountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         Account destinationAccount = accountRepository.findById(destinationAccountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         // update the account's bodys totalBalances
-        String response = accountService.updateAccountsWithUpadateTransfer(sourceAccount, destinationAccount, existedTransfer, request);
+        String response = accountService.updateAccountsWithUpdateTransfer(sourceAccount, destinationAccount, existedTransfer, request);
 
-        if(response.equals("success")) {
+        if (response.equals("success")) {
             existedTransfer.setAmountSent(request.getAmountSent());
             existedTransfer.setAmountReceived(request.getAmountReceived());
             existedTransfer.setExChangeRate(request.getExChangeRate());
@@ -113,24 +111,24 @@ public class TransferService {
         }
     }
 
-    public TransferResponse getTransferById(String transferId){
+    public TransferResponse getTransferById(String transferId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = transferRepository.findById(transferId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transfer not found or access denied"));
-        if(!transfer.getUser().getId().equals(currentUser.getId())){
+        if (!transfer.getUser().getId().equals(currentUser.getId())) {
             throw new ResourceNotFoundException("Transfer not found or access denied");
-            } else {
+        } else {
             return mapToTransferResponse(transfer);
         }
     }
 
-    public String deleteTransfer(String transferId){
+    public String deleteTransfer(String transferId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = transferRepository.findById(transferId)
-                .orElseThrow(()-> new ResourceNotFoundException("Transfer is not found..."));
-        if (transfer.getUser().getId().equals(currentUser.getId())){
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer is not found..."));
+        if (transfer.getUser().getId().equals(currentUser.getId())) {
             String response = accountService.updateAccountsTotalBalanceWithDeleteTransfer(transfer);
-            if (response.equals("success")){
+            if (response.equals("success")) {
                 transferRepository.delete(transfer);
             } else {
                 throw new ResourceNotFoundException("Transfer not found or access denied");
@@ -146,8 +144,8 @@ public class TransferService {
         if (image != null && image.get("url") != null) {
             imageUrl.put("url", image.get("url"));
             imageUrl.put("filename", image.get("filename"));
-        } else{
-            imageUrl.put("url","");
+        } else {
+            imageUrl.put("url", "");
             imageUrl.put("filename", "");
         }
         return new TransferResponse(
