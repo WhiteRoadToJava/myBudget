@@ -6,6 +6,7 @@ import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
+import com.mybudget.server.modules.enums.InterestCompounding;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.DebtRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
@@ -30,7 +31,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class DebtService {
-    public static final String DEBT_CATEGORY = "dept";
+    public static final String DEBT_CATEGORY = "Debt";
 
     private final UserUtils userUtils;
     private final DebtRepository debtRepository;
@@ -57,7 +58,7 @@ public class DebtService {
         User user = userUtils.getCurrentAuthenticatedUser();
         List<DebtResponse> responses = new ArrayList<>();
         for (Debt debt : debtRepository.findByUserOrderByStartDateDesc(user)) {
-            List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt);
+            List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt);
             responses.add(toDebtResponse(debt, calculate(debt, movements)));
         }
         return responses;
@@ -73,7 +74,7 @@ public class DebtService {
         Debt debt = findDebt(debtId, user);
         validateDebtRequest(request);
 
-        List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt);
+        List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt);
         if (!movements.isEmpty()) {
             if (request.getDirection() != debt.getDirection()) {
                 throw new IllegalArgumentException("The direction can not be changed after movements were added");
@@ -88,11 +89,11 @@ public class DebtService {
         return toDebtResponse(debtRepository.save(debt), result);
     }
 
-    public String deleteDebt(String deptId) {
+    public String deleteDebt(String debtId) {
         User user = userUtils.getCurrentAuthenticatedUser();
-        Debt debt = findDebt(deptId, user);
+        Debt debt = findDebt(debtId, user);
 
-        if (!debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt).isEmpty()) {
+        if (!debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt).isEmpty()) {
             throw new IllegalArgumentException(
                     "Delete the movements of the debt first, so the money in your accounts is put back");
         }
@@ -125,7 +126,7 @@ public class DebtService {
         movement.setDate(request.getDate());
         movement.setDescription(request.getDescription());
 
-        List<DebtMovement> history = new ArrayList<>(debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt));
+        List<DebtMovement> history = new ArrayList<>(debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt));
         history.add(movement);
         calculate(debt, history);
 
@@ -149,8 +150,8 @@ public class DebtService {
                 .orElseThrow(() -> new ResourceNotFoundException("Movement is not founded"));
 
         List<DebtMovement> remaining = new ArrayList<>();
-        for (DebtMovement other : debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt)) {
-            if (other.getId().equals(movement.getId())) {
+        for (DebtMovement other : debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt)) {
+            if (!other.getId().equals(movement.getId())) {
                 remaining.add(other);
             }
         }
@@ -173,17 +174,17 @@ public class DebtService {
         return debtRepository.findByIdAndUser(debtId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found"));
     }
-
+// check this function
     private void applySettings(Debt debt, DebtRequest request) {
         debt.setName(request.getName().trim());
         debt.setCounterparty(request.getCounterparty());
         debt.setDirection(request.getDirection());
         debt.setCurrency(request.getCurrency().trim());
         debt.setAnnualRate(request.getAnnualRate());
-        debt.setCompounding(request.getCompounding());
         debt.setStartDate(request.getStartDate());
-        debt.setCountInflowsAsIncome(request.isCountInflowsIncome());
-        debt.setCountOutflowsAsExpense(request.isCountOutflowsExpense());
+        debt.setCompounding(request.getCompounding() == null ? InterestCompounding.NONE : request.getCompounding());
+        debt.setCountInflowsAsIncome(request.isCountInflowsAsIncome());
+        debt.setCountOutflowsAsExpense(request.isCountOutflowsAsExpense());
         debt.setNote(request.getNote());
     }
 
@@ -191,7 +192,7 @@ public class DebtService {
         if (account.getStatus() != null && account.getStatus().contains(AccountStatus.ARCHIVED)) {
             throw new IllegalArgumentException("The account is archived");
         }
-        if (account.getCurrency() == null || !account.getCurrency().equalsIgnoreCase(debt.getCurrency())) {
+        if (account.getCurrency().trim() == null || !account.getCurrency().trim().equalsIgnoreCase(debt.getCurrency())) {
             throw new IllegalArgumentException("The currency of the account (" + account.getCurrency()
                     + ") must be the same as the currency of the debt (" + debt.getCurrency() + ")");
         }
@@ -261,7 +262,7 @@ public class DebtService {
 
 
     private DebtResponse toDebtResponse(Debt debt, DebtCalculator.Result result) {
-        DebtSummeryResponse summary = new DebtSummeryResponse(
+        DebtSummaryResponse summary = new DebtSummaryResponse(
                 result.principal().doubleValue(),
                 result.accruedInterest().doubleValue(),
                 result.totalOwed().doubleValue(),
@@ -290,7 +291,7 @@ public class DebtService {
     }
 
     private DebtDetailsResponse detailsOf(Debt debt) {
-        List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAsc(debt);
+        List<DebtMovement> movements = debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt);
         DebtCalculator.Result result = calculate(debt, movements);
 
         Map<String, DebtCalculator.Line> linesById = new HashMap<>();

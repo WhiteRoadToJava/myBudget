@@ -19,22 +19,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DebtDirectionTest {
     @Test
     void whenIBorrowedTheDisbursementBringsMoneyIn() {
-        assertEquals(CashFlow.IN, DebtDirection.OWNED_BY_ME.cashFlowOf(DebtMovementType.DISBURSEMENT));
+        assertEquals(CashFlow.IN, DebtDirection.OWED_BY_ME.cashFlowOf(DebtMovementType.DISBURSEMENT));
     }
 
     @Test
     void whenBorrowedTheRepaymentTakesMoneyout() {
-        assertEquals(CashFlow.OUT, DebtDirection.OWNED_BY_ME.cashFlowOf(DebtMovementType.REPAYMENT));
+        assertEquals(CashFlow.OUT, DebtDirection.OWED_BY_ME.cashFlowOf(DebtMovementType.REPAYMENT));
     }
 
     @Test
     void whenILentTheDisbursementTakesMoneyOut() {
-        assertEquals(CashFlow.OUT, DebtDirection.OWNED_TO_ME.cashFlowOf(DebtMovementType.DISBURSEMENT));
+        assertEquals(CashFlow.OUT, DebtDirection.OWED_TO_ME.cashFlowOf(DebtMovementType.DISBURSEMENT));
     }
 
     @Test
     void whenILentTheRepaymentBringsMoneyIn() {
-        assertEquals(CashFlow.IN, DebtDirection.OWNED_TO_ME.cashFlowOf(DebtMovementType.REPAYMENT));
+        assertEquals(CashFlow.IN, DebtDirection.OWED_TO_ME.cashFlowOf(DebtMovementType.REPAYMENT));
     }
 
     @Test

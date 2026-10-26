@@ -20,7 +20,7 @@ public class DebtRequest {
     private double annualRate;
     private InterestCompounding compounding;
     private LocalDate startDate;
-    private boolean countInflowsIncome;
-    private boolean countOutflowsExpense;
+    private boolean countInflowsAsIncome;
+    private boolean countOutflowsAsExpense;
     private String note;
 }
