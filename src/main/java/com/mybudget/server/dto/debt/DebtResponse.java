@@ -17,5 +17,5 @@ public record DebtResponse (
         boolean countInflowsAsIncome,
         boolean countOutflowsAsExpense,
         String note,
-        DebtSummeryResponse summary
+        DebtSummaryResponse summary
 ){}

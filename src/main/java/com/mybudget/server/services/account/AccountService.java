@@ -181,7 +181,10 @@ public class AccountService {
         List<Transaction> transactions = new ArrayList<>();
         transactions.addAll(incomses.stream().map(this::mapIToTransation).toList());
         transactions.addAll(expenses.stream().map(this::mapExpenseToTranaction).toList());
-        transactions.addAll(transfers.stream().map(this::mapTransferToTransaction).toList());
+        transactions.addAll(transfers.stream()
+                .map(this::mapTransferToTransaction)
+                .filter(java.util.Objects::nonNull)
+                .toList());
 
         return transactions;
     }
@@ -236,16 +239,16 @@ public class AccountService {
     }
 
     public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
-        Double oldTotalbalance = account.getTotalBalance();
-        Double newTotalBalance = oldTotalbalance - incomse.getAmount() + amount;
+        Double oldTotalBalance = account.getTotalBalance();
+        Double newTotalBalance = oldTotalBalance - incomse.getAmount() + amount;
         account.setTotalBalance(newTotalBalance);
         return accountRepository.save(account);
     }
 
     @Transactional
     public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expense, double amount) {
-        Double oldTotalbalance = account.getTotalBalance();
-        Double newTotalBalance = oldTotalbalance + expense.getAmount() - amount;
+        Double oldTotalBalance = account.getTotalBalance();
+        Double newTotalBalance = oldTotalBalance + expense.getAmount() - amount;
         account.setTotalBalance(newTotalBalance);
         return accountRepository.save(account);
     }
@@ -268,7 +271,7 @@ public class AccountService {
 
 
     @Transactional
-    public String updateAccountsWithUpadateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request) {
+    public String updateAccountsWithUpdateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request) {
         if (accountSend != null) {
             Double oldAccountSendTotal = accountSend.getTotalBalance();
             Double newAccountSentTotal = oldAccountSendTotal + transfer.getAmountSent() - request.getAmountSent();
@@ -344,13 +347,11 @@ public class AccountService {
     }
 
 
-
-
-
     public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {
-        double current = account.getTotalBalance() == null ? 0.0: account.getTotalBalance();
+        double current = account.getTotalBalance() == null ? 0.0 : account.getTotalBalance();
         double change = cashFlow == CashFlow.IN ? amount : -amount;
         account.setTotalBalance(roundToCents(current + change));
+        accountRepository.save(account);
     }
 
     public void revertCashFlow(Account account, CashFlow cashFlow, double amount) {
@@ -358,6 +359,6 @@ public class AccountService {
     }
 
     private double roundToCents(double value) {
-        return Math.round(value * 100.0) /100.0;
+        return Math.round(value * 100.0) / 100.0;
     }
- }
+}

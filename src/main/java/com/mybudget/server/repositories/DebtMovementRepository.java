@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DebtMovementRepository extends MongoRepository<DebtMovement, String> {
-    List<DebtMovement> findByDebtOrderByDateAscCreatedAsc(Debt debt);
+    List<DebtMovement> findByDebtOrderByDateAscCreatedAtAsc(Debt debt);
 
     Optional<DebtMovement> findByIdAndDebt(String id, Debt debt);
 

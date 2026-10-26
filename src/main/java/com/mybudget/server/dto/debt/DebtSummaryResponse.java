@@ -2,7 +2,7 @@ package com.mybudget.server.dto.debt;
 
 import java.time.LocalDate;
 
-public record DebtSummeryResponse (
+public record DebtSummaryResponse(
     double principal,
     double accruedInterest,
     double totalOwed,
