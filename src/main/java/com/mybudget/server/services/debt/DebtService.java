@@ -131,7 +131,7 @@ public class DebtService {
         calculate(debt, history);
 
         CashFlow cashFlow = debt.getDirection().cashFlowOf(movement.getMovementType());
-        accountService.applyCashFlow(account, cashFlow, movement.getAmount());
+        accountService.applyCashflow(account, cashFlow, movement.getAmount());
         try {
             createIncomeOrExpenseIfRequested(debt, movement, cashFlow);
             debtMovementRepository.save(movement);

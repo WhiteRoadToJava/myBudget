@@ -7,6 +7,7 @@ import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Incomse;
 import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.IncomseRepository;
 import com.mybudget.server.services.account.AccountService;
@@ -83,18 +84,49 @@ public class IncomseService {
         @Transactional
         public IncomseResponse updateIncomse(String incomseId, IncomseRequset requset){
             User currentUser = userUtils.getCurrentAuthenticatedUser();
-            Incomse incomse = incomseRepository.findById(incomseId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Incomse not found"));
-            String accountId = requset.getAccount().getId();
-            Account account = accountRepository.findByIdAndUser(accountId, currentUser);
-            accountService.updateTotalBalanceWithUpdateIncome(account, incomse, requset.getAmount());
-            incomse.setAccount(account);
-            if (incomse.getUser().getId().equals(currentUser.getId())){
-                        incomse.setAmount(requset.getAmount());
-                        incomse.setCategory(requset.getCategory());
-                        incomse.setImage(requset.getImage());
+            Incomse incomse = findOwnedIncomse(incomseId, currentUser);
+            Account newAccount = findOwnedAccount(requset.getAccount(), currentUser);
+
+            Account oldAccount = incomse.getAccount();
+            double oldAmount = incomse.getAmount();;
+            double newAmount = requset.getAmount();
+            boolean sameAccount = oldAccount != null && oldAccount.getId().equals( newAccount.getId());
+            if (sameAccount){
+                accountService.applyCashflow(newAccount, CashFlow.IN, newAmount - oldAmount);
+            } else {
+                if (oldAccount != null){
+                    accountService.revertCashFlow(oldAccount, CashFlow.IN, oldAmount);
+                }
+                accountService.applyCashflow(newAccount, CashFlow.IN, newAmount);
+            }
+            try{
+                incomse.setAmount(newAmount);
+                incomse.setAmount(newAmount);
+                incomse.setCategory(requset.getCategory());
+                incomse.setImage(requset.getImage());
+                return mapToIncomseResponse(incomseRepository.save(incomse));
+            } catch (RuntimeException e){
+                if (sameAccount) {
+                    accountService.applyCashflow(newAccount, CashFlow.IN, oldAmount - newAmount);
+                } else {
+                    accountService.revertCashFlow(newAccount, CashFlow.IN, newAmount);
+                    if (oldAccount != null){
+                        accountService.revertCashFlow(oldAccount, CashFlow.IN, oldAmount);
                     }
-            return mapToIncomseResponse(incomseRepository.save(incomse));
+                }
+                throw e;
+            }
+        }
+
+        private Account findOwnedAccount(Account requesstAccount, User currentUser){
+        if (requesstAccount == null || requesstAccount.getId() == null){
+            throw  new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(requesstAccount.getId(), currentUser);
+        if (account == null){
+            throw new ResourceNotFoundException("Account not found");
+        }
+        return account;
         }
         @Transactional
         public String deleteIncomse(String incomseId){
@@ -109,7 +141,14 @@ public class IncomseService {
                 throw new ResourceNotFoundException("Incomse not found or access denied");
             }
         }
-
+private Incomse findOwnedIncomse(String incomseId, User currentUser){
+    Incomse incomse = incomseRepository.findById(incomseId)
+            .orElseThrow(()-> new ResourceNotFoundException("Income not found"));
+    if (incomse.getId() == null || !incomse.getUser().getId().equals(currentUser.getId())){
+        throw  new ResourceNotFoundException("Income not found");
+    }
+    return incomse;
+}
         public List<IncomseResponse> getAllIncomseByAccount(Account account){
             List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
             return  incomseResponses.stream().map(this::mapToIncomseResponse).toList();
