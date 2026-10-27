@@ -1,5 +1,7 @@
 package com.mybudget.server.modules;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mybudget.server.modules.enums.Role;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.data.annotation.CreatedDate;
@@ -33,6 +35,7 @@ public class User {
             message = "Password must be at least 8 characters long and contain at least "
             + "one uppercase letter, one number, and one special character"
     )
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private Set<Role> roles;
@@ -44,6 +47,7 @@ public class User {
     private String createdAt;
     // null = legacy account (treated as enabled), false = waiting for email activation, true = active
     private Boolean enabled;
+    @JsonIgnore
     private Instant passwordCreatedAt;
 
     public User() {
