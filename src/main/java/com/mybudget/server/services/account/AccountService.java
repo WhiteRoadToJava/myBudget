@@ -165,8 +165,8 @@ public class AccountService {
         List<Expense> expenseList = expenseRepository.findAllByAccount(account);
         List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account);
         List<Transaction> transactions = new ArrayList<>();
-        transactions.addAll(incomseList.stream().map(this::mapIToTransation).toList());
-        transactions.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
+        transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
+        transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
         transactions.addAll(transferList.stream()
                 .map(t -> mapTransferToTransaction(t, account)).toList());
         return transactions;
@@ -179,8 +179,8 @@ public class AccountService {
         List<Transfer> transfers = transferRepository.findAllByUser(currentUser.getId());
 
         List<Transaction> transactions = new ArrayList<>();
-        transactions.addAll(incomses.stream().map(this::mapIToTransation).toList());
-        transactions.addAll(expenses.stream().map(this::mapExpenseToTranaction).toList());
+        transactions.addAll(incomses.stream().map(this::mapIToTransaction).toList());
+        transactions.addAll(expenses.stream().map(this::mapExpenseToTransaction).toList());
         transactions.addAll(transfers.stream()
                 .map(this::mapTransferToTransaction)
                 .filter(java.util.Objects::nonNull)
@@ -195,8 +195,8 @@ public class AccountService {
         List<Expense> expenseList = expenseRepository.findAllByUser(currentUser);
 
         List<Transaction> transactionList = new ArrayList<>();
-        transactionList.addAll(incomseList.stream().map(this::mapIToTransation).toList());
-        transactionList.addAll((expenseList.stream().map(this::mapExpenseToTranaction).toList()));
+        transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
+        transactionList.addAll((expenseList.stream().map(this::mapExpenseToTransaction).toList()));
         return transactionList;
     }
 
@@ -236,21 +236,6 @@ public class AccountService {
             account.setTotalBalance(account.getTotalBalance() + amount);
             accountRepository.save(account);
         }
-    }
-
-    public Account updateTotalBalanceWithUpdateIncome(Account account, Incomse incomse, double amount) {
-        Double oldTotalBalance = account.getTotalBalance();
-        Double newTotalBalance = oldTotalBalance - incomse.getAmount() + amount;
-        account.setTotalBalance(newTotalBalance);
-        return accountRepository.save(account);
-    }
-
-    @Transactional
-    public Account updateTotalBalanceWithUpdateExpense(Account account, Expense expense, double amount) {
-        Double oldTotalBalance = account.getTotalBalance();
-        Double newTotalBalance = oldTotalBalance + expense.getAmount() - amount;
-        account.setTotalBalance(newTotalBalance);
-        return accountRepository.save(account);
     }
 
     @Transactional
@@ -322,8 +307,8 @@ public class AccountService {
         List<Transfer> transferList = transferRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
 
         List<Transaction> transactionList = new ArrayList<>();
-        transactionList.addAll(incomseList.stream().map(this::mapIToTransation).toList());
-        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTranaction).toList());
+        transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
+        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
         transactionList.addAll(transferList.stream().map(this::mapTransferToTransaction).toList());
         return transactionList;
 
@@ -334,11 +319,11 @@ public class AccountService {
         return accountMapper.mapTransferToTransaction(transfer, account);
     }
 
-    private Transaction mapExpenseToTranaction(Expense expense) {
+    private Transaction mapExpenseToTransaction(Expense expense) {
         return accountMapper.mapExpenseToTranaction(expense);
     }
 
-    private Transaction mapIToTransation(Incomse incomse) {
+    private Transaction mapIToTransaction(Incomse incomse) {
         return accountMapper.mapIToTransation(incomse);
     }
 
@@ -347,7 +332,7 @@ public class AccountService {
     }
 
 
-    public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {
+    public void applyCashflow(Account account, CashFlow cashFlow, double amount) {
         double current = account.getTotalBalance() == null ? 0.0 : account.getTotalBalance();
         double change = cashFlow == CashFlow.IN ? amount : -amount;
         account.setTotalBalance(roundToCents(current + change));
@@ -355,7 +340,7 @@ public class AccountService {
     }
 
     public void revertCashFlow(Account account, CashFlow cashFlow, double amount) {
-        applyCashFlow(account, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
+        applyCashflow(account, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
     }
 
     private double roundToCents(double value) {
