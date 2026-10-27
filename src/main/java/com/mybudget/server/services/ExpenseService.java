@@ -6,6 +6,7 @@ import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
 import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.services.account.AccountService;
@@ -69,19 +70,61 @@ public class ExpenseService {
     @Transactional
     public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, currentUser);
+        Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
+
+        Account oldAccount = expense.getAccount();
+        double oldAmount = expense.getAmount();
+        double newAmount = expenseRequest.getAmount();
+        boolean sameAccount = oldAccount != null && oldAccount.getId().equals(newAccount.getId());
+        if (sameAccount) {
+            accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount - oldAmount);
+        } else {
+            if (oldAccount != null) {
+                accountService.revertCashFlow(oldAccount, CashFlow.OUT, newAmount);
+            }
+            accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount);
+        }
+        try {
+            expense.setAccount(newAccount);
+            expense.setAmount(newAmount);
+            expense.setCategory(expenseRequest.getCategory());
+            expense.setImage(expenseRequest.getImage());
+            if (expenseRequest.getCreatedAt() != null) {
+                expense.setCreatedAt(expenseRequest.getCreatedAt());
+            }
+            return mapToExpenseResponse(expenseRepository.save(expense));
+        } catch (RuntimeException e) {
+            if (sameAccount) {
+                accountService.applyCashflow(newAccount, CashFlow.OUT, oldAmount - newAmount);
+            } else {
+                accountService.revertCashFlow(newAccount, CashFlow.OUT, newAmount);
+                if (oldAccount != null) {
+                    accountService.applyCashflow(oldAccount, CashFlow.OUT, oldAmount);
+                }
+            }
+            throw e;
+        }
+    }
+
+    private Expense findOwnedExpense(String expenseId, User currentUser) {
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
-        String accountId = expenseRequest.getAccount().getId();
-        Account account = accountRepository.findByIdAndUser(accountId, currentUser);
-        accountService.updateTotalBalanceWithUpdateExpense(account, expense, expenseRequest.getAmount());
-        expense.setAccount(account);
-        if (expense.getUser().getId().equals(currentUser.getId())) {
-            expense.setAmount(expenseRequest.getAmount());
-            expense.setCategory(expenseRequest.getCategory());
+        if (expense.getUser() == null || !expense.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Expense not found");
         }
-        expense.setImage(expenseRequest.getImage());
-        expense.setCreatedAt(expenseRequest.getCreatedAt());
-        return mapToExpenseResponse(expenseRepository.save(expense));
+        return expense;
+    }
+
+    private Account findOwnedAccount(Account requesstAccount, User currentUser) {
+        if (requesstAccount == null || requesstAccount.getId() == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(requesstAccount.getId(), currentUser);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not nound");
+        }
+        return account;
     }
 
     @Transactional
@@ -128,8 +171,8 @@ public class ExpenseService {
         if (image != null && image.get("url") != null) {
             imageUrl.put("url", image.get("url"));
             imageUrl.put("filename", image.get("filename"));
-        } else{
-            imageUrl.put("url","");
+        } else {
+            imageUrl.put("url", "");
             imageUrl.put("filename", "");
         }
         return new ExpenseResponse(
