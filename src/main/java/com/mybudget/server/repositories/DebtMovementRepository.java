@@ -1,5 +1,6 @@
 package com.mybudget.server.repositories;
 
+import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Debt;
 import com.mybudget.server.modules.DebtMovement;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -13,4 +14,6 @@ public interface DebtMovementRepository extends MongoRepository<DebtMovement, St
     Optional<DebtMovement> findByIdAndDebt(String id, Debt debt);
 
     void deleteByDebt(Debt debt);
+
+    boolean existedByAccount(Account account);
 }

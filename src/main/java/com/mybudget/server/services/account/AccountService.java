@@ -6,17 +6,14 @@ import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.dto.transfer.TransferRequest;
+import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
-import com.mybudget.server.repositories.AccountRepository;
-import com.mybudget.server.repositories.ExpenseRepository;
-import com.mybudget.server.repositories.IncomseRepository;
-import com.mybudget.server.repositories.TransferRepository;
+import com.mybudget.server.repositories.*;
 import com.mybudget.server.util.UserUtils;
 import com.mybudget.server.mapMappers.AccountMapper;
-import com.mybudget.server.mapMappers.UserMappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +32,7 @@ public class AccountService {
     private final ExpenseRepository expenseRepository;
     private final TransferRepository transferRepository;
     private final AccountMapper accountMapper;
-    private final UserMappers userMappers;
+    private final DebtMovementRepository debtMovementRepository;
 
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
@@ -111,6 +108,9 @@ public class AccountService {
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
+        }
+        if (debtMovementRepository.existedByAccount(account)){
+            throw new ConflictException("This account has debt movements. Delete or move them before deleting the account");
         }
         incomseRepository.deleteAllByAccount(account);
         expenseRepository.deleteAllByAccount(account);
