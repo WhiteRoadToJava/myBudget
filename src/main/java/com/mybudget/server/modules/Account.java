@@ -41,4 +41,11 @@ public class Account {
         this.createdAt = createdAt;
 
     }
+
+    public Double getTotalBalance(){
+        if (totalBalance != null){
+            return totalBalance;
+        }
+        return balance != null ? balance : 0.0;
+    }
 }
