@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/user/schedules")
-public class SecheduleController {
+public class ScheduleController {
     private final ScheduleService scheduleService;
 
 
@@ -32,13 +32,13 @@ public class SecheduleController {
 
     @DeleteMapping("delete-schedule/{scheduleId}")
         public ResponseEntity<?> delete(@PathVariable String scheduleId ){
-        scheduleService.deleteSchedulae(scheduleId);
+        scheduleService.deleteSchedule(scheduleId);
         return  ResponseEntity.status(HttpStatus.OK).body("delete is successfuly");
     }
 
     @PatchMapping("/{scheduleId}/update-schedule")
     public ResponseEntity<?> updateSchedule(@PathVariable String scheduleId, @RequestBody ScheduleuUpdateRequest request){
-        ScheduleResponse response = scheduleService.updateSehedule(scheduleId, request);
+        ScheduleResponse response = scheduleService.updateSchedule(scheduleId, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

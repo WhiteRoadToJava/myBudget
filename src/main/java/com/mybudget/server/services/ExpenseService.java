@@ -78,12 +78,12 @@ public class ExpenseService {
         double newAmount = expenseRequest.getAmount();
         boolean sameAccount = oldAccount != null && oldAccount.getId().equals(newAccount.getId());
         if (sameAccount) {
-            accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount - oldAmount);
+            accountService.applyCashFlow(newAccount, CashFlow.OUT, newAmount - oldAmount);
         } else {
             if (oldAccount != null) {
                 accountService.revertCashFlow(oldAccount, CashFlow.OUT, oldAmount);
             }
-            accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount);
+            accountService.applyCashFlow(newAccount, CashFlow.OUT, newAmount);
         }
         try {
             expense.setAccount(newAccount);
@@ -96,11 +96,11 @@ public class ExpenseService {
             return mapToExpenseResponse(expenseRepository.save(expense));
         } catch (RuntimeException e) {
             if (sameAccount) {
-                accountService.applyCashflow(newAccount, CashFlow.OUT, oldAmount - newAmount);
+                accountService.applyCashFlow(newAccount, CashFlow.OUT, oldAmount - newAmount);
             } else {
                 accountService.revertCashFlow(newAccount, CashFlow.OUT, newAmount);
                 if (oldAccount != null) {
-                    accountService.applyCashflow(oldAccount, CashFlow.OUT, oldAmount);
+                    accountService.applyCashFlow(oldAccount, CashFlow.OUT, oldAmount);
                 }
             }
             throw e;

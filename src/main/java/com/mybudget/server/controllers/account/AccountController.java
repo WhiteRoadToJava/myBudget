@@ -4,7 +4,6 @@ import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +16,6 @@ import com.mybudget.server.services.account.AccountService;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,7 +32,7 @@ public class AccountController {
     }
 @PatchMapping("/update-account")
     public ResponseEntity<?> updateAccount(@RequestBody Account account){
-        AccountResponse response = accountService.updateAcoount(account);
+        AccountResponse response = accountService.updateAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @DeleteMapping("/delete-account/{accountId}")
@@ -61,7 +59,7 @@ public class AccountController {
     }
     @GetMapping("/all-incomse-and-expense-transactions")
     public ResponseEntity<?> getAllTransations(){
-        List<Transaction> transactionList = accountService.getAllIncomseExpenseTransactins();
+        List<Transaction> transactionList = accountService.getAllIncomeExpenseTransactions();
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 

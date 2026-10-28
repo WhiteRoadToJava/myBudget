@@ -12,7 +12,6 @@ import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,15 +27,12 @@ public class TransferService {
     private final AccountService accountService;
 
 
-    public TransferResponse excuteTransfer(TransferRequest request) {
+    public TransferResponse executeTransfer(TransferRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
 
-        Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-        Account destinationAccount = accountRepository.findById(request.getDestinationAccount().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-
-        Double receivedAmount = request.getAmountSent() * request.getExChangeRate();
+        Account sourceAccount = findOwnedAccount(request.getSourceAccount(), user);
+        Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), user);
+        double receivedAmount = request.getAmountSent() * request.getExChangeRate();
 
         Transfer transfer = new Transfer();
         accountService.updateTotalBalanceWithSemdTransfer(sourceAccount, request.getAmountSent());
@@ -56,13 +52,10 @@ public class TransferService {
 
     // This method is used with schedule
     @Transactional
-    public TransferResponse excuteTransfer(TransferRequest request, User user) {
-        Account sourceAccount = accountRepository.findById(request.getSourceAccount().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-        Account destinationAccount = accountRepository.findById(request.getDestinationAccount().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-
-        Double receivedAmount = request.getAmountSent() * request.getExChangeRate();
+    public TransferResponse executeTransfer(TransferRequest request, User user) {
+        Account sourceAccount = findOwnedAccount(request.getSourceAccount(), user);
+        Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), user);
+        double receivedAmount = request.getAmountSent() * request.getExChangeRate();
 
         Transfer transfer = new Transfer();
         accountService.updateTotalBalanceWithSemdTransfer(sourceAccount, request.getAmountSent());
@@ -85,16 +78,9 @@ public class TransferService {
     public TransferResponse updateTransfer(String transferId, TransferRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         // check if transfer exists
-        Transfer existedTransfer = transferRepository.findById(transferId)
-                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found"));
-        //  find the account's bodys
-        String sourceAccountId = request.getSourceAccount().getId();
-        String destinationAccountId = request.getDestinationAccount().getId();
-        ;
-        Account sourceAccount = accountRepository.findById(sourceAccountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-        Account destinationAccount = accountRepository.findById(destinationAccountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+        Transfer existedTransfer = findOwnedTransfer(transferId, currentUser);
+        Account sourceAccount = findOwnedAccount(request.getSourceAccount(), currentUser);
+        Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), currentUser);
         // update the account's bodys totalBalances
         String response = accountService.updateAccountsWithUpdateTransfer(sourceAccount, destinationAccount, existedTransfer, request);
 
@@ -113,27 +99,17 @@ public class TransferService {
 
     public TransferResponse getTransferById(String transferId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        Transfer transfer = transferRepository.findById(transferId)
-                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found or access denied"));
-        if (!transfer.getUser().getId().equals(currentUser.getId())) {
-            throw new ResourceNotFoundException("Transfer not found or access denied");
-        } else {
-            return mapToTransferResponse(transfer);
-        }
+        return mapToTransferResponse(findOwnedTransfer(transferId, currentUser));
     }
 
     public String deleteTransfer(String transferId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        Transfer transfer = transferRepository.findById(transferId)
-                .orElseThrow(() -> new ResourceNotFoundException("Transfer is not found..."));
-        if (transfer.getUser().getId().equals(currentUser.getId())) {
-            String response = accountService.updateAccountsTotalBalanceWithDeleteTransfer(transfer);
-            if (response.equals("success")) {
-                transferRepository.delete(transfer);
-            } else {
-                throw new ResourceNotFoundException("Transfer not found or access denied");
-            }
+        Transfer transfer = findOwnedTransfer(transferId, currentUser);
+        String response = accountService.updateAccountsTotalBalanceWithDeleteTransfer(transfer);
+        if (!response.equals("success")){
+            throw new ResourceNotFoundException("transfer not found or access denied");
         }
+        transferRepository.delete(transfer);
         return "Transfer deleted successfully";
     }
 
@@ -159,5 +135,24 @@ public class TransferService {
                 transfer.getCreatedAt(),
                 transfer.getImage()
         );
+    }
+
+    private Account findOwnedAccount(Account requested, User user){
+        if (requested == null|| requested.getId() == null || user == null){
+            throw new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(requested.getId(), user);
+        if (account == null){
+            throw new ResourceNotFoundException("account not found");
+        }
+        return account;
+    }
+    private Transfer findOwnedTransfer(String transferId, User user){
+        Transfer transfer = transferRepository.findById(transferId)
+                .orElseThrow(()-> new ResourceNotFoundException("Transfer not found"));
+        if (transfer.getUser() == null || !transfer.getUser().getId().equals(user.getId())){
+            throw new ResourceNotFoundException("Transfer not found");
+        }
+        return transfer;
     }
 }
