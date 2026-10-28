@@ -100,18 +100,18 @@ public class IncomseService {
                 accountService.applyCashflow(newAccount, CashFlow.IN, newAmount);
             }
             try{
+                incomse.setAccount(newAccount);
                 incomse.setAmount(newAmount);
-                incomse.setAmount(requset.getAmount());
                 incomse.setCategory(requset.getCategory());
                 incomse.setImage(requset.getImage());
                 return mapToIncomseResponse(incomseRepository.save(incomse));
             } catch (RuntimeException e){
                 if (sameAccount) {
-                    accountService.applyCashflow(oldAccount, CashFlow.IN, oldAmount);
+                    accountService.applyCashflow(newAccount, CashFlow.IN, oldAmount - newAmount);
                 } else {
                     accountService.revertCashFlow(newAccount, CashFlow.IN, newAmount);
                     if (oldAccount != null){
-                        accountService.revertCashFlow(oldAccount, CashFlow.IN, oldAmount);
+                        accountService.applyCashflow(oldAccount, CashFlow.IN, oldAmount);
                     }
                 }
                 throw e;
