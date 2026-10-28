@@ -47,7 +47,7 @@ public class AccountService {
         Account account = new Account(
                 accountRequest.getName(),
                 accountRequest.getDescription(),
-                accountRequest.getBalance(),
+                openingBalance,
                 openingBalance,
                 accountRequest.getCurrency(),
                 accountRequest.getType(),
@@ -69,8 +69,8 @@ public class AccountService {
         existedAccount.setCurrency(accouunt.getCurrency());
         existedAccount.setType(accouunt.getType());
 
-        double oldBalance = existedAccount.getBalance();
-        double newBalance = accouunt.getBalance();
+        double oldBalance = existedAccount.getBalance() != null ? existedAccount.getBalance() : 0.0;
+        double newBalance = accouunt.getBalance() != null ? accouunt.getBalance() : 0.0;
         double oldTotalBalance = existedAccount.getTotalBalance();
         existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBalance, oldTotalBalance));
         existedAccount.setBalance(newBalance);
