@@ -25,7 +25,7 @@ public class AccountMapper {
         String type = "";
         String category = "";
         Double amount = 0.0;
-        LocalDateTime dateTime = transfer.getCreatedAt() != null ? transfer.getCreatedAt() : LocalDateTime.parse("2011-01-01");
+        LocalDateTime dateTime = transfer.getCreatedAt() != null ? transfer.getCreatedAt() : LocalDateTime.of(2011, 1,1,0,0);
 
 
         Map<String, String> imageUrl = transfer.getImage();

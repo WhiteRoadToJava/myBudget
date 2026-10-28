@@ -101,13 +101,13 @@ public class IncomseService {
             }
             try{
                 incomse.setAmount(newAmount);
-                incomse.setAmount(newAmount);
+                incomse.setAmount(requset.getAmount());
                 incomse.setCategory(requset.getCategory());
                 incomse.setImage(requset.getImage());
                 return mapToIncomseResponse(incomseRepository.save(incomse));
             } catch (RuntimeException e){
                 if (sameAccount) {
-                    accountService.applyCashflow(newAccount, CashFlow.IN, oldAmount - newAmount);
+                    accountService.applyCashflow(oldAccount, CashFlow.IN, oldAmount);
                 } else {
                     accountService.revertCashFlow(newAccount, CashFlow.IN, newAmount);
                     if (oldAccount != null){
@@ -144,7 +144,7 @@ public class IncomseService {
 private Incomse findOwnedIncomse(String incomseId, User currentUser){
     Incomse incomse = incomseRepository.findById(incomseId)
             .orElseThrow(()-> new ResourceNotFoundException("Income not found"));
-    if (incomse.getId() == null || !incomse.getUser().getId().equals(currentUser.getId())){
+    if (incomse.getUser() == null || !incomse.getUser().getId().equals(currentUser.getId())){
         throw  new ResourceNotFoundException("Income not found");
     }
     return incomse;

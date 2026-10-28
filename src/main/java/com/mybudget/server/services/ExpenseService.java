@@ -81,7 +81,7 @@ public class ExpenseService {
             accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount - oldAmount);
         } else {
             if (oldAccount != null) {
-                accountService.revertCashFlow(oldAccount, CashFlow.OUT, newAmount);
+                accountService.revertCashFlow(oldAccount, CashFlow.OUT, oldAmount);
             }
             accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount);
         }
@@ -98,7 +98,7 @@ public class ExpenseService {
             if (sameAccount) {
                 accountService.applyCashflow(newAccount, CashFlow.OUT, oldAmount - newAmount);
             } else {
-                accountService.revertCashFlow(newAccount, CashFlow.OUT, newAmount);
+                accountService.revertCashFlow(newAccount, CashFlow.OUT, oldAmount);
                 if (oldAccount != null) {
                     accountService.applyCashflow(oldAccount, CashFlow.OUT, oldAmount);
                 }
@@ -122,7 +122,7 @@ public class ExpenseService {
         }
         Account account = accountRepository.findByIdAndUser(requesstAccount.getId(), currentUser);
         if (account == null) {
-            throw new ResourceNotFoundException("Account not nound");
+            throw new ResourceNotFoundException("Account not found");
         }
         return account;
     }
