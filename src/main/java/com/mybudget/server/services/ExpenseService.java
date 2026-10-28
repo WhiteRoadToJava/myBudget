@@ -98,7 +98,7 @@ public class ExpenseService {
             if (sameAccount) {
                 accountService.applyCashflow(newAccount, CashFlow.OUT, oldAmount - newAmount);
             } else {
-                accountService.revertCashFlow(newAccount, CashFlow.OUT, oldAmount);
+                accountService.revertCashFlow(newAccount, CashFlow.OUT, newAmount);
                 if (oldAccount != null) {
                     accountService.applyCashflow(oldAccount, CashFlow.OUT, oldAmount);
                 }
