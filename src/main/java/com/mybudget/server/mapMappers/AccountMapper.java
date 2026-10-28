@@ -23,10 +23,10 @@ public class AccountMapper {
 
     public Transaction mapTransferToTransaction(Transfer transfer, Account account){
         String type = "";
-        Account sourceAccount = new Account();
-        Account destinationAccount = new Account();
         String category = "";
         Double amount = 0.0;
+        LocalDateTime dateTime = transfer.getCreatedAt() != null ? transfer.getCreatedAt() : LocalDateTime.parse("2011-01-01");
+
 
         Map<String, String> imageUrl = transfer.getImage();
         Map<String, String> image = new HashMap<>();
@@ -38,19 +38,22 @@ public class AccountMapper {
             image.put("filename", "");
         }
 
-        if(transfer.getSourceAccount().getId().equals(account.getId())) {
+        Account realSource = transfer.getSourceAccount();
+        Account realDestination = transfer.getDestinationAccount();
+
+        if (isSameAccount(realSource, account)){
             category = "transfer";
-            type= "out-transfer";
-            sourceAccount = transfer.getSourceAccount();
-            destinationAccount = transfer.getDestinationAccount();
+            type = "out-transfer";
             amount = transfer.getAmountSent();
-        } else if (transfer.getDestinationAccount().getId().equals(account.getId())) {
+        } else if (isSameAccount(realDestination, account)){
             category = "transfer";
-            type= "in-transfer";
-            sourceAccount = transfer.getSourceAccount();
-            destinationAccount = transfer.getDestinationAccount();
+            type = "in-transfer";
             amount = transfer.getAmountReceived();
+        } else {
+            return null;
         }
+        Account sourceAccount = realSource != null ? realSource : deletedAccount();
+        Account destinationAccount = realDestination != null ? realDestination : deletedAccount();
         return  new Transaction(
                 transfer.getId(),
                 amount,
@@ -58,10 +61,20 @@ public class AccountMapper {
                 sourceAccount,
                 destinationAccount,
                 type,
-                transfer.getCreatedAt(),
+                dateTime,
                 transfer.getDescription(),
                 image
         );
+    }
+    private boolean isSameAccount(Account candidate, Account account){
+        return candidate != null && candidate.getId() != null
+                && candidate.getId().equals(account.getId());
+    }
+
+    private Account deletedAccount(){
+        Account placedHolder = new Account();
+        placedHolder.setName("Deleted account");
+        return placedHolder;
     }
 
 
@@ -139,11 +152,13 @@ public class AccountMapper {
     }
 
     public Transaction mapTransferToTransaction(Transfer transfer){
-        if(transfer.getSourceAccount() != null){
-            Account sourceAccount = transfer.getSourceAccount();
-            return mapTransferToTransaction(transfer, sourceAccount);
+        if (transfer.getSourceAccount() != null){
+            return mapTransferToTransaction(transfer, transfer.getSourceAccount());
         }
-        return  null;
+        if (transfer.getDestinationAccount() !=  null){
+            return mapTransferToTransaction(transfer, transfer.getDestinationAccount());
+        }
+        return null;
     }
 
 }

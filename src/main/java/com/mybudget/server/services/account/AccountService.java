@@ -168,7 +168,9 @@ public class AccountService {
         transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
         transactions.addAll(transferList.stream()
-                .map(t -> mapTransferToTransaction(t, account)).toList());
+                .map(t -> mapTransferToTransaction(t, account))
+                .filter(java.util.Objects::nonNull)
+                .toList());
         return transactions;
     }
 
@@ -196,7 +198,9 @@ public class AccountService {
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
-        transactionList.addAll((expenseList.stream().map(this::mapExpenseToTransaction).toList()));
+        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction)
+                .filter(java.util.Objects::nonNull)
+                .toList());
         return transactionList;
     }
 
