@@ -57,7 +57,7 @@ public class AccountService {
         return accountResponse;
     }
 
-    public AccountResponse updateAcoount(Account accouunt) {
+    public AccountResponse updateAccount(Account accouunt) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account existedAccount = accountRepository.findByIdAndUser(accouunt.getId(), currentUser);
         if (existedAccount == null) {
@@ -170,9 +170,9 @@ public class AccountService {
         if (account == null){
             throw  new ResourceNotFoundException("Account not found");
         }
-        List<Incomse> incomseList = incomseRepository.findAllByAccount(requestAccount);
-        List<Expense> expenseList = expenseRepository.findAllByAccount(requestAccount);
-        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(requestAccount, requestAccount);
+        List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
+        List<Expense> expenseList = expenseRepository.findAllByAccount(account);
+        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account);
         List<Transaction> transactions = new ArrayList<>();
         transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
@@ -181,7 +181,7 @@ public class AccountService {
                 .filter(java.util.Objects::nonNull)
                 .toList());
         transactions.addAll(mapDebtMovements(
-                debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(requestAccount)
+                debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
         ));
         return transactions;
     }
@@ -206,7 +206,7 @@ public class AccountService {
         return transactions;
     }
 
-    public List<Transaction> getAllIncomseExpenseTransactins() {
+    public List<Transaction> getAllIncomeExpenseTransactions() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         List<Incomse> incomseList = incomseRepository.findAllByUser(currentUser);
         List<Expense> expenseList = expenseRepository.findAllByUser(currentUser);
@@ -256,7 +256,7 @@ public class AccountService {
     }
 
     @Transactional
-    public void updateTotalBalanceWithDeleteIncomse(Account account, Double amount) {
+    public void updateTotalBalanceWithDeleteIncome(Account account, Double amount) {
         if (account != null) {
             account.setTotalBalance(account.getTotalBalance() - amount);
             accountRepository.save(account);
@@ -355,7 +355,7 @@ public class AccountService {
     }
 
 
-    public void applyCashflow(Account account, CashFlow cashFlow, double amount) {
+    public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {
         double current = account.getTotalBalance() == null ? 0.0 : account.getTotalBalance();
         double change = cashFlow == CashFlow.IN ? amount : -amount;
         account.setTotalBalance(roundToCents(current + change));
@@ -363,7 +363,7 @@ public class AccountService {
     }
 
     public void revertCashFlow(Account account, CashFlow cashFlow, double amount) {
-        applyCashflow(account, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
+        applyCashFlow(account, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
     }
 
     private double roundToCents(double value) {

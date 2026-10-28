@@ -12,7 +12,6 @@ import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +27,7 @@ public class TransferService {
     private final AccountService accountService;
 
 
-    public TransferResponse excuteTransfer(TransferRequest request) {
+    public TransferResponse executeTransfer(TransferRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
 
         Account sourceAccount = findOwnedAccount(request.getSourceAccount(), user);
@@ -53,7 +52,7 @@ public class TransferService {
 
     // This method is used with schedule
     @Transactional
-    public TransferResponse excuteTransfer(TransferRequest request, User user) {
+    public TransferResponse executeTransfer(TransferRequest request, User user) {
         Account sourceAccount = findOwnedAccount(request.getSourceAccount(), user);
         Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), user);
         double receivedAmount = request.getAmountSent() * request.getExChangeRate();
@@ -110,7 +109,7 @@ public class TransferService {
         if (!response.equals("success")){
             throw new ResourceNotFoundException("transfer not found or access denied");
         }
-        transferRepository.save(transfer);
+        transferRepository.delete(transfer);
         return "Transfer deleted successfully";
     }
 

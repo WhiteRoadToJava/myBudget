@@ -127,7 +127,7 @@ public class ScheduleService {
             }
             case TRANSFER -> {
                 TransferRequest request = mapToTransferRequest(schedule);
-                transferService.excuteTransfer(request, user);
+                transferService.executeTransfer(request, user);
                 updateNextExecutionDate(schedule);
             }
         }

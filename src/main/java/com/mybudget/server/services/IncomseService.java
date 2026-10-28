@@ -92,12 +92,12 @@ public class IncomseService {
             double newAmount = requset.getAmount();
             boolean sameAccount = oldAccount != null && oldAccount.getId().equals( newAccount.getId());
             if (sameAccount){
-                accountService.applyCashflow(newAccount, CashFlow.IN, newAmount - oldAmount);
+                accountService.applyCashFlow(newAccount, CashFlow.IN, newAmount - oldAmount);
             } else {
                 if (oldAccount != null){
                     accountService.revertCashFlow(oldAccount, CashFlow.IN, oldAmount);
                 }
-                accountService.applyCashflow(newAccount, CashFlow.IN, newAmount);
+                accountService.applyCashFlow(newAccount, CashFlow.IN, newAmount);
             }
             try{
                 incomse.setAccount(newAccount);
@@ -107,11 +107,11 @@ public class IncomseService {
                 return mapToIncomseResponse(incomseRepository.save(incomse));
             } catch (RuntimeException e){
                 if (sameAccount) {
-                    accountService.applyCashflow(newAccount, CashFlow.IN, oldAmount - newAmount);
+                    accountService.applyCashFlow(newAccount, CashFlow.IN, oldAmount - newAmount);
                 } else {
                     accountService.revertCashFlow(newAccount, CashFlow.IN, newAmount);
                     if (oldAccount != null){
-                        accountService.applyCashflow(oldAccount, CashFlow.IN, oldAmount);
+                        accountService.applyCashFlow(oldAccount, CashFlow.IN, oldAmount);
                     }
                 }
                 throw e;
@@ -134,7 +134,7 @@ public class IncomseService {
             Incomse incomse = incomseRepository.findById(incomseId)
                     .orElseThrow(()-> new ResourceNotFoundException("Incomse not found"));
             if(incomse.getUser().getId().equals(currentUser.getId())){
-                accountService.updateTotalBalanceWithDeleteIncomse(incomse.getAccount(), incomse.getAmount());
+                accountService.updateTotalBalanceWithDeleteIncome(incomse.getAccount(), incomse.getAmount());
                 incomseRepository.delete(incomse);
                 return "Incomse deleted successfully";
             } else {
