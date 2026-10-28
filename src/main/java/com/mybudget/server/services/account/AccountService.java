@@ -42,12 +42,13 @@ public class AccountService {
             throw new ResourceNotFoundException("Account already exists");
         }
         Date createdAt = new Date();
+        double openingBalance = accountRequest.getBalance() != null ? accountRequest.getBalance() : 0.0;
 
         Account account = new Account(
                 accountRequest.getName(),
                 accountRequest.getDescription(),
-                accountRequest.getBalance(),
-                accountRequest.getTotalBalance(),
+                openingBalance,
+                openingBalance,
                 accountRequest.getCurrency(),
                 accountRequest.getType(),
                 currentUser,
@@ -68,11 +69,11 @@ public class AccountService {
         existedAccount.setCurrency(accouunt.getCurrency());
         existedAccount.setType(accouunt.getType());
 
-        double oldBalance = existedAccount.getBalance();
-        double newBslsnce = accouunt.getBalance();
+        double oldBalance = existedAccount.getBalance() != null ? existedAccount.getBalance() : 0.0;
+        double newBalance = accouunt.getBalance() != null ? accouunt.getBalance() : oldBalance;
         double oldTotalBalance = existedAccount.getTotalBalance();
-        existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBslsnce, oldTotalBalance));
-        existedAccount.setBalance(newBslsnce);
+        existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBalance, oldTotalBalance));
+        existedAccount.setBalance(newBalance);
         return accountMapper.mapToAccountResponse(accountRepository.save(existedAccount));
     }
 
@@ -129,10 +130,7 @@ public class AccountService {
         Map<String, Double> totalBalanceByCurrency = new HashMap<>();
 
         for (Account account : accounts) {
-            if (account.getTotalBalance() == null) {
-                account.setTotalBalance(0.0);
-                accountRepository.save(account);
-            }
+
             if (account.getStatus() == null) {
                 account.setStatus(Collections.singleton(AccountStatus.ACTIVE));
             }
@@ -243,10 +241,6 @@ public class AccountService {
 
     public void updateTotalBalanceWithIncome(Account account, double amount) {
         if (account != null) {
-            if (account.getTotalBalance() == null) {
-                account.setTotalBalance(0.0);
-                accountRepository.save(account);
-            }
             if (account.getBalance() == null) {
                 throw new ResourceNotFoundException("Balance is null");
             }
