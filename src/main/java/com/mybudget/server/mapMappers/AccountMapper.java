@@ -3,15 +3,14 @@ package com.mybudget.server.mapMappers;
 
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountResponse;
-import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.Expense;
-import com.mybudget.server.modules.Incomse;
-import com.mybudget.server.modules.Transfer;
+import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
+import com.mybudget.server.modules.enums.CashFlow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -159,6 +158,46 @@ public class AccountMapper {
             return mapTransferToTransaction(transfer, transfer.getDestinationAccount());
         }
         return null;
+    }
+
+    public Transaction mapDebtMovementToTransaction(DebtMovement movement){
+        Debt debt = movement.getDebt();
+        if (debt == null || debt.getDirection() == null || movement.getDate() == null){
+            return null;
+        }
+        CashFlow cashFlow = debt.getDirection().cashFlowOf(movement.getMovementType());
+        String type = cashFlow == CashFlow.IN ? "debt-in" : "debt-out";
+        Account account = movement.getAccount() != null ? movement.getAccount() : deletedAccount();
+
+        LocalDateTime when = movement.getCreatedAt() != null
+                && movement.getCreatedAt().toLocalDate().equals(movement.getDate())
+                ? movement.getCreatedAt()
+                : movement.getDate().atTime(LocalTime.NOON);
+        String description = movement.getDescription() != null && !movement.getDescription().isBlank()
+                ? movement.getDescription()
+                : debt.getName();
+
+        Map<String, String> image = new HashMap<>();
+        Map<String, String> imageUrl = movement.getImage();
+        if (imageUrl != null && imageUrl.get("url") != null){
+            image.put("url", imageUrl.get("url"));
+            image.put("filename", imageUrl.get("filename"));
+        } else {
+            image.put("url", "");
+            image.put("filename", "");
+        }
+        return new Transaction(
+                movement.getId(),
+                movement.getAmount(),
+                "Debt",
+                account,
+                null,
+                type,
+                when,
+                description,
+                image,
+                debt.getId()
+        );
     }
 
 }

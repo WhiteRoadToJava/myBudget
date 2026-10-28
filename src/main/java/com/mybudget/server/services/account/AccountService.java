@@ -15,6 +15,7 @@ import com.mybudget.server.repositories.*;
 import com.mybudget.server.util.UserUtils;
 import com.mybudget.server.mapMappers.AccountMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,7 +110,7 @@ public class AccountService {
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
-        if (debtMovementRepository.existedByAccount(account)){
+        if (debtMovementRepository.existsByAccount(account)){
             throw new ConflictException("This account has debt movements. Delete or move them before deleting the account");
         }
         incomseRepository.deleteAllByAccount(account);
@@ -171,6 +172,9 @@ public class AccountService {
                 .map(t -> mapTransferToTransaction(t, account))
                 .filter(java.util.Objects::nonNull)
                 .toList());
+        transactions.addAll(mapDebtMovements(
+                debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
+        ));
         return transactions;
     }
 
@@ -187,6 +191,9 @@ public class AccountService {
                 .map(this::mapTransferToTransaction)
                 .filter(java.util.Objects::nonNull)
                 .toList());
+        transactions.addAll(mapDebtMovements(
+                debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNull(currentUser)
+        ));
 
         return transactions;
     }
@@ -198,9 +205,7 @@ public class AccountService {
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
-        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction)
-                .filter(java.util.Objects::nonNull)
-                .toList());
+        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
         return transactionList;
     }
 
@@ -302,10 +307,11 @@ public class AccountService {
 
 
     public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
-        // confirm the user is authenticated and heseilf that do the  rappor
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        LocalDateTime date1 = LocalDate.parse(fromDate).atStartOfDay();
-        LocalDateTime date2 = LocalDate.parse(toDate).atStartOfDay();
+        LocalDate from = LocalDate.parse(fromDate);
+        LocalDate to = LocalDate.parse(toDate);
+        LocalDateTime date1 = from.atStartOfDay();
+        LocalDateTime date2 = to.atStartOfDay();
         List<Incomse> incomseList = incomseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
         List<Expense> expenseList = expenseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
         List<Transfer> transferList = transferRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
@@ -313,9 +319,14 @@ public class AccountService {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
-        transactionList.addAll(transferList.stream().map(this::mapTransferToTransaction).toList());
+        transactionList.addAll(transferList.stream()
+                .map(this::mapTransferToTransaction)
+                .filter(java.util.Objects::nonNull)
+                .toList());
+        transactionList.addAll(mapDebtMovements(
+                debtMovementRepository.findAllByUserAndDateBetweenAndMirroredTransactionIdIsNull(
+                        currentUser, Range.rightOpen(from, to))));
         return transactionList;
-
     }
 
 
@@ -349,5 +360,12 @@ public class AccountService {
 
     private double roundToCents(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private List<Transaction> mapDebtMovements(List<DebtMovement> movements){
+        return movements.stream()
+                .map(accountMapper::mapDebtMovementToTransaction)
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 }
