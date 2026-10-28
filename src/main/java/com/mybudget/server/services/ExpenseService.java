@@ -81,7 +81,7 @@ public class ExpenseService {
             accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount - oldAmount);
         } else {
             if (oldAccount != null) {
-                accountService.revertCashFlow(oldAccount, CashFlow.OUT, newAmount);
+                accountService.revertCashFlow(oldAccount, CashFlow.OUT, oldAmount);
             }
             accountService.applyCashflow(newAccount, CashFlow.OUT, newAmount);
         }
@@ -122,7 +122,7 @@ public class ExpenseService {
         }
         Account account = accountRepository.findByIdAndUser(requesstAccount.getId(), currentUser);
         if (account == null) {
-            throw new ResourceNotFoundException("Account not nound");
+            throw new ResourceNotFoundException("Account not found");
         }
         return account;
     }
