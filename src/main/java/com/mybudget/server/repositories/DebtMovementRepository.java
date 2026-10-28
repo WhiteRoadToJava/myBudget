@@ -3,8 +3,10 @@ package com.mybudget.server.repositories;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Debt;
 import com.mybudget.server.modules.DebtMovement;
+import com.mybudget.server.modules.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,5 +17,9 @@ public interface DebtMovementRepository extends MongoRepository<DebtMovement, St
 
     void deleteByDebt(Debt debt);
 
-    boolean existedByAccount(Account account);
+    boolean existsByAccount(Account account);
+    List<DebtMovement> findAllByAccountAndMirroredTransactionIdIsNull(Account account);
+    List<DebtMovement> findAllByUserAndMirroredTransactionIdIsNull(User user);
+    List<DebtMovement> findAllByUserAndDateGreaterThanEqualAndDateLessThanAndMirroredTransactionIdIsNull(
+            User user, LocalDate fromDate, LocalDate toDate);
 }
