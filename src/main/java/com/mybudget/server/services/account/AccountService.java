@@ -70,7 +70,7 @@ public class AccountService {
         existedAccount.setType(accouunt.getType());
 
         double oldBalance = existedAccount.getBalance() != null ? existedAccount.getBalance() : 0.0;
-        double newBalance = accouunt.getBalance() != null ? accouunt.getBalance() : 0.0;
+        double newBalance = accouunt.getBalance() != null ? accouunt.getBalance() : oldBalance;
         double oldTotalBalance = existedAccount.getTotalBalance();
         existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBalance, oldTotalBalance));
         existedAccount.setBalance(newBalance);
