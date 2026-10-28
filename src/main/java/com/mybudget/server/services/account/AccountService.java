@@ -15,6 +15,7 @@ import com.mybudget.server.repositories.*;
 import com.mybudget.server.util.UserUtils;
 import com.mybudget.server.mapMappers.AccountMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -190,6 +191,9 @@ public class AccountService {
                 .map(this::mapTransferToTransaction)
                 .filter(java.util.Objects::nonNull)
                 .toList());
+        transactions.addAll(mapDebtMovements(
+                debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNull(currentUser)
+        ));
 
         return transactions;
     }
@@ -320,8 +324,8 @@ public class AccountService {
                 .filter(java.util.Objects::nonNull)
                 .toList());
         transactionList.addAll(mapDebtMovements(
-                debtMovementRepository.findAllByUserAndDateGreaterThanEqualAndDateLessThanAndMirroredTransactionIdIsNull(
-                        currentUser, from, to)));
+                debtMovementRepository.findAllByUserAndDateBetweenAndMirroredTransactionIdIsNull(
+                        currentUser, Range.rightOpen(from, to))));
         return transactionList;
     }
 
