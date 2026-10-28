@@ -161,19 +161,27 @@ public class AccountService {
     }
 
 
-    public List<Transaction> getAllAccountTransactions(Account account) {
-        List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
-        List<Expense> expenseList = expenseRepository.findAllByAccount(account);
-        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account);
+    public List<Transaction> getAllAccountTransactions(Account requestAccount) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        if (requestAccount == null || requestAccount.getId() == null){
+            throw new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(requestAccount.getId(), currentUser);
+        if (account == null){
+            throw  new ResourceNotFoundException("Account not found");
+        }
+        List<Incomse> incomseList = incomseRepository.findAllByAccount(requestAccount);
+        List<Expense> expenseList = expenseRepository.findAllByAccount(requestAccount);
+        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(requestAccount, requestAccount);
         List<Transaction> transactions = new ArrayList<>();
         transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
         transactions.addAll(transferList.stream()
-                .map(t -> mapTransferToTransaction(t, account))
+                .map(t -> mapTransferToTransaction(t, requestAccount))
                 .filter(java.util.Objects::nonNull)
                 .toList());
         transactions.addAll(mapDebtMovements(
-                debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
+                debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(requestAccount)
         ));
         return transactions;
     }

@@ -1,7 +1,6 @@
 package com.mybudget.server.services.schedule;
 
 
-import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleRequest;
@@ -43,21 +42,15 @@ public class ScheduleService {
     private final ScheduleMapper scheduleMapper;
 
 
-
-
-
     public ScheduleResponse executeSchedule(ScheduleRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         System.out.println(request.getAmountReceived());
         // Fetch source account
-        Account sourceAccount = accountRepository.findById(request.getSourceAccountId())
-                .orElseThrow(() -> new RuntimeException("Source account not found"));
-
+        Account sourceAccount = findOwnedAccount(request.getSourceAccountId(), currentUser);
         // Fetch destination account (optional)
         Account destinationAccount;
         if (request.getDestinationAccountId() != null && !request.getDestinationAccountId().isEmpty()) {
-            destinationAccount = accountRepository.findById(request.getDestinationAccountId())
-                    .orElseThrow(() -> new RuntimeException("Destination account not found"));
+            destinationAccount = findOwnedAccount(request.getDestinationAccountId(), currentUser);
         } else {
             destinationAccount = sourceAccount;
         }
@@ -82,18 +75,18 @@ public class ScheduleService {
         return mapToResponse(saved);
     }
 
-    public ScheduleResponse updateSehedule(String scheduleId, ScheduleuUpdateRequest request ){
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(()-> new ResourceNotFoundException("Schedule is not found."));
+    public ScheduleResponse updateSchedule(String scheduleId, ScheduleuUpdateRequest request) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Schedule schedule = findOwnedSchedule(scheduleId, currentUser);
         schedule.setName(request.getName());
         schedule.setDescription(request.getDescription());
         schedule.setCategory(request.getCategory());
         schedule.setScheduleIntervals(request.getScheduleIntervalSet());
         schedule.setAmountSend(request.getAmountSend());
         TransactionType transactionType = schedule.getTransactionTypes().iterator().next();
-        if(TransactionType.TRANSFER.equals(transactionType)){
-        schedule.setExChangeRate(request.getExChangeRate());
-        schedule.setAmountReceived(request.getAmountReceived());
+        if (TransactionType.TRANSFER.equals(transactionType)) {
+            schedule.setExChangeRate(request.getExChangeRate());
+            schedule.setAmountReceived(request.getAmountReceived());
         }
         schedule.setNextExecutionDate(request.getNextExecutionDate());
         schedule.setActive(request.isActive());
@@ -102,47 +95,45 @@ public class ScheduleService {
     }
 
 
-
     @Scheduled(cron = "0 0 8 * * *")
-    private void runDailySchedules(){
+    private void runDailySchedules() {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59,59);
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
 
         List<Schedule> dueTodaySchedules = scheduleRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
         for (Schedule schedule : dueTodaySchedules) {
             try {
                 processSchedule(schedule);
-            }catch (Exception e){
-                throw new ResourceNotFoundException("Failed to process schedule id={}, error={}"+  schedule.getId()+ e.getMessage());
+            } catch (Exception e) {
+                log.error("Failed to process schedule id={}: {}", schedule.getId(), e.getMessage());
             }
         }
     }
 
 
-
-private void processSchedule(Schedule schedule) {
-    TransactionType type = schedule.getTransactionTypes().iterator().next();
-    User user = schedule.getUser();
-    switch (type) {
-        case INCOMSE -> {
-            IncomseRequset requset = mapToIncomstRequest(schedule);
-            incomseService.excuteIncomse(requset, user);
-            updateNextExecutionDate(schedule);
-        }
-        case EXPENSE -> {
-            ExpenseRequset requset = mapToExpenseRequest(schedule);
-            expenseService.addExpense(requset, user);
-            updateNextExecutionDate(schedule);
-        }
-        case TRANSFER -> {
-            TransferRequest request = mapToTransferRequest(schedule);
-            transferService.excuteTransfer(request, user);
-            updateNextExecutionDate(schedule);
+    private void processSchedule(Schedule schedule) {
+        TransactionType type = schedule.getTransactionTypes().iterator().next();
+        User user = schedule.getUser();
+        switch (type) {
+            case INCOMSE -> {
+                IncomseRequset request = mapToIncomstRequest(schedule);
+                incomseService.excuteIncomse(request, user);
+                updateNextExecutionDate(schedule);
+            }
+            case EXPENSE -> {
+                ExpenseRequset requset = mapToExpenseRequest(schedule);
+                expenseService.addExpense(requset, user);
+                updateNextExecutionDate(schedule);
+            }
+            case TRANSFER -> {
+                TransferRequest request = mapToTransferRequest(schedule);
+                transferService.excuteTransfer(request, user);
+                updateNextExecutionDate(schedule);
+            }
         }
     }
-}
 
-    private void updateNextExecutionDate(Schedule schedule){
+    private void updateNextExecutionDate(Schedule schedule) {
         ScheduleInterval interval = schedule.getScheduleIntervals().iterator().next();
 
         LocalDateTime next = switch (interval) {
@@ -156,56 +147,55 @@ private void processSchedule(Schedule schedule) {
     }
 
 
-
     public List<ScheduleResponse> getAllSchedules() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        if(currentUser == null) throw new UnauthorizedException("User not found");
+        if (currentUser == null) throw new UnauthorizedException("User not found");
         String userId = currentUser.getId();
         List<Schedule> schedules = scheduleRepository.findAllByUser(userId);
         return schedules.stream().map(this::mapToResponse).toList();
     }
 
 
-
-
-private ScheduleResponse mapToResponse(Schedule schedule){
+    private ScheduleResponse mapToResponse(Schedule schedule) {
         return scheduleMapper.mapToResponse(schedule);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public void deleteSchedulae(String scheduleId){
-        User currentUser = userUtils.getCurrentAuthenticatedUser();
-        String userId = currentUser.getId();
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found"));
-        if(userId .equals(schedule.getUser().getId())){
-            scheduleRepository.delete(schedule);
-        }
     }
 
 
+    public void deleteSchedule(String scheduleId) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Schedule schedule = findOwnedSchedule(scheduleId, currentUser);
+        scheduleRepository.delete(schedule);
+    }
 
 
-    private IncomseRequset mapToIncomstRequest(Schedule schedule){
+    private IncomseRequset mapToIncomstRequest(Schedule schedule) {
         return scheduleMapper.mapToIncomstRequest(schedule);
     }
-    private ExpenseRequset  mapToExpenseRequest(Schedule schedule){
+
+    private ExpenseRequset mapToExpenseRequest(Schedule schedule) {
         return scheduleMapper.mapToExpenseRequest(schedule);
     }
 
-    private TransferRequest mapToTransferRequest(Schedule schedule){
+    private TransferRequest mapToTransferRequest(Schedule schedule) {
         return scheduleMapper.mapToTransferRequest(schedule);
+    }
+    private Account findOwnedAccount(String accountId, User user){
+        if (accountId == null || accountId.isBlank()){
+            throw new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(accountId, user);
+        if (account == null){
+            throw new ResourceNotFoundException("Account not found");
+        }
+        return account;
+    }
+    private Schedule findOwnedSchedule(String scheduleId,  User user){
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
+        if (schedule.getUser() ==  null || !schedule.getUser().getId().equals(user.getId())){
+            throw new ResourceNotFoundException("Schedule not found");
+        }
+        return schedule;
     }
 
 
