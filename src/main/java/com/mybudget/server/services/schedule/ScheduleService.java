@@ -5,7 +5,7 @@ import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
-import com.mybudget.server.dto.schedule.ScheduleuUpdateRequest;
+import com.mybudget.server.dto.schedule.ScheduleUpdateRequest;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.exeptions.UnauthorizedException;
@@ -75,7 +75,7 @@ public class ScheduleService {
         return mapToResponse(saved);
     }
 
-    public ScheduleResponse updateSchedule(String scheduleId, ScheduleuUpdateRequest request) {
+    public ScheduleResponse updateSchedule(String scheduleId, ScheduleUpdateRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Schedule schedule = findOwnedSchedule(scheduleId, currentUser);
         schedule.setName(request.getName());
@@ -89,18 +89,20 @@ public class ScheduleService {
             schedule.setAmountReceived(request.getAmountReceived());
         }
         schedule.setNextExecutionDate(request.getNextExecutionDate());
-        schedule.setActive(request.isActive());
+        if (request.getActive() != null) {
+            schedule.setActive(request.getActive());
+        }
         Schedule savedSchedule = scheduleRepository.save(schedule);
         return mapToResponse(savedSchedule);
     }
 
 
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "${app.schedule.cron:0 0 8 * * *}")
     private void runDailySchedules() {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
 
-        List<Schedule> dueTodaySchedules = scheduleRepository.findByNextExecutionDateBetweenAndIsActiveTrue(startOfDay, endOfDay);
+        List<Schedule> dueTodaySchedules = scheduleRepository.findByNextExecutionDateLessThanEqualAndIsActiveTrue(endOfDay);
         for (Schedule schedule : dueTodaySchedules) {
             try {
                 processSchedule(schedule);

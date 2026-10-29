@@ -2,7 +2,7 @@ package com.mybudget.server.controllers;
 
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
-import com.mybudget.server.dto.schedule.ScheduleuUpdateRequest;
+import com.mybudget.server.dto.schedule.ScheduleUpdateRequest;
 import com.mybudget.server.services.schedule.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ public class ScheduleController {
     }
 
     @PatchMapping("/{scheduleId}/update-schedule")
-    public ResponseEntity<?> updateSchedule(@PathVariable String scheduleId, @RequestBody ScheduleuUpdateRequest request){
+    public ResponseEntity<?> updateSchedule(@PathVariable String scheduleId, @RequestBody ScheduleUpdateRequest request){
         ScheduleResponse response = scheduleService.updateSchedule(scheduleId, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }

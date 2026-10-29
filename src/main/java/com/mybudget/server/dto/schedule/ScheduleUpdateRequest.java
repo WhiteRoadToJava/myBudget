@@ -1,5 +1,6 @@
 package com.mybudget.server.dto.schedule;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.mybudget.server.modules.enums.ScheduleInterval;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,7 +13,7 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScheduleuUpdateRequest {
+public class ScheduleUpdateRequest {
     private String name;
     private String description;
     private String Category;
@@ -21,6 +22,7 @@ public class ScheduleuUpdateRequest {
     private BigDecimal exChangeRate;
     private BigDecimal amountReceived;
     private LocalDateTime nextExecutionDate;
-    private boolean isActive;
+    @JsonAlias({"isActive", "active"})
+    private Boolean active;
 }
 
