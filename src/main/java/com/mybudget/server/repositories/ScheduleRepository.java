@@ -9,6 +9,6 @@ import java.util.List;
 
 @Repository
 public interface ScheduleRepository extends MongoRepository<Schedule, String> {
-    List<Schedule> findByNextExecutionDateBetweenAndIsActiveTrue(LocalDateTime start, LocalDateTime end);
-    List<Schedule> findAllByUser(String userId);
+    List<Schedule> findByNextExecutionDateLessThanEqualAndIsActiveTrue(LocalDateTime end);    List<Schedule> findAllByUser(String userId);
+
 }
