@@ -2,12 +2,14 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.expense.ExpenseResponse;
+import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.repositories.AccountRepository;
+import com.mybudget.server.repositories.DebtMovementRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
@@ -26,7 +28,7 @@ public class ExpenseService {
     private final AccountRepository accountRepository;
     private final ExpenseRepository expenseRepository;
     private final AccountService accountService;
-
+    private final DebtMovementRepository debtMovementRepository;
 
     @Transactional
     public ExpenseResponse addExpense(ExpenseRequset expenseRequest) {
@@ -71,6 +73,7 @@ public class ExpenseService {
     public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, currentUser);
+        ensureNotDebtMirror(expense.getId());
         Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
 
         Account oldAccount = expense.getAccount();
@@ -107,6 +110,11 @@ public class ExpenseService {
         }
     }
 
+    private void ensureNotDebtMirror(String recordId){
+        if (debtMovementRepository.existsByMirroredTransactionId(recordId)){
+            throw new ConflictException("This Expense was Created by debt movement, Edit or delete it from the debt");
+        }
+    }
     private Expense findOwnedExpense(String expenseId, User currentUser) {
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
@@ -130,15 +138,11 @@ public class ExpenseService {
     @Transactional
     public String deleteExpense(String expenseId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        Expense expense = expenseRepository.findById(expenseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
-        if (expense.getUser().getId().equals(currentUser.getId())) {
-            accountService.updateTotalBalanceWithDeleteExpense(expense.getAccount(), expense.getAmount());
-            expenseRepository.delete(expense);
-            return "Expense deleted successfully";
-        } else {
-            throw new ResourceNotFoundException("Expense not found or access denied");
-        }
+        Expense expense = findOwnedExpense(expenseId, currentUser);
+        ensureNotDebtMirror(expense.getId());
+        accountService.updateTotalBalanceWithDeleteExpense(expense.getAccount(), expense.getAmount());
+        expenseRepository.delete(expense);
+        return "Expense deleted successfully";
     }
 
     public ExpenseResponse getExpenseById(String expenseId) {
