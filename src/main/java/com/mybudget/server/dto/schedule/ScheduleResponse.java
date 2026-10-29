@@ -1,5 +1,6 @@
 package com.mybudget.server.dto.schedule;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mybudget.server.modules.enums.ScheduleInterval;
 import com.mybudget.server.modules.enums.TransactionType;
 import lombok.AllArgsConstructor;
@@ -28,6 +29,7 @@ private BigDecimal amountSend;
 private BigDecimal exChangeRate;
 private BigDecimal amountReceived;
 private LocalDateTime executionDate;
+@JsonProperty("isActive")
 private boolean active;
 private UserSummary createdBy;
 private LocalDateTime createdAt;
