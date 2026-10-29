@@ -3,6 +3,7 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
+import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Incomse;
@@ -135,13 +136,14 @@ public class IncomseService {
     public String deleteIncomse(String incomseId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Incomse incomse = findOwnedIncomse(incomseId, currentUser);
-        accountService.updateTotalBalanceWithIncome(incomse.getAccount(), incomse.getAmount());
+        ensureNotDebtMirror(incomse.getId());
+        accountService.updateTotalBalanceWithDeleteIncome(incomse.getAccount(), incomse.getAmount());
         incomseRepository.delete(incomse);
         return "Income deleted successfully";
     }
     private void ensureNotDebtMirror(String recordId){
         if (debtMovementRepository.existsByMirroredTransactionId(recordId)){
-            throw new ResourceNotFoundException("This income was created by a debt movement. Edit or delete it from the debt");
+            throw new ConflictException("This income was created by a debt movement. Edit or delete it from the debt");
         }
     }
 

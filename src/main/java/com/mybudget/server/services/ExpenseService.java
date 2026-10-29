@@ -2,6 +2,7 @@ package com.mybudget.server.services;
 
 import com.mybudget.server.dto.expense.ExpenseRequset;
 import com.mybudget.server.dto.expense.ExpenseResponse;
+import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Expense;
@@ -72,6 +73,7 @@ public class ExpenseService {
     public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, currentUser);
+        ensureNotDebtMirror(expense.getId());
         Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
 
         Account oldAccount = expense.getAccount();
@@ -110,7 +112,7 @@ public class ExpenseService {
 
     private void ensureNotDebtMirror(String recordId){
         if (debtMovementRepository.existsByMirroredTransactionId(recordId)){
-            throw new ResourceNotFoundException(("This Expense was Created by debt movement, Edit or delete it from the debt"));
+            throw new ConflictException("This Expense was Created by debt movement, Edit or delete it from the debt");
         }
     }
     private Expense findOwnedExpense(String expenseId, User currentUser) {
