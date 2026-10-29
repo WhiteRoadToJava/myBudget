@@ -17,7 +17,7 @@ public interface DebtMovementRepository extends MongoRepository<DebtMovement, St
     Optional<DebtMovement> findByIdAndDebt(String id, Debt debt);
 
     void deleteByDebt(Debt debt);
-
+    boolean existsByMirroredTransactionId(String mirroredTransactionId);
     boolean existsByAccount(Account account);
 
     List<DebtMovement> findAllByAccountAndMirroredTransactionIdIsNull(Account account);
