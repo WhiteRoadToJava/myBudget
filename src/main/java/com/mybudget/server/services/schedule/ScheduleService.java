@@ -57,8 +57,9 @@ public class ScheduleService {
         boolean isDebtPayment = request.getTransactionTypes().contains(TransactionType.DEBT_PAYMENT);
         Account sourceAccount = findOwnedAccount(request.getSourceAccountId(), currentUser);
         Account destinationAccount = sourceAccount;
-        debtService.checkScheduledPayment(request.getDebtId(), sourceAccount.getId(), currentUser);
-
+        if (isDebtPayment) {
+            debtService.checkScheduledPayment(request.getDebtId(), sourceAccount.getId(), currentUser);
+        }
         if (isTransfer) {
             destinationAccount = findOwnedAccount(request.getDestinationAccountId(), currentUser);
             if (destinationAccount.getId().equals(sourceAccount.getId())) {
@@ -251,7 +252,12 @@ public class ScheduleService {
                 && (request.getDestinationAccountId() == null || request.getDestinationAccountId().isBlank())) {
             throw new IllegalArgumentException("A transfer needs a destination account");
         }
+        if (types.contains(TransactionType.DEBT_PAYMENT)
+        && request.getDebtId() == null || request.getDebtId().isBlank()){
+            throw new IllegalArgumentException("debt payment needs a debt");
+        }
     }
+
 
     private void requireOneInterval(Set<ScheduleInterval> intervals) {
         if (intervals == null || intervals.size() != 1 || intervals.contains(null)) {
