@@ -25,9 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -44,69 +48,98 @@ public class ScheduleService {
 
     public ScheduleResponse executeSchedule(ScheduleRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        System.out.println(request.getAmountReceived());
-        // Fetch source account
+
+        // reject an invalid schedule now, instead of letting it fail silently at 08:00
+        validateNewSchedule(request);
+        boolean isTransfer = request.getTransactionTypes().contains(TransactionType.TRANSFER);
+
         Account sourceAccount = findOwnedAccount(request.getSourceAccountId(), currentUser);
-        // Fetch destination account (optional)
-        Account destinationAccount;
-        if (request.getDestinationAccountId() != null && !request.getDestinationAccountId().isEmpty()) {
+        Account destinationAccount = sourceAccount;
+        if (isTransfer) {
             destinationAccount = findOwnedAccount(request.getDestinationAccountId(), currentUser);
-        } else {
-            destinationAccount = sourceAccount;
+            if (destinationAccount.getId().equals(sourceAccount.getId())) {
+                throw new IllegalArgumentException("A transfer needs two different accounts");
+            }
         }
-        // Build schedule
+
         Schedule schedule = Schedule.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .category(request.getCategory())
                 .sourceAccount(sourceAccount)
                 .destinationAccount(destinationAccount)
                 .transactionTypes(request.getTransactionTypes())
                 .scheduleIntervals(request.getScheduleIntervals())
                 .amountSend(request.getAmountSend())
                 .nextExecutionDate(request.getNextExecutionDate())
-                .exChangeRate(request.getExChangeRate())
-                .amountReceived(request.getAmountReceived())
                 .isActive(true)
                 .user(currentUser)
                 .build();
 
-        Schedule saved = scheduleRepository.save(schedule);
+        if (isTransfer) {
+            applyTransferAmounts(schedule, request.getExChangeRate());
+        }
 
-        return mapToResponse(saved);
+        return mapToResponse(scheduleRepository.save(schedule));
     }
 
     public ScheduleResponse updateSchedule(String scheduleId, ScheduleUpdateRequest request) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Schedule schedule = findOwnedSchedule(scheduleId, currentUser);
-        schedule.setName(request.getName());
-        schedule.setDescription(request.getDescription());
-        schedule.setCategory(request.getCategory());
-        schedule.setScheduleIntervals(request.getScheduleIntervalSet());
-        schedule.setAmountSend(request.getAmountSend());
-        TransactionType transactionType = schedule.getTransactionTypes().iterator().next();
-        if (TransactionType.TRANSFER.equals(transactionType)) {
-            schedule.setExChangeRate(request.getExChangeRate());
-            schedule.setAmountReceived(request.getAmountReceived());
+
+        // validate first, then apply: a bad request changes nothing
+        if (request.getScheduleIntervalSet() != null) {
+            requireOneInterval(request.getScheduleIntervalSet());
         }
-        schedule.setNextExecutionDate(request.getNextExecutionDate());
+        if (request.getAmountSend() != null) {
+            requirePositive(request.getAmountSend(), "Amount");
+        }
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            schedule.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            schedule.setDescription(request.getDescription());
+        }
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            schedule.setCategory(request.getCategory());
+        }
+        if (request.getScheduleIntervalSet() != null) {
+            schedule.setScheduleIntervals(request.getScheduleIntervalSet());
+        }
+        if (request.getAmountSend() != null) {
+            schedule.setAmountSend(request.getAmountSend());
+        }
+        if (isTransfer(schedule)) {
+            // the edit form sends 0 when the rate is unknown: keep the stored one then
+            BigDecimal rate = isPositive(request.getExChangeRate())
+                    ? request.getExChangeRate()
+                    : schedule.getExChangeRate();
+            applyTransferAmounts(schedule, rate);
+        }
+        if (request.getNextExecutionDate() != null) {
+            schedule.setNextExecutionDate(request.getNextExecutionDate());
+        }
         if (request.getActive() != null) {
             schedule.setActive(request.getActive());
         }
-        Schedule savedSchedule = scheduleRepository.save(schedule);
-        return mapToResponse(savedSchedule);
+
+        return mapToResponse(scheduleRepository.save(schedule));
     }
 
 
     @Scheduled(cron = "${app.schedule.cron:0 0 8 * * *}")
     private void runDailySchedules() {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
 
-        List<Schedule> dueTodaySchedules = scheduleRepository.findByNextExecutionDateLessThanEqualAndIsActiveTrue(endOfDay);
-        for (Schedule schedule : dueTodaySchedules) {
+        // everything due today or earlier: a date stored at exactly 00:00 is included,
+        // and a day the server missed is picked up on the next run
+        List<Schedule> dueSchedules = scheduleRepository.findByNextExecutionDateLessThanEqualAndIsActiveTrue(endOfDay);
+        for (Schedule schedule : dueSchedules) {
             try {
                 processSchedule(schedule);
             } catch (Exception e) {
+                // one failing schedule must not stop the others
                 log.error("Failed to process schedule id={}: {}", schedule.getId(), e.getMessage());
             }
         }
@@ -118,13 +151,13 @@ public class ScheduleService {
         User user = schedule.getUser();
         switch (type) {
             case INCOMSE -> {
-                IncomseRequset request = mapToIncomstRequest(schedule);
+                IncomseRequset request = mapToIncomeRequest(schedule);
                 incomseService.excuteIncomse(request, user);
                 updateNextExecutionDate(schedule);
             }
             case EXPENSE -> {
-                ExpenseRequset requset = mapToExpenseRequest(schedule);
-                expenseService.addExpense(requset, user);
+                ExpenseRequset request = mapToExpenseRequest(schedule);
+                expenseService.addExpense(request, user);
                 updateNextExecutionDate(schedule);
             }
             case TRANSFER -> {
@@ -158,11 +191,6 @@ public class ScheduleService {
     }
 
 
-    private ScheduleResponse mapToResponse(Schedule schedule) {
-        return scheduleMapper.mapToResponse(schedule);
-    }
-
-
     public void deleteSchedule(String scheduleId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Schedule schedule = findOwnedSchedule(scheduleId, currentUser);
@@ -170,7 +198,73 @@ public class ScheduleService {
     }
 
 
-    private IncomseRequset mapToIncomstRequest(Schedule schedule) {
+    // ---------- validation ----------
+
+    private void validateNewSchedule(ScheduleRequest request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        Set<TransactionType> types = request.getTransactionTypes();
+        if (types == null || types.size() != 1 || types.contains(null)) {
+            throw new IllegalArgumentException("Exactly one transaction type is required");
+        }
+        requireOneInterval(request.getScheduleIntervals());
+        requirePositive(request.getAmountSend(), "Amount");
+        if (request.getNextExecutionDate() == null) {
+            throw new IllegalArgumentException("Next execution date is required");
+        }
+        if (types.contains(TransactionType.TRANSFER)
+                && (request.getDestinationAccountId() == null || request.getDestinationAccountId().isBlank())) {
+            throw new IllegalArgumentException("A transfer needs a destination account");
+        }
+    }
+
+    private void requireOneInterval(Set<ScheduleInterval> intervals) {
+        if (intervals == null || intervals.size() != 1 || intervals.contains(null)) {
+            throw new IllegalArgumentException("Exactly one schedule interval is required");
+        }
+    }
+
+    private void requirePositive(BigDecimal value, String field) {
+        if (!isPositive(value)) {
+            throw new IllegalArgumentException(field + " must be greater than zero");
+        }
+    }
+
+    private boolean isPositive(BigDecimal value) {
+        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private boolean isTransfer(Schedule schedule) {
+        return schedule.getTransactionTypes() != null
+                && schedule.getTransactionTypes().contains(TransactionType.TRANSFER);
+    }
+
+    // Same currency: rate 1. Different currencies: the client must send a rate.
+    // The received amount is always derived from the rate, like TransferService does.
+    private void applyTransferAmounts(Schedule schedule, BigDecimal requestedRate) {
+        BigDecimal rate = requestedRate;
+        if (!isPositive(rate)) {
+            String from = schedule.getSourceAccount() != null ? schedule.getSourceAccount().getCurrency() : null;
+            String to = schedule.getDestinationAccount() != null ? schedule.getDestinationAccount().getCurrency() : null;
+            if (from != null && Objects.equals(from, to)) {
+                rate = BigDecimal.ONE;
+            } else {
+                throw new IllegalArgumentException("Exchange rate is required for accounts with different currencies");
+            }
+        }
+        schedule.setExChangeRate(rate);
+        schedule.setAmountReceived(schedule.getAmountSend().multiply(rate).setScale(2, RoundingMode.HALF_UP));
+    }
+
+
+    // ---------- mapping and lookups ----------
+
+    private ScheduleResponse mapToResponse(Schedule schedule) {
+        return scheduleMapper.mapToResponse(schedule);
+    }
+
+    private IncomseRequset mapToIncomeRequest(Schedule schedule) {
         return scheduleMapper.mapToIncomstRequest(schedule);
     }
 
@@ -181,24 +275,24 @@ public class ScheduleService {
     private TransferRequest mapToTransferRequest(Schedule schedule) {
         return scheduleMapper.mapToTransferRequest(schedule);
     }
-    private Account findOwnedAccount(String accountId, User user){
-        if (accountId == null || accountId.isBlank()){
+
+    private Account findOwnedAccount(String accountId, User user) {
+        if (accountId == null || accountId.isBlank()) {
             throw new ResourceNotFoundException("Account not found");
         }
         Account account = accountRepository.findByIdAndUser(accountId, user);
-        if (account == null){
+        if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         return account;
     }
-    private Schedule findOwnedSchedule(String scheduleId,  User user){
+
+    private Schedule findOwnedSchedule(String scheduleId, User user) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
-        if (schedule.getUser() ==  null || !schedule.getUser().getId().equals(user.getId())){
+        if (schedule.getUser() == null || !schedule.getUser().getId().equals(user.getId())) {
             throw new ResourceNotFoundException("Schedule not found");
         }
         return schedule;
     }
-
-
 }
