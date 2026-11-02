@@ -14,7 +14,7 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSernder;
+    private final JavaMailSender mailSender;
 
     @Value("${app.mail.from}")
     private String from;
@@ -22,24 +22,24 @@ public class EmailService {
     @Value("${app.mail.enabled:true}")
     private boolean enabled;
 
-    public EmailService(JavaMailSender mailSernder){
-        this.mailSernder = mailSernder;
+    public EmailService(JavaMailSender mailSender){
+        this.mailSender = mailSender;
     }
 
     @Async
     public void send(String to, String subject, String html){
         if(!enabled){
-            log.info("[MAIL disabked] to={} subject={}\n {}", to, subject, html);
+            log.info("[MAIL disabled] to={} subject={}\n {}", to, subject, html);
             return;
         }
         try {
-            MimeMessage message = mailSernder.createMimeMessage();
+            MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(from);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(html, true);
-            mailSernder.send(message);
+            mailSender.send(message);
         } catch (Exception e) {
             log.error("Failed to send email o {}", to , e);
         }

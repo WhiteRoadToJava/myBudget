@@ -253,8 +253,8 @@ public class ScheduleService {
             throw new IllegalArgumentException("A transfer needs a destination account");
         }
         if (types.contains(TransactionType.DEBT_PAYMENT)
-        && request.getDebtId() == null || request.getDebtId().isBlank()){
-            throw new IllegalArgumentException("debt payment needs a debt");
+                && (request.getDebtId() == null || request.getDebtId().isBlank())) {
+            throw new IllegalArgumentException("A debt payment needs a debt");
         }
     }
 
