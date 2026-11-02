@@ -28,6 +28,7 @@ public class ScheduleRequest {
         private BigDecimal amountSend;
         private BigDecimal exChangeRate;
         private BigDecimal amountReceived;
+        private String debtId;
         private LocalDateTime nextExecutionDate ;
         @JsonProperty("isActive")
         private boolean isActive;

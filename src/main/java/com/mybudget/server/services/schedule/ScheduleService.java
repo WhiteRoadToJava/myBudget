@@ -19,6 +19,7 @@ import com.mybudget.server.repositories.ScheduleRepository;
 import com.mybudget.server.services.ExpenseService;
 import com.mybudget.server.services.IncomseService;
 import com.mybudget.server.services.TransferService;
+import com.mybudget.server.services.debt.DebtService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ public class ScheduleService {
     private final AccountRepository accountRepository;
     private final UserUtils userUtils;
     private final ScheduleMapper scheduleMapper;
+    private final DebtService debtService;
 
 
     public ScheduleResponse executeSchedule(ScheduleRequest request) {
@@ -52,9 +54,11 @@ public class ScheduleService {
         // reject an invalid schedule now, instead of letting it fail silently at 08:00
         validateNewSchedule(request);
         boolean isTransfer = request.getTransactionTypes().contains(TransactionType.TRANSFER);
-
+        boolean isDebtPayment = request.getTransactionTypes().contains(TransactionType.DEBT_PAYMENT);
         Account sourceAccount = findOwnedAccount(request.getSourceAccountId(), currentUser);
         Account destinationAccount = sourceAccount;
+        debtService.checkScheduledPayment(request.getDebtId(), sourceAccount.getId(), currentUser);
+
         if (isTransfer) {
             destinationAccount = findOwnedAccount(request.getDestinationAccountId(), currentUser);
             if (destinationAccount.getId().equals(sourceAccount.getId())) {
@@ -65,7 +69,8 @@ public class ScheduleService {
         Schedule schedule = Schedule.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .category(request.getCategory())
+                .category(isDebtPayment ? "Debt" : request.getCategory())
+                .debtId(isDebtPayment ? request.getDebtId() : null)
                 .sourceAccount(sourceAccount)
                 .destinationAccount(destinationAccount)
                 .transactionTypes(request.getTransactionTypes())
@@ -165,7 +170,36 @@ public class ScheduleService {
                 transferService.executeTransfer(request, user);
                 updateNextExecutionDate(schedule);
             }
+            case DEBT_PAYMENT -> processDebtPayment(schedule, user);
         }
+    }
+
+    private void processDebtPayment(Schedule schedule, User user) {
+        if (schedule.getSourceAccount() == null) {
+            stopSchedule(schedule);
+            log.warn("Debt payment schedule id={} stopped: its account was deleted", schedule.getId());
+            return;
+        }
+        DebtService.ScheduledPayment result;
+        try {
+            result = debtService.payScheduled(
+                    schedule.getDebtId(), schedule.getSourceAccount().getId(), schedule.getAmountSend(), user
+            );
+        } catch (ResourceNotFoundException | IllegalArgumentException e) {
+            stopSchedule(schedule);
+            log.warn("Debt payment schedule id={} stopped : {}", schedule.getId(), e.getMessage());
+            return;
+        }
+        if (result == DebtService.ScheduledPayment.PAID) {
+            updateNextExecutionDate(schedule);
+        } else {
+            stopSchedule(schedule);
+        }
+    }
+
+    private void stopSchedule(Schedule schedule) {
+        schedule.setActive(false);
+        scheduleRepository.save(schedule);
     }
 
     private void updateNextExecutionDate(Schedule schedule) {

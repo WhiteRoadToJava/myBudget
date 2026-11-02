@@ -39,6 +39,7 @@ public class Schedule {
     private BigDecimal amountSend;
     private BigDecimal exChangeRate;
     private BigDecimal amountReceived;
+    private String debtId;
     private LocalDateTime nextExecutionDate ;
     private boolean isActive;
     @CreatedDate

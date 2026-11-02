@@ -22,6 +22,7 @@ public class ScheduleMapper {
         response.setAmountSend(schedule.getAmountSend());
         response.setExChangeRate(schedule.getExChangeRate());
         response.setAmountReceived(schedule.getAmountReceived());
+        response.setDebtId(schedule.getDebtId());
         response.setExecutionDate(schedule.getNextExecutionDate());
         response.setActive(schedule.isActive());
         response.setCreatedAt(schedule.getCreatedAt());

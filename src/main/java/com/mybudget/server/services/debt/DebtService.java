@@ -6,6 +6,7 @@ import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
+import com.mybudget.server.modules.enums.DebtMovementType;
 import com.mybudget.server.modules.enums.InterestCompounding;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.DebtRepository;
@@ -104,9 +105,12 @@ public class DebtService {
 
     //----------------------------------------------
 
-
-    public DebtDetailsResponse addMovement(String debtId, DebtMovementRequest request) {
+    public DebtDetailsResponse addMovement(String debId, DebtMovementRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
+        return addMovement(debId, request, user);
+    }
+
+    private DebtDetailsResponse addMovement(String debtId, DebtMovementRequest request, User user) {
         Debt debt = findDebt(debtId, user);
         validateMovementRequest(request);
 
@@ -169,12 +173,48 @@ public class DebtService {
     }
 
 
-    //-------------------------------------------------------
+    //-------------------- schedule payment -----------------------------------
+
+    public enum ScheduledPayment {PAID, FINISHED, NOTHING_TO_PAY}
+
+    public void checkScheduledPayment (String debtId, String accountId, User user){
+        Debt debt = findDebt(debtId, user);
+        Account account = accountRepository.findByIdAndUser(accountId, user);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        checkAccountCanBeUsed(debt, account);
+        if (owedToday(debt).signum() <= 0){
+            throw   new IllegalArgumentException("The debt has nothing left to pay");
+        }
+    }
+
+    public ScheduledPayment payScheduled(String debtId, String accountId, BigDecimal amount, User user){
+        Debt debt = findDebt(debtId, user);
+        BigDecimal owed = owedToday(debt);
+        if (owed.signum() <= 0){
+            return ScheduledPayment.NOTHING_TO_PAY;
+        }
+        BigDecimal pay = amount.setScale(2, RoundingMode.HALF_UP).min(owed);
+
+        DebtMovementRequest request = new DebtMovementRequest();
+        request.setMovementType(DebtMovementType.REPAYMENT);
+        request.setAmount(pay.doubleValue());
+        request.setDate(LocalDate.now());
+        request.setAccountId(accountId);
+        addMovement(debtId, request, user);
+
+        return pay.compareTo(owed) >= 0 ? ScheduledPayment.FINISHED : ScheduledPayment.PAID;
+    }
+    private BigDecimal owedToday(Debt debt) {
+        return calculate(debt, debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt)).totalOwed();
+    }
     private Debt findDebt(String debtId, User user) {
         return debtRepository.findByIdAndUser(debtId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found"));
     }
-// check this function
+
+    // check this function
     private void applySettings(Debt debt, DebtRequest request) {
         debt.setName(request.getName().trim());
         debt.setCounterparty(request.getCounterparty());
@@ -322,7 +362,7 @@ public class DebtService {
                 movement.getMirroredTransactionId() != null);
     }
 
-    private void createIncomeOrExpenseIfRequested(Debt debt, DebtMovement movement, CashFlow cashFlow){
+    private void createIncomeOrExpenseIfRequested(Debt debt, DebtMovement movement, CashFlow cashFlow) {
         LocalDateTime when = dateTimeOf(movement.getDate());
 
 
@@ -354,13 +394,13 @@ public class DebtService {
     }
 
 
-    private void deleteIncomeOrExpense(DebtMovement movement){
+    private void deleteIncomeOrExpense(DebtMovement movement) {
         String id = movement.getMirroredTransactionId();
-        if (id == null){
+        if (id == null) {
             return;
         }
-        if ("incomse".equals(movement.getMirroredTransactionType())){
+        if ("incomse".equals(movement.getMirroredTransactionType())) {
             incomseRepository.deleteById(id);
-        }else expenseRepository.deleteById(id);
+        } else expenseRepository.deleteById(id);
     }
 }
