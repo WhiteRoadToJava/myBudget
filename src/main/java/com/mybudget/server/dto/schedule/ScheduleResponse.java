@@ -28,6 +28,7 @@ private ScheduleInterval scheduleInterval;
 private BigDecimal amountSend;
 private BigDecimal exChangeRate;
 private BigDecimal amountReceived;
+private String debtId;
 private LocalDateTime executionDate;
 @JsonProperty("isActive")
 private boolean active;

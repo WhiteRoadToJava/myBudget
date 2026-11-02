@@ -25,7 +25,7 @@ public class AccountVerificationService {
     private final EmailTemplates emailTemplates;
     private final UserRepository userRepository;
 
-    @Value("${app.frontend.url}")
+    @Value("${app.frontend.path}")
     private String frontendUrl;
 
     public void sendActivationEmail(User user, String language) {

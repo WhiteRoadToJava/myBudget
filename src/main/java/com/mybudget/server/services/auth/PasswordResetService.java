@@ -33,7 +33,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.frontend.url}")
+    @Value("${app.frontend.path}")
     private String frontendUrl;
 
 
