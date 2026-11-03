@@ -34,6 +34,7 @@ public class AccountService {
     private final TransferRepository transferRepository;
     private final AccountMapper accountMapper;
     private final DebtMovementRepository debtMovementRepository;
+    private final ScheduleRepository scheduleRepository;
 
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
@@ -116,6 +117,8 @@ public class AccountService {
         }
         incomseRepository.deleteAllByAccount(account);
         expenseRepository.deleteAllByAccount(account);
+        // schedules on a deleted account could never run again
+        scheduleRepository.deleteAllBySourceAccountOrDestinationAccount(account, account);
 
         accountRepository.delete(account);
     }
@@ -151,6 +154,12 @@ public class AccountService {
     public AccountResponse updateAccountStatus(String accountId, UpdateAccountStatus status) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account targedAccount = accountRepository.findByIdAndUser(accountId, currentUser);
+        if (targedAccount == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        if (status == null || status.getStatus() == null || status.getStatus().isEmpty()) {
+            throw new IllegalArgumentException("A status is required");
+        }
 
         targedAccount.setStatus(status.getStatus());
 
@@ -181,7 +190,7 @@ public class AccountService {
         transactions.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
         ));
-        return transactions;
+        return withDebtIds(transactions, currentUser);
     }
 
     public List<Transaction> getUserAllTransaction() {
@@ -201,7 +210,7 @@ public class AccountService {
                 debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNull(currentUser)
         ));
 
-        return transactions;
+        return withDebtIds(transactions, currentUser);
     }
 
     public List<Transaction> getAllIncomeExpenseTransactions() {
@@ -212,7 +221,7 @@ public class AccountService {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
-        return transactionList;
+        return withDebtIds(transactionList, currentUser);
     }
 
 
@@ -328,7 +337,7 @@ public class AccountService {
         transactionList.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByUserAndDateBetweenAndMirroredTransactionIdIsNull(
                         currentUser, Range.rightOpen(from, to))));
-        return transactionList;
+        return withDebtIds(transactionList, currentUser);
     }
 
 
@@ -362,6 +371,26 @@ public class AccountService {
 
     private double roundToCents(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    // Income and expense records created by a debt movement get the id of their debt,
+    // so the frontend can open the debt instead of offering edit/delete (which answer 409).
+    private List<Transaction> withDebtIds(List<Transaction> transactions, User user) {
+        Map<String, String> debtIdByRecord = new HashMap<>();
+        for (DebtMovement movement : debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNotNull(user)) {
+            if (movement.getDebt() != null) {
+                debtIdByRecord.put(movement.getMirroredTransactionId(), movement.getDebt().getId());
+            }
+        }
+        if (debtIdByRecord.isEmpty()) {
+            return transactions;
+        }
+        for (Transaction transaction : transactions) {
+            if (transaction.getDebtId() == null && debtIdByRecord.containsKey(transaction.getId())) {
+                transaction.setDebtId(debtIdByRecord.get(transaction.getId()));
+            }
+        }
+        return transactions;
     }
 
     private List<Transaction> mapDebtMovements(List<DebtMovement> movements){
