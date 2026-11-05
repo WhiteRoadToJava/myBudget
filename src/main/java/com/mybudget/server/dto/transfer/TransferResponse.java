@@ -1,6 +1,7 @@
 package com.mybudget.server.dto.transfer;
 
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.enums.FeeDirection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,4 +25,10 @@ public class TransferResponse {
     private String description;
     private LocalDateTime createdAt;
     private Map<String, String> image;
+    private Double sendFee;
+    private FeeDirection sendFeeDirection;
+    private Account sendFeeAccount;
+    private Double receiveFee;
+    private FeeDirection receiveFeeDirection;
+    private Account receiveFeeAccount;
 }

@@ -5,7 +5,6 @@ import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
-import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.*;
@@ -83,27 +82,7 @@ public class AccountService {
         return currentTotal + (newBalance - oldBalance);
     }
 
-    public AccountResponse updateTotalBalanceWithReceivedTransfer(Account account, Double amount) {
-        String accountId = account.getId();
-        Account updatedAccount = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
 
-        Double totalBalance = account.getTotalBalance() + amount;
-        updatedAccount.setTotalBalance(totalBalance);
-
-        return accountMapper.mapToAccountResponse(accountRepository.save(updatedAccount));
-    }
-
-    public AccountResponse updateTotalBalanceWithSemdTransfer(Account account, Double amount) {
-        String accountId = account.getId();
-        Account updatedAccount = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-
-        Double totalBalance = account.getTotalBalance() - amount;
-        updatedAccount.setTotalBalance(totalBalance);
-
-        return accountMapper.mapToAccountResponse(accountRepository.save(updatedAccount));
-    }
 
     @Transactional
     public void deleteAccount(String accountId) {
@@ -179,7 +158,8 @@ public class AccountService {
         }
         List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
         List<Expense> expenseList = expenseRepository.findAllByAccount(account);
-        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccount(account, account);
+        List<Transfer> transferList = transferRepository.findAllBySourceAccountOrDestinationAccountOrSendFeeAccountOrReceiveFeeAccount(
+                account, account, account, account);
         List<Transaction> transactions = new ArrayList<>();
         transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
@@ -203,8 +183,7 @@ public class AccountService {
         transactions.addAll(incomses.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenses.stream().map(this::mapExpenseToTransaction).toList());
         transactions.addAll(transfers.stream()
-                .map(this::mapTransferToTransaction)
-                .filter(java.util.Objects::nonNull)
+                .flatMap(t -> accountMapper.mapTransferForUser(t).stream())
                 .toList());
         transactions.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNull(currentUser)
@@ -274,49 +253,7 @@ public class AccountService {
         }
     }
 
-
     @Transactional
-    public String updateAccountsWithUpdateTransfer(Account accountSend, Account accountDestination, Transfer transfer, TransferRequest request) {
-        if (accountSend != null) {
-            Double oldAccountSendTotal = accountSend.getTotalBalance();
-            Double newAccountSentTotal = oldAccountSendTotal + transfer.getAmountSent() - request.getAmountSent();
-            accountSend.setTotalBalance(newAccountSentTotal);
-            accountRepository.save(accountSend);
-
-        }
-        if (accountDestination != null) {
-            Double oldAccountDestinationTotal = accountDestination.getTotalBalance();
-            Double newAccountDestinationTotal = oldAccountDestinationTotal - transfer.getAmountReceived() + request.getAmountReceived();
-            accountDestination.setTotalBalance(newAccountDestinationTotal);
-            accountRepository.save(accountDestination);
-        }
-        return "success";
-    }
-
-    @Transactional
-    public String updateAccountsTotalBalanceWithDeleteTransfer(Transfer transfer) {
-        String sourceAccountId = "";
-        if (transfer.getSourceAccount() != null) {
-            sourceAccountId = transfer.getSourceAccount().getId();
-            accountRepository.findById(sourceAccountId).ifPresent(sourceAccount -> {
-                Double newBalance = sourceAccount.getTotalBalance() + transfer.getAmountSent();
-                sourceAccount.setTotalBalance(newBalance);
-                accountRepository.save(sourceAccount);
-            });
-        }
-        String destinationAccountId = "";
-        if (transfer.getDestinationAccount() != null) {
-            destinationAccountId = transfer.getDestinationAccount().getId();
-            accountRepository.findById(destinationAccountId).ifPresent(destinationAccount -> {
-                Double newBalance = destinationAccount.getTotalBalance() - transfer.getAmountReceived();
-                destinationAccount.setTotalBalance(newBalance);
-                accountRepository.save(destinationAccount);
-            });
-        }
-        return "success";
-    }
-
-
     public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         LocalDate from = LocalDate.parse(fromDate);
@@ -331,8 +268,7 @@ public class AccountService {
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
         transactionList.addAll(transferList.stream()
-                .map(this::mapTransferToTransaction)
-                .filter(java.util.Objects::nonNull)
+                .flatMap(t -> accountMapper.mapTransferForUser(t).stream())
                 .toList());
         transactionList.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByUserAndDateBetweenAndMirroredTransactionIdIsNull(
@@ -353,9 +289,6 @@ public class AccountService {
         return accountMapper.mapIToTransation(incomse);
     }
 
-    private Transaction mapTransferToTransaction(Transfer transfer) {
-        return accountMapper.mapTransferToTransaction(transfer);
-    }
 
 
     public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {

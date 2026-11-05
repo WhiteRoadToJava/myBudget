@@ -17,6 +17,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DebtDirectionTest {
+    // start date of the debt used by the calculator test below
+    private static final LocalDate START = LocalDate.of(2026, 1, 1);
+
     @Test
     void whenIBorrowedTheDisbursementBringsMoneyIn() {
         assertEquals(CashFlow.IN, DebtDirection.OWED_BY_ME.cashFlowOf(DebtMovementType.DISBURSEMENT));

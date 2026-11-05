@@ -80,16 +80,17 @@ public class ScheduleMapper {
                 null
         );
     }
+    // Setters instead of the all-args constructor: TransferRequest has more fields now
+    // (the fees), and a positional constructor breaks every time a field is added.
+    // Scheduled transfers have no fees yet, so those fields stay null (= no fee).
     public TransferRequest mapToTransferRequest(Schedule schedule){
-        return new TransferRequest(
-                schedule.getSourceAccount(),
-                schedule.getDestinationAccount(),
-                schedule.getAmountSend().doubleValue(),
-                schedule.getExChangeRate().doubleValue(),
-                schedule.getAmountReceived().doubleValue(),
-                schedule.getDescription(),
-                schedule.getCreatedAt(),
-                null
-        );
+        TransferRequest request = new TransferRequest();
+        request.setSourceAccount(schedule.getSourceAccount());
+        request.setDestinationAccount(schedule.getDestinationAccount());
+        request.setAmountSent(schedule.getAmountSend().doubleValue());
+        request.setExChangeRate(schedule.getExChangeRate().doubleValue());
+        request.setAmountReceived(schedule.getAmountReceived().doubleValue());
+        request.setDescription(schedule.getDescription());
+        return request;
     }
 }

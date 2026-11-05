@@ -6,14 +6,18 @@ import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
+import com.mybudget.server.services.TransferEffects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -40,14 +44,21 @@ public class AccountMapper {
         Account realSource = transfer.getSourceAccount();
         Account realDestination = transfer.getDestinationAccount();
 
+        // the amount is what the transfer did to this account, fees included
+        double net = TransferEffects.netFor(transfer, account.getId());
         if (isSameAccount(realSource, account)){
             category = "transfer";
             type = "out-transfer";
-            amount = transfer.getAmountSent();
+            amount = Math.abs(net);
         } else if (isSameAccount(realDestination, account)){
             category = "transfer";
             type = "in-transfer";
-            amount = transfer.getAmountReceived();
+            amount = Math.abs(net);
+        } else if (net != 0) {
+            // only a fee was paid from or into this account
+            category = "transfer";
+            type = net > 0 ? "transfer-fee-in" : "transfer-fee-out";
+            amount = Math.abs(net);
         } else {
             return null;
         }
@@ -150,14 +161,23 @@ public class AccountMapper {
         );
     }
 
-    public Transaction mapTransferToTransaction(Transfer transfer){
-        if (transfer.getSourceAccount() != null){
-            return mapTransferToTransaction(transfer, transfer.getSourceAccount());
+    // Lists of all accounts: the transfer once (from the source, or the destination
+    // when the source was deleted), plus one fee row for every other account a fee touched.
+    public List<Transaction> mapTransferForUser(Transfer transfer){
+        List<Transaction> rows = new ArrayList<>();
+        Account main = transfer.getSourceAccount() != null ? transfer.getSourceAccount() : transfer.getDestinationAccount();
+        if (main != null) {
+            rows.add(mapTransferToTransaction(transfer, main));
         }
-        if (transfer.getDestinationAccount() !=  null){
-            return mapTransferToTransaction(transfer, transfer.getDestinationAccount());
+        for (TransferEffects.Effect effect : TransferEffects.of(transfer)) {
+            Account feeAccount = effect.account();
+            if (!isSameAccount(transfer.getSourceAccount(), feeAccount)
+                    && !isSameAccount(transfer.getDestinationAccount(), feeAccount)) {
+                rows.add(mapTransferToTransaction(transfer, feeAccount));
+            }
         }
-        return null;
+        rows.removeIf(Objects::isNull);
+        return rows;
     }
 
     public Transaction mapDebtMovementToTransaction(DebtMovement movement){
