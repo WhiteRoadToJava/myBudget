@@ -6,17 +6,16 @@ import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Transfer;
 import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.enums.CashFlow;
+import com.mybudget.server.modules.enums.FeeDirection;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,74 +25,35 @@ public class TransferService {
     private final TransferRepository transferRepository;
     private final AccountService accountService;
 
-
     public TransferResponse executeTransfer(TransferRequest request) {
-        User user = userUtils.getCurrentAuthenticatedUser();
-
-        Account sourceAccount = findOwnedAccount(request.getSourceAccount(), user);
-        Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), user);
-        double receivedAmount = request.getAmountSent() * request.getExChangeRate();
-
-        Transfer transfer = new Transfer();
-        accountService.updateTotalBalanceWithSemdTransfer(sourceAccount, request.getAmountSent());
-        accountService.updateTotalBalanceWithReceivedTransfer(destinationAccount, receivedAmount);
-        transfer.setUser(user);
-        transfer.setDescription(request.getDescription());
-        transfer.setExChangeRate(request.getExChangeRate());
-        transfer.setAmountSent(request.getAmountSent());
-        transfer.setAmountReceived(receivedAmount);
-        transfer.setSourceAccount(sourceAccount);
-        transfer.setDestinationAccount(destinationAccount);
-        transfer.setCurrency(sourceAccount.getCurrency());
-        transfer.setImage(request.getImage());
-
-        return mapToTransferResponse(transferRepository.save(transfer));
+        return create(request, userUtils.getCurrentAuthenticatedUser());
     }
 
-    // This method is used with schedule
-    @Transactional
+    // used by the schedules, which run without a logged-in user
     public TransferResponse executeTransfer(TransferRequest request, User user) {
-        Account sourceAccount = findOwnedAccount(request.getSourceAccount(), user);
-        Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), user);
-        double receivedAmount = request.getAmountSent() * request.getExChangeRate();
-
-        Transfer transfer = new Transfer();
-        accountService.updateTotalBalanceWithSemdTransfer(sourceAccount, request.getAmountSent());
-        accountService.updateTotalBalanceWithReceivedTransfer(destinationAccount, receivedAmount);
-        transfer.setUser(user);
-        transfer.setDescription(request.getDescription());
-        transfer.setExChangeRate(request.getExChangeRate());
-        transfer.setAmountSent(request.getAmountSent());
-        transfer.setAmountReceived(receivedAmount);
-        transfer.setSourceAccount(sourceAccount);
-        transfer.setDestinationAccount(destinationAccount);
-        transfer.setCurrency(sourceAccount.getCurrency());
-
-
-        return mapToTransferResponse(transferRepository.save(transfer));
+        return create(request, user);
     }
 
-
-    @Transactional
     public TransferResponse updateTransfer(String transferId, TransferRequest request) {
-        User currentUser = userUtils.getCurrentAuthenticatedUser();
-        // check if transfer exists
-        Transfer existedTransfer = findOwnedTransfer(transferId, currentUser);
-        Account sourceAccount = findOwnedAccount(request.getSourceAccount(), currentUser);
-        Account destinationAccount = findOwnedAccount(request.getDestinationAccount(), currentUser);
-        // update the account's bodys totalBalances
-        String response = accountService.updateAccountsWithUpdateTransfer(sourceAccount, destinationAccount, existedTransfer, request);
+        User user = userUtils.getCurrentAuthenticatedUser();
+        Transfer transfer = findOwnedTransfer(transferId, user);
 
-        if (response.equals("success")) {
-            existedTransfer.setAmountSent(request.getAmountSent());
-            existedTransfer.setAmountReceived(request.getAmountReceived());
-            existedTransfer.setExChangeRate(request.getExChangeRate());
-            existedTransfer.setDescription(request.getDescription());
-            existedTransfer.setCreatedAt(request.getCreatedAt());
-            existedTransfer.setImage(request.getImage());
-            return mapToTransferResponse(transferRepository.save(existedTransfer));
-        } else {
-            throw new ResourceNotFoundException("Transfer not found or access denied");
+        // what the transfer did before the change, so it can be undone exactly
+        List<TransferEffects.Effect> before = TransferEffects.of(transfer);
+        fill(transfer, request, user);
+        if (request.getCreatedAt() != null) {
+            transfer.setCreatedAt(request.getCreatedAt());
+        }
+        List<TransferEffects.Effect> after = TransferEffects.of(transfer);
+
+        apply(before, -1);
+        apply(after, +1);
+        try {
+            return mapToTransferResponse(transferRepository.save(transfer));
+        } catch (RuntimeException e) {
+            apply(after, -1);
+            apply(before, +1);
+            throw e;
         }
     }
 
@@ -105,25 +65,108 @@ public class TransferService {
     public String deleteTransfer(String transferId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = findOwnedTransfer(transferId, currentUser);
-        String response = accountService.updateAccountsTotalBalanceWithDeleteTransfer(transfer);
-        if (!response.equals("success")){
-            throw new ResourceNotFoundException("transfer not found or access denied");
+        List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
+
+        apply(effects, -1);
+        try {
+            transferRepository.delete(transfer);
+        } catch (RuntimeException e) {
+            apply(effects, +1);
+            throw e;
         }
-        transferRepository.delete(transfer);
         return "Transfer deleted successfully";
     }
 
+    // ---------- create / fill ----------
+
+    private TransferResponse create(TransferRequest request, User user) {
+        Transfer transfer = new Transfer();
+        transfer.setUser(user);
+        fill(transfer, request, user);
+
+        List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
+        apply(effects, +1);
+        try {
+            return mapToTransferResponse(transferRepository.save(transfer));
+        } catch (RuntimeException e) {
+            apply(effects, -1);
+            throw e;
+        }
+    }
+
+    // validates the request and copies it into the transfer; changes no balance
+    private void fill(Transfer transfer, TransferRequest request, User user) {
+        validate(request);
+        Account source = findOwnedAccount(request.getSourceAccount(), user);
+        Account destination = findOwnedAccount(request.getDestinationAccount(), user);
+        if (source.getId().equals(destination.getId())) {
+            throw new IllegalArgumentException("A transfer needs two different accounts");
+        }
+
+        transfer.setSourceAccount(source);
+        transfer.setDestinationAccount(destination);
+        transfer.setAmountSent(request.getAmountSent());
+        transfer.setExChangeRate(request.getExChangeRate());
+        transfer.setAmountReceived(round(request.getAmountSent() * request.getExChangeRate()));
+        transfer.setCurrency(source.getCurrency());
+        transfer.setDescription(request.getDescription());
+        transfer.setImage(request.getImage());
+
+        double sendFee = feeValue(request.getSendFee());
+        transfer.setSendFee(sendFee);
+        transfer.setSendFeeDirection(direction(request.getSendFeeDirection()));
+        transfer.setSendFeeAccount(sendFee > 0 ? feeAccount(request.getSendFeeAccount(), source, user) : null);
+
+        double receiveFee = feeValue(request.getReceiveFee());
+        transfer.setReceiveFee(receiveFee);
+        transfer.setReceiveFeeDirection(direction(request.getReceiveFeeDirection()));
+        transfer.setReceiveFeeAccount(receiveFee > 0 ? feeAccount(request.getReceiveFeeAccount(), destination, user) : null);
+    }
+
+    private void validate(TransferRequest request) {
+        if (request.getAmountSent() == null || request.getAmountSent() <= 0) {
+            throw new IllegalArgumentException("The amount sent must be greater than zero");
+        }
+        if (request.getExChangeRate() == null || request.getExChangeRate() <= 0) {
+            throw new IllegalArgumentException("The exchange rate must be greater than zero");
+        }
+        if (request.getSendFee() != null && request.getSendFee() < 0
+                || request.getReceiveFee() != null && request.getReceiveFee() < 0) {
+            throw new IllegalArgumentException("A fee can not be negative");
+        }
+    }
+
+    // the chosen account, or the account on the fee's side when none is chosen
+    private Account feeAccount(Account requested, Account sideAccount, User user) {
+        if (requested == null || requested.getId() == null || requested.getId().isBlank()) {
+            return sideAccount;
+        }
+        return findOwnedAccount(requested, user);
+    }
+
+    private double feeValue(Double fee) {
+        return fee == null ? 0.0 : round(fee);
+    }
+
+    private FeeDirection direction(FeeDirection direction) {
+        return direction == null ? FeeDirection.CHARGE : direction;
+    }
+
+    // sign +1 applies the effects, -1 undoes them; each account is read fresh
+    private void apply(List<TransferEffects.Effect> effects, int sign) {
+        for (TransferEffects.Effect effect : effects) {
+            accountRepository.findById(effect.account().getId())
+                    .ifPresent(account -> accountService.applyCashFlow(account, CashFlow.IN, sign * effect.amount()));
+        }
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
+    // ---------- mapping and lookups ----------
 
     private TransferResponse mapToTransferResponse(Transfer transfer) {
-        Map<String, String> image = transfer.getImage();
-        Map<String, String> imageUrl = new HashMap<>();
-        if (image != null && image.get("url") != null) {
-            imageUrl.put("url", image.get("url"));
-            imageUrl.put("filename", image.get("filename"));
-        } else {
-            imageUrl.put("url", "");
-            imageUrl.put("filename", "");
-        }
         return new TransferResponse(
                 transfer.getId(),
                 transfer.getSourceAccount(),
@@ -133,24 +176,31 @@ public class TransferService {
                 transfer.getAmountReceived(),
                 transfer.getDescription(),
                 transfer.getCreatedAt(),
-                transfer.getImage()
+                transfer.getImage(),
+                transfer.getSendFee(),
+                transfer.getSendFeeDirection(),
+                transfer.getSendFeeAccount(),
+                transfer.getReceiveFee(),
+                transfer.getReceiveFeeDirection(),
+                transfer.getReceiveFeeAccount()
         );
     }
 
-    private Account findOwnedAccount(Account requested, User user){
-        if (requested == null|| requested.getId() == null || user == null){
+    private Account findOwnedAccount(Account requested, User user) {
+        if (requested == null || requested.getId() == null || user == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         Account account = accountRepository.findByIdAndUser(requested.getId(), user);
-        if (account == null){
-            throw new ResourceNotFoundException("account not found");
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
         }
         return account;
     }
-    private Transfer findOwnedTransfer(String transferId, User user){
+
+    private Transfer findOwnedTransfer(String transferId, User user) {
         Transfer transfer = transferRepository.findById(transferId)
-                .orElseThrow(()-> new ResourceNotFoundException("Transfer not found"));
-        if (transfer.getUser() == null || !transfer.getUser().getId().equals(user.getId())){
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found"));
+        if (transfer.getUser() == null || !transfer.getUser().getId().equals(user.getId())) {
             throw new ResourceNotFoundException("Transfer not found");
         }
         return transfer;

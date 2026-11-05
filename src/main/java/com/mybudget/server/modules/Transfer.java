@@ -1,5 +1,6 @@
 package com.mybudget.server.modules;
 
+import com.mybudget.server.modules.enums.FeeDirection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,4 +36,16 @@ public class Transfer {
     private String type = "transfer";
     private double exChangeRate;
     private Map<String, String> image;
+
+    // Fees. Missing values mean "no fee". The fee account is stored explicitly
+    // (the source / destination when the user does not choose another one), so a
+    // null account with a fee means that account was deleted.
+    private Double sendFee;
+    private FeeDirection sendFeeDirection;
+    @DBRef
+    private Account sendFeeAccount;
+    private Double receiveFee;
+    private FeeDirection receiveFeeDirection;
+    @DBRef
+    private Account receiveFeeAccount;
 }
