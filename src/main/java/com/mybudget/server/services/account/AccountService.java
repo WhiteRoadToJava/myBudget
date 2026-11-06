@@ -282,11 +282,11 @@ public class AccountService {
     }
 
     private Transaction mapExpenseToTransaction(Expense expense) {
-        return accountMapper.mapExpenseToTranaction(expense);
+        return accountMapper.mapExpenseToTransaction(expense);
     }
 
     private Transaction mapIToTransaction(Incomse incomse) {
-        return accountMapper.mapIToTransation(incomse);
+        return accountMapper.mapIToTransaction(incomse);
     }
 
 

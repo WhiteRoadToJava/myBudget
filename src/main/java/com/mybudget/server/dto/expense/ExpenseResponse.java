@@ -20,5 +20,6 @@ public class ExpenseResponse {
     private User user;
     private Account account;
     private Map<String, String> image;
+    private String description;
 
 }

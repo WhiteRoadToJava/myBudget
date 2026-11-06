@@ -38,6 +38,8 @@ public class IncomseService {
         Incomse incomse = new Incomse();
         incomse.setAmount(incomseRequest.getAmount());
         incomse.setCategory(incomseRequest.getCategory());
+        incomse.setDescription(cleanDescription(incomseRequest.getDescription()));
+        incomse.setImage(incomseRequest.getImage());
         incomse.setUser(currentUser);
 
         String accountId = incomseRequest.getAccount().getId();
@@ -53,19 +55,20 @@ public class IncomseService {
 
     // this method is used with schedule
     @Transactional
-    public IncomseResponse excuteIncomse(IncomseRequset requset, User user) {
+    public IncomseResponse excuteIncomse(IncomseRequset request, User user) {
         Incomse incomse = new Incomse();
-        incomse.setAmount(requset.getAmount());
-        incomse.setCategory(requset.getCategory());
+        incomse.setAmount(request.getAmount());
+        incomse.setCategory(request.getCategory());
+        incomse.setDescription(cleanDescription(request.getDescription()));
         incomse.setUser(user);
 
-        String accountId = requset.getAccount().getId();
+        String accountId = request.getAccount().getId();
         Account account = accountRepository.findByIdAndUser(accountId, user);
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         incomse.setAccount(account);
-        accountService.updateTotalBalanceWithIncome(account, requset.getAmount());
+        accountService.updateTotalBalanceWithIncome(account, request.getAmount());
 
         return mapToIncomseResponse(incomseRepository.save(incomse));
     }
@@ -107,6 +110,7 @@ public class IncomseService {
             incomse.setAmount(newAmount);
             incomse.setCategory(requset.getCategory());
             incomse.setImage(requset.getImage());
+            incomse.setDescription(requset.getDescription());
             return mapToIncomseResponse(incomseRepository.save(incomse));
         } catch (RuntimeException e) {
             if (sameAccount) {
@@ -194,8 +198,14 @@ public class IncomseService {
                 incomse.getAccount(),
                 type,
                 date,
-                image
+                image,
+                incomse.getDescription()
         );
+    }
+
+
+    private String cleanDescription(String description){
+        return description == null || description.isBlank() ? null :  description.trim();
     }
 
 }

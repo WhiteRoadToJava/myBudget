@@ -1,6 +1,6 @@
 package com.mybudget.server.services;
 
-import com.mybudget.server.dto.expense.ExpenseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;
 import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
@@ -31,11 +31,12 @@ public class ExpenseService {
     private final DebtMovementRepository debtMovementRepository;
 
     @Transactional
-    public ExpenseResponse addExpense(ExpenseRequset expenseRequest) {
+    public ExpenseResponse addExpense(ExpenseRequest expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = new Expense();
         expense.setAmount(expenseRequest.getAmount());
         expense.setCategory(expenseRequest.getCategory());
+        expense.setDescription(expenseRequest.getDescription());
         expense.setUser(currentUser);
         expense.setImage(expenseRequest.getImage());
 
@@ -52,10 +53,11 @@ public class ExpenseService {
 
     // this method is used with schedule
     @Transactional
-    public ExpenseResponse addExpense(ExpenseRequset requset, User user) {
+    public ExpenseResponse addExpense(ExpenseRequest requset, User user) {
         Expense expense = new Expense();
         expense.setAmount(requset.getAmount());
         expense.setCategory(requset.getCategory());
+        expense.setDescription(cleanDescription(requset.getDescription()));
         expense.setUser(user);
 
         String accountId = requset.getAccount().getId();
@@ -70,7 +72,7 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ExpenseResponse updateExpense(String expenseId, ExpenseRequset expenseRequest) {
+    public ExpenseResponse updateExpense(String expenseId, ExpenseRequest expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, currentUser);
         ensureNotDebtMirror(expense.getId());
@@ -93,6 +95,7 @@ public class ExpenseService {
             expense.setAmount(newAmount);
             expense.setCategory(expenseRequest.getCategory());
             expense.setImage(expenseRequest.getImage());
+            expense.setDescription(cleanDescription(expenseRequest.getDescription()));
             if (expenseRequest.getCreatedAt() != null) {
                 expense.setCreatedAt(expenseRequest.getCreatedAt());
             }
@@ -186,7 +189,14 @@ public class ExpenseService {
                 expense.getCreatedAt(),
                 expense.getUser(),
                 expense.getAccount(),
-                imageUrl
+                imageUrl,
+                expense.getDescription()
         );
+    }
+
+
+
+    private String cleanDescription(String description){
+        return description == null || description.isBlank() ? null: description.trim();
     }
 }

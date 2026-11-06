@@ -22,6 +22,7 @@ public class Expense {
     private String id;
     private double amount;
     private String category;
+    private String description;
     @CreatedDate
     private LocalDateTime createdAt;
     @DBRef

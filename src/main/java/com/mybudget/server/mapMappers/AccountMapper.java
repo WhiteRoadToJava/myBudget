@@ -107,7 +107,7 @@ public class AccountMapper {
                 date
         );
     }
-    public Transaction mapIToTransation (Incomse incomse){
+    public Transaction mapIToTransaction(Incomse incomse){
         String type = "type";
         Map<String, String> imageUrl = incomse.getImage();
         Map<String, String> image = new HashMap<>();
@@ -129,11 +129,11 @@ public class AccountMapper {
                 null,
                 type,
                 incomse.getCreatedAt(),
-                null,
+                incomse.getDescription(),
                 image
         );
     }
-    public Transaction mapExpenseToTranaction(Expense expense) {
+    public Transaction mapExpenseToTransaction(Expense expense) {
         String type;
         Map<String, String> imageUrl = expense.getImage();
         Map<String, String> image = new HashMap<>();
@@ -156,7 +156,7 @@ public class AccountMapper {
                 null,
                 type,
                 date,
-                null,
+                expense.getDescription(),
                 image
         );
     }

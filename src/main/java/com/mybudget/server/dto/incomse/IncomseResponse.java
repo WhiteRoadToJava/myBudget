@@ -11,7 +11,8 @@ import java.util.Date;
 import java.util.Map;
 
 
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 public class IncomseResponse {
     private String id;
@@ -22,5 +23,5 @@ public class IncomseResponse {
     private String type = "incomse";
     private LocalDateTime createAt;
     private Map<String, String> image;
-
+    private String description;
 }

@@ -1,6 +1,6 @@
 package com.mybudget.server.controllers;
 
-import com.mybudget.server.dto.expense.ExpenseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.services.ExpenseService;
@@ -18,7 +18,7 @@ public class ExpenseController {
     private  final ExpenseService expenseService;
 
     @PostMapping("/add-expense")
-    public ResponseEntity<?> addExpense(@RequestBody ExpenseRequset expenseRequest){
+    public ResponseEntity<?> addExpense(@RequestBody ExpenseRequest expenseRequest){
         ExpenseResponse response = expenseService.addExpense(expenseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -30,7 +30,7 @@ public class ExpenseController {
     }
 
     @PatchMapping("/update-expense/{expenseId}")
-    public ResponseEntity<?> updateExpense(@RequestBody ExpenseRequset expenseRequest, @PathVariable String expenseId){
+    public ResponseEntity<?> updateExpense(@RequestBody ExpenseRequest expenseRequest, @PathVariable String expenseId){
         ExpenseResponse response = expenseService.updateExpense(expenseId, expenseRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }

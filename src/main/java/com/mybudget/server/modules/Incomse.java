@@ -20,6 +20,7 @@ public class Incomse {
     private String id;
     private double amount;
     private String category;
+    private String description;
     @DBRef
     private User user;
     @DBRef

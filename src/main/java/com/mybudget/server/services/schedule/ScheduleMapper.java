@@ -1,6 +1,6 @@
 package com.mybudget.server.services.schedule;
 
-import com.mybudget.server.dto.expense.ExpenseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
 import com.mybudget.server.dto.transfer.TransferRequest;
@@ -69,8 +69,8 @@ public class ScheduleMapper {
 
         );
     }
-    public ExpenseRequset mapToExpenseRequest(Schedule schedule){
-        return new ExpenseRequset(
+    public ExpenseRequest mapToExpenseRequest(Schedule schedule){
+        return new ExpenseRequest(
                 schedule.getAmountSend().doubleValue(),
                 schedule.getCategory(),
                 schedule.getUser(),

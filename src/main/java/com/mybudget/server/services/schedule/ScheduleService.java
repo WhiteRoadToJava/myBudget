@@ -1,7 +1,7 @@
 package com.mybudget.server.services.schedule;
 
 
-import com.mybudget.server.dto.expense.ExpenseRequset;
+import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleRequest;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
@@ -162,7 +162,7 @@ public class ScheduleService {
                 updateNextExecutionDate(schedule);
             }
             case EXPENSE -> {
-                ExpenseRequset request = mapToExpenseRequest(schedule);
+                ExpenseRequest request = mapToExpenseRequest(schedule);
                 expenseService.addExpense(request, user);
                 updateNextExecutionDate(schedule);
             }
@@ -308,7 +308,7 @@ public class ScheduleService {
         return scheduleMapper.mapToIncomstRequest(schedule);
     }
 
-    private ExpenseRequset mapToExpenseRequest(Schedule schedule) {
+    private ExpenseRequest mapToExpenseRequest(Schedule schedule) {
         return scheduleMapper.mapToExpenseRequest(schedule);
     }
 
