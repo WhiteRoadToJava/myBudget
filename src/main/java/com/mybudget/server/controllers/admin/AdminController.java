@@ -3,7 +3,6 @@ package com.mybudget.server.controllers.admin;
 
 import com.mybudget.server.dto.RegisterRequest;
 import com.mybudget.server.dto.RegisterResponse;
-import com.mybudget.server.dto.user.UpdateExpireDate;
 import com.mybudget.server.dto.user.UserResponse;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.Role;
@@ -58,12 +57,6 @@ public class AdminController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PatchMapping("/update-expired-date/{userId}")
-    public ResponseEntity<?> updateExpiredDate( @PathVariable String userId, @RequestBody UpdateExpireDate date) {
-        UserResponse response = adminService.updateExpiredDate(userId, date);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @GetMapping("/user-details/{userId}")

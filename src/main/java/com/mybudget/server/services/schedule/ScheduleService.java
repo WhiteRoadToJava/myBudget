@@ -20,6 +20,7 @@ import com.mybudget.server.services.ExpenseService;
 import com.mybudget.server.services.IncomseService;
 import com.mybudget.server.services.TransferService;
 import com.mybudget.server.services.debt.DebtService;
+import com.mybudget.server.services.subscription.SubscriptionService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,7 @@ public class ScheduleService {
     private final UserUtils userUtils;
     private final ScheduleMapper scheduleMapper;
     private final DebtService debtService;
+    private final SubscriptionService subscriptionService;
 
 
     public ScheduleResponse executeSchedule(ScheduleRequest request) {
@@ -143,6 +145,12 @@ public class ScheduleService {
         List<Schedule> dueSchedules = scheduleRepository.findByNextExecutionDateLessThanEqualAndIsActiveTrue(endOfDay);
         for (Schedule schedule : dueSchedules) {
             try {
+                // read-only users: nothing runs; the occurrence is skipped, not caught up later
+                if (!subscriptionService.canWrite(schedule.getUser())) {
+                    updateNextExecutionDate(schedule);
+                    log.info("Skipped schedule id={}: the user's subscription has ended", schedule.getId());
+                    continue;
+                }
                 processSchedule(schedule);
             } catch (Exception e) {
                 // one failing schedule must not stop the others
