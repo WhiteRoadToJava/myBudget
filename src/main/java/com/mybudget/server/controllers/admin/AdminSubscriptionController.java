@@ -1,15 +1,19 @@
 package com.mybudget.server.controllers.admin;
 
+import com.mybudget.server.dto.admin.DeleteUserRequest;
+import com.mybudget.server.dto.admin.UserDeletionReport;
 import com.mybudget.server.dto.subscription.AdminUserDetails;
 import com.mybudget.server.dto.subscription.AdminUserSummary;
 import com.mybudget.server.dto.subscription.ExtendSubscriptionRequest;
 import com.mybudget.server.dto.subscription.PageResult;
 import com.mybudget.server.dto.subscription.SubscriptionStats;
+import com.mybudget.server.services.admin.UserDeletionService;
 import com.mybudget.server.services.subscription.PaymentRequestService;
 import com.mybudget.server.services.subscription.SubscriptionService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +34,7 @@ public class AdminSubscriptionController {
     private final SubscriptionService subscriptionService;
     private final UserUtils userUtils;
     private final PaymentRequestService paymentRequestService;
+    private final UserDeletionService userDeletionService;
 
     // ?q=ali&filter=EXPIRING&page=0&size=20  (filter: TRIAL, ACTIVE, EXPIRING, EXPIRED, NOT_SET)
     @GetMapping("/search")
@@ -64,5 +69,13 @@ public class AdminSubscriptionController {
                                                        @RequestBody Map<String, Boolean> body) {
         boolean enabled = Boolean.TRUE.equals(body.get("enabled"));
         return ResponseEntity.ok(subscriptionService.setEnabled(userId, enabled));
+    }
+
+    // deletes the user and all their data; body: { "confirmEmail": "the user's email" }
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<UserDeletionReport> delete(@PathVariable String userId,
+                                                     @RequestBody DeleteUserRequest request) {
+        return ResponseEntity.ok(userDeletionService.delete(
+                userId, request.getConfirmEmail(), userUtils.getCurrentAuthenticatedUser()));
     }
 }
