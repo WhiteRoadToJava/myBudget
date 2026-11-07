@@ -7,6 +7,7 @@ public record SubscriptionStats(
         long active,
         long expiringIn7Days,
         long expired,
-        long notSet
+        long notSet,
+        long pendingRequests
 ) {
 }
