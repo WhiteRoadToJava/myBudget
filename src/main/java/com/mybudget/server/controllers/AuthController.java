@@ -10,6 +10,7 @@ import com.mybudget.server.modules.enums.Role;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.services.AccountVerificationService;
 import com.mybudget.server.services.AuthService;
+import com.mybudget.server.services.subscription.SubscriptionService;
 import com.mybudget.server.services.UserService;
 
 import com.mybudget.server.services.auth.PasswordResetService;
@@ -49,6 +50,7 @@ public class AuthController {
     private final UserService userService;
     private final AuthService authService;
     private final AccountVerificationService accountVerificationService;
+    private final SubscriptionService subscriptionService;
     private final PasswordResetService passwordResetService;
 
     @PostMapping("register")
@@ -64,6 +66,7 @@ public class AuthController {
         User user = mapRegisterRequestToUser(registerRequest);
         user.setRoles(Set.of(Role.USER));
         user.setEnabled(false);
+        subscriptionService.startTrial(user);
         authService.registerUser(user);
 
         accountVerificationService.sendActivationEmail(user, registerRequest.getLanguage());
@@ -213,7 +216,7 @@ public class AuthController {
                 registerRequest.getFirstName(),
                 registerRequest.getLastName(),
                 registerRequest.getPhone(),
-                registerRequest.getExpireDate()
+                null // the end date is never taken from the request
         );
     }
 

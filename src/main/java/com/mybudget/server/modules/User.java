@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
@@ -42,7 +43,12 @@ public class User {
     private String firstName;
     private String lastName;
     private String phone;
+    // old free-text end date, read only as a fallback for subscriptionEndsAt
     private String expireDate;
+    // last day with full access (Damascus time); null = not set yet
+    private LocalDate subscriptionEndsAt;
+    // true from registration until the first recorded payment
+    private Boolean onTrial;
     @CreatedDate
     private String createdAt;
     // null = legacy account (treated as enabled), false = waiting for email activation, true = active
