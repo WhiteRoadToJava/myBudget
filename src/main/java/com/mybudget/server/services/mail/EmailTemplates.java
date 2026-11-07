@@ -59,6 +59,32 @@ public class EmailTemplates {
         return new Mail(t.subject(), layout(normalize(lang), firstName, t, link));
     }
 
+    // a new admin chooses a password through the reset page
+    public Mail adminInvitation(String lang, String firstName, String invitedBy, String link) {
+        String by = invitedBy == null ? "" : HtmlUtils.htmlEscape(invitedBy);
+        Texts t = switch (normalize(lang)) {
+            case "ar" -> new Texts(
+                    "دعوة لإدارة MyBudget",
+                    "مرحباً",
+                    "أضافك " + by + " كمدير في MyBudget. اختر كلمة مرور لتفعيل حسابك، ثم سجّل الدخول ببريدك الإلكتروني:",
+                    "اختيار كلمة المرور",
+                    "الرابط صالح لمدة 72 ساعة. بعد ذلك يمكنك استخدام \"نسيت كلمة المرور\" في صفحة الدخول.");
+            case "sv" -> new Texts(
+                    "Inbjudan att administrera MyBudget",
+                    "Hej",
+                    by + " har lagt till dig som administratör i MyBudget. Välj ett lösenord för att aktivera kontot och logga sedan in med din e-postadress:",
+                    "Välj lösenord",
+                    "Länken gäller i 72 timmar. Därefter kan du använda \"Glömt lösenord\" på inloggningssidan.");
+            default -> new Texts(
+                    "You are invited to manage MyBudget",
+                    "Hi",
+                    by + " added you as an administrator of MyBudget. Choose a password to activate your account, then sign in with your email address:",
+                    "Choose password",
+                    "This link expires in 72 hours. After that, use \"Forgot password\" on the sign-in page.");
+        };
+        return new Mail(t.subject(), layout(normalize(lang), firstName, t, link));
+    }
+
     private static String normalize(String lang){
         if(lang == null) return "en";
         String l = lang.toLowerCase();
