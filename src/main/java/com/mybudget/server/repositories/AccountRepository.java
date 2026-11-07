@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface AccountRepository extends MongoRepository<Account ,  String> {
     Optional<Account> findByNameAndUser(String name, User user);
     List<Account> findAllByUser(User user);
+    List<Account> findAllByGroupId(String groupId);
     Account findByIdAndUser(String id, User user);
 
     List<Account> findByCreatedAtBetween(LocalDateTime date1, LocalDateTime date2);
