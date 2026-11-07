@@ -28,6 +28,8 @@ public class Account {
     @CreatedDate
     private String createdAt;
     private Set<AccountStatus> status;
+    // the basket this account belongs to; null = a basket of its own (one currency)
+    private String groupId;
 
 
     public Account(String name, String description, Double balance, Double totalBalance, String currency, String type,  User currentUser, String createdAt) {

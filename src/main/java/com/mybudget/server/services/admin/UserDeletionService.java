@@ -4,6 +4,7 @@ import com.mybudget.server.dto.admin.UserDeletionReport;
 import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.AccountGroup;
 import com.mybudget.server.modules.Debt;
 import com.mybudget.server.modules.DebtMovement;
 import com.mybudget.server.modules.Expense;
@@ -78,6 +79,7 @@ public class UserDeletionService {
         deleted.put("incomes", remove(byUser, Incomse.class));
         deleted.put("expenses", remove(byUser, Expense.class));
         deleted.put("accounts", remove(byUser, Account.class));
+        deleted.put("accountGroups", remove(byUser, AccountGroup.class));
         deleted.put("totalBalance", remove(new Query(Criteria.where("user").is(user.getId())), TotalBalance.class));
         deleted.put("paymentRequests", remove(new Query(Criteria.where("userId").is(user.getId())), PaymentRequest.class));
         deleted.put("verificationTokens", remove(new Query(Criteria.where("username").is(user.getUsername())), VerificationToken.class));
