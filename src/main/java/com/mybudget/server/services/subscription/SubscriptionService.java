@@ -201,14 +201,16 @@ public class SubscriptionService {
         return new PageResult<>(items, total, safePage, safeSize);
     }
 
-    public SubscriptionStats stats() {
+    // pendingRequests comes from PaymentRequestService (it depends on this service, not the other way)
+    public SubscriptionStats stats(long pendingRequests) {
         return new SubscriptionStats(
                 mongoTemplate.count(new Query(), User.class),
                 mongoTemplate.count(new Query(criteriaFor(null, "TRIAL")), User.class),
                 mongoTemplate.count(new Query(criteriaFor(null, "ACTIVE")), User.class),
                 mongoTemplate.count(new Query(criteriaFor(null, "EXPIRING")), User.class),
                 mongoTemplate.count(new Query(criteriaFor(null, "EXPIRED")), User.class),
-                mongoTemplate.count(new Query(criteriaFor(null, "NOT_SET")), User.class)
+                mongoTemplate.count(new Query(criteriaFor(null, "NOT_SET")), User.class),
+                pendingRequests
         );
     }
 

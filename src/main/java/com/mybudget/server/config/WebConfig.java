@@ -21,7 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(subscriptionInterceptor)
                 .addPathPatterns("/api/user/**")
-                .excludePathPatterns("/api/user/update-user");
+                .excludePathPatterns("/api/user/update-user", "/api/user/subscription/**");
     }
 
     @Value("${upload.dir}")

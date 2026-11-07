@@ -5,6 +5,7 @@ import com.mybudget.server.dto.subscription.AdminUserSummary;
 import com.mybudget.server.dto.subscription.ExtendSubscriptionRequest;
 import com.mybudget.server.dto.subscription.PageResult;
 import com.mybudget.server.dto.subscription.SubscriptionStats;
+import com.mybudget.server.services.subscription.PaymentRequestService;
 import com.mybudget.server.services.subscription.SubscriptionService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AdminSubscriptionController {
 
     private final SubscriptionService subscriptionService;
     private final UserUtils userUtils;
+    private final PaymentRequestService paymentRequestService;
 
     // ?q=ali&filter=EXPIRING&page=0&size=20  (filter: TRIAL, ACTIVE, EXPIRING, EXPIRED, NOT_SET)
     @GetMapping("/search")
@@ -41,7 +43,7 @@ public class AdminSubscriptionController {
 
     @GetMapping("/stats")
     public ResponseEntity<SubscriptionStats> stats() {
-        return ResponseEntity.ok(subscriptionService.stats());
+        return ResponseEntity.ok(subscriptionService.stats(paymentRequestService.pendingCount()));
     }
 
     @GetMapping("/{userId}/subscription")
