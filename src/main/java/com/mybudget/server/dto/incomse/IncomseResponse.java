@@ -24,4 +24,5 @@ public class IncomseResponse {
     private LocalDateTime createAt;
     private Map<String, String> image;
     private String description;
+    private String currency;
 }

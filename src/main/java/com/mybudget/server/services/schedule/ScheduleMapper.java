@@ -65,8 +65,8 @@ public class ScheduleMapper {
                 schedule.getUser(),
                 schedule.getSourceAccount(),
                 schedule.getDescription(),
-                null
-
+                null,
+                schedule.getSourceCurrency()
         );
     }
     public ExpenseRequest mapToExpenseRequest(Schedule schedule){
@@ -77,7 +77,8 @@ public class ScheduleMapper {
                 schedule.getSourceAccount(),
                 schedule.getDescription(),
                 schedule.getCreatedAt(),
-                null
+                null,
+                schedule.getSourceCurrency()
         );
     }
     // Setters instead of the all-args constructor: TransferRequest has more fields now

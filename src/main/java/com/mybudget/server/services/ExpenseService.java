@@ -11,6 +11,7 @@ import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.DebtMovementRepository;
 import com.mybudget.server.repositories.ExpenseRepository;
+import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,9 @@ public class ExpenseService {
             throw new ResourceNotFoundException("Account not found");
         }
         expense.setAccount(account);
-        accountService.updateTotalBalanaceWithExpense(account, expenseRequest.getAmount());
+        String currency = AccountBalances.resolve(account, expenseRequest.getCurrency());
+        expense.setCurrency(currency);
+        accountService.applyCashFlow(account, currency, CashFlow.OUT, expenseRequest.getAmount());
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
@@ -66,7 +69,9 @@ public class ExpenseService {
             throw new ResourceNotFoundException("Account not found");
         }
         expense.setAccount(account);
-        accountService.updateTotalBalanaceWithExpense(account, requset.getAmount());
+        String currency = AccountBalances.resolve(account, requset.getCurrency());
+        expense.setCurrency(currency);
+        accountService.applyCashFlow(account, currency, CashFlow.OUT, requset.getAmount());
 
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
@@ -78,18 +83,20 @@ public class ExpenseService {
         ensureNotDebtMirror(expense.getId());
         Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
 
+        // the old and the new place of the money: (account, currency)
         Account oldAccount = expense.getAccount();
+        String oldCurrency = oldAccount == null ? null
+                : (expense.getCurrency() != null ? expense.getCurrency() : AccountBalances.primaryCurrency(oldAccount));
         double oldAmount = expense.getAmount();
         double newAmount = expenseRequest.getAmount();
-        boolean sameAccount = oldAccount != null && oldAccount.getId().equals(newAccount.getId());
-        if (sameAccount) {
-            accountService.applyCashFlow(newAccount, CashFlow.OUT, newAmount - oldAmount);
-        } else {
-            if (oldAccount != null) {
-                accountService.revertCashFlow(oldAccount, CashFlow.OUT, oldAmount);
-            }
-            accountService.applyCashFlow(newAccount, CashFlow.OUT, newAmount);
+        String newCurrency = AccountBalances.resolve(newAccount, expenseRequest.getCurrency());
+
+        // undo the old record, then apply the new one (same account: both on the same object)
+        if (oldAccount != null) {
+            Account oldTarget = oldAccount.getId().equals(newAccount.getId()) ? newAccount : oldAccount;
+            accountService.revertCashFlow(oldTarget, oldCurrency, CashFlow.OUT, oldAmount);
         }
+        accountService.applyCashFlow(newAccount, newCurrency, CashFlow.OUT, newAmount);
         try {
             expense.setAccount(newAccount);
             expense.setAmount(newAmount);
@@ -99,15 +106,13 @@ public class ExpenseService {
             if (expenseRequest.getCreatedAt() != null) {
                 expense.setCreatedAt(expenseRequest.getCreatedAt());
             }
+            expense.setCurrency(newCurrency);
             return mapToExpenseResponse(expenseRepository.save(expense));
         } catch (RuntimeException e) {
-            if (sameAccount) {
-                accountService.applyCashFlow(newAccount, CashFlow.OUT, oldAmount - newAmount);
-            } else {
-                accountService.revertCashFlow(newAccount, CashFlow.OUT, newAmount);
-                if (oldAccount != null) {
-                    accountService.applyCashFlow(oldAccount, CashFlow.OUT, oldAmount);
-                }
+            accountService.revertCashFlow(newAccount, newCurrency, CashFlow.OUT, newAmount);
+            if (oldAccount != null) {
+                Account oldTarget = oldAccount.getId().equals(newAccount.getId()) ? newAccount : oldAccount;
+                accountService.applyCashFlow(oldTarget, oldCurrency, CashFlow.OUT, oldAmount);
             }
             throw e;
         }
@@ -127,6 +132,14 @@ public class ExpenseService {
         return expense;
     }
 
+    // the currency of a record; a record from before the migration is in the account's first currency
+    private String currencyOf(Expense expense) {
+        if (expense.getCurrency() != null || expense.getAccount() == null) {
+            return expense.getCurrency();
+        }
+        return AccountBalances.primaryCurrency(expense.getAccount());
+    }
+
     private Account findOwnedAccount(Account requesstAccount, User currentUser) {
         if (requesstAccount == null || requesstAccount.getId() == null) {
             throw new ResourceNotFoundException("Account not found");
@@ -143,7 +156,7 @@ public class ExpenseService {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, currentUser);
         ensureNotDebtMirror(expense.getId());
-        accountService.updateTotalBalanceWithDeleteExpense(expense.getAccount(), expense.getAmount());
+        accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
         expenseRepository.delete(expense);
         return "Expense deleted successfully";
     }
@@ -190,7 +203,8 @@ public class ExpenseService {
                 expense.getUser(),
                 expense.getAccount(),
                 imageUrl,
-                expense.getDescription()
+                expense.getDescription(),
+                currencyOf(expense)
         );
     }
 

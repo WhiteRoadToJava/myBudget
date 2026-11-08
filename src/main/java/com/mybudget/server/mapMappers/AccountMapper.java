@@ -7,6 +7,7 @@ import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.services.TransferEffects;
+import com.mybudget.server.services.account.AccountBalances;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -64,7 +65,7 @@ public class AccountMapper {
         }
         Account sourceAccount = realSource != null ? realSource : deletedAccount();
         Account destinationAccount = realDestination != null ? realDestination : deletedAccount();
-        return  new Transaction(
+        Transaction row = new Transaction(
                 transfer.getId(),
                 amount,
                 category,
@@ -75,6 +76,19 @@ public class AccountMapper {
                 transfer.getDescription(),
                 image
         );
+        // the currency on this account's side of the transfer
+        String side;
+        if ("out-transfer".equals(type)) {
+            side = currencyOf(transfer.getSourceCurrency(), realSource);
+        } else if ("in-transfer".equals(type)) {
+            side = currencyOf(transfer.getDestinationCurrency(), realDestination);
+        } else if (isSameAccount(transfer.getSendFeeAccount(), account)) {
+            side = currencyOf(transfer.getSendFeeCurrency(), transfer.getSendFeeAccount());
+        } else {
+            side = currencyOf(transfer.getReceiveFeeCurrency(), transfer.getReceiveFeeAccount());
+        }
+        row.setCurrency(side);
+        return row;
     }
     private boolean isSameAccount(Account candidate, Account account){
         return candidate != null && candidate.getId() != null
@@ -88,6 +102,14 @@ public class AccountMapper {
     }
 
 
+
+    // a record's currency; one from before the migration is in its account's first currency
+    private String currencyOf(String recordCurrency, Account account) {
+        if (recordCurrency != null || account == null) {
+            return recordCurrency;
+        }
+        return AccountBalances.primaryCurrency(account);
+    }
 
     public AccountResponse mapToAccountResponse(Account account) {
         String date = account.getCreatedAt();
@@ -104,7 +126,8 @@ public class AccountMapper {
                 account.getBalance(),
                 account.getTotalBalance(),
                 status,
-                date
+                date,
+                AccountBalances.pockets(account)
         );
     }
     public Transaction mapIToTransaction(Incomse incomse){
@@ -121,7 +144,7 @@ public class AccountMapper {
         if(incomse.getType() == null){
             type= "incomse";
         }else type = incomse.getType();
-        return new Transaction(
+        Transaction row = new Transaction(
                 incomse.getId(),
                 incomse.getAmount(),
                 incomse.getCategory(),
@@ -132,6 +155,8 @@ public class AccountMapper {
                 incomse.getDescription(),
                 image
         );
+        row.setCurrency(currencyOf(incomse.getCurrency(), incomse.getAccount()));
+        return row;
     }
     public Transaction mapExpenseToTransaction(Expense expense) {
         String type;
@@ -148,7 +173,7 @@ public class AccountMapper {
             type = "expense";
         } else type = expense.getType();
         LocalDateTime date = expense.getCreatedAt();
-        return new Transaction(
+        Transaction row = new Transaction(
                 expense.getId(),
                 expense.getAmount(),
                 expense.getCategory(),
@@ -159,6 +184,8 @@ public class AccountMapper {
                 expense.getDescription(),
                 image
         );
+        row.setCurrency(currencyOf(expense.getCurrency(), expense.getAccount()));
+        return row;
     }
 
     // Lists of all accounts: the transfer once (from the source, or the destination
@@ -216,7 +243,8 @@ public class AccountMapper {
                 when,
                 description,
                 image,
-                debt.getId()
+                debt.getId(),
+                debt.getCurrency()
         );
     }
 

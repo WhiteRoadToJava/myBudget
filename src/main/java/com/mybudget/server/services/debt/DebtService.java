@@ -370,6 +370,7 @@ public class DebtService {
             Incomse incomse = new Incomse();
             incomse.setAmount(movement.getAmount());
             incomse.setCategory(DEBT_CATEGORY);
+            incomse.setCurrency(debt.getCurrency());
             incomse.setDescription(movement.getDescription());
             incomse.setUser(movement.getUser());
             incomse.setAccount(movement.getAccount());
@@ -384,6 +385,7 @@ public class DebtService {
             Expense expense = new Expense();
             expense.setAmount(movement.getAmount());
             expense.setCategory(DEBT_CATEGORY);
+            expense.setCurrency(debt.getCurrency());
             expense.setDescription(movement.getDescription());
             expense.setUser(movement.getUser());
             expense.setAccount(movement.getAccount());

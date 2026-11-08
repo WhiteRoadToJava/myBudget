@@ -21,5 +21,6 @@ public class ExpenseResponse {
     private Account account;
     private Map<String, String> image;
     private String description;
+    private String currency;
 
 }
