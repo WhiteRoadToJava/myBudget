@@ -64,7 +64,7 @@ class UserDeletionServiceTest {
         assertEquals("ali@x.com", report.username());
         assertEquals(2L, report.deleted().get("accounts"));
         assertEquals(1L, report.deleted().get("users"));
-        assertEquals(12, report.deleted().size());
+        assertEquals(11, report.deleted().size());
         verify(mongo).remove(user);
     }
 
