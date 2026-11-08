@@ -33,4 +33,13 @@ assert.strictEqual(b.incomes.skippedAsDebtMirror, 1);
 assert.strictEqual(b.expenses.total, -300);
 assert.strictEqual(b.fees, -15);
 assert.deepStrictEqual(b.debtMovements.map((m) => m.amount), [200, -50]);
+// a migrated account (with balances) and a transfer saved without currencies, from a deleted account:
+// the transfer counts in the account's first currency
+const mixed = {
+  accounts: [{ _id: "B", name: "B", currency: "SEK", balances: [{ currency: "SEK", openingBalance: 1000, totalBalance: 1050 }] }],
+  incomes: [], expenses: [], movements: [], debts: [],
+  transfers: [{ sourceAccount: ref("GONE"), destinationAccount: ref("B"), amountSent: 50, amountReceived: 50 }],
+};
+rows = compare(mixed.accounts, expectedBalances(mixed));
+assert.deepStrictEqual(rows.map((r) => [r.currency, r.expected, r.diff]), [["SEK", 1050, 0]]);
 console.log("verify-balances: all checks passed");

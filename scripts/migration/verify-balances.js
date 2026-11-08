@@ -54,6 +54,10 @@ function expectedBalances({ accounts, incomes, expenses, transfers, movements, d
       for (const b of a.balances) {
         pockets.set(key(id, b.currency), round2(Number(b.openingBalance ?? 0)));
       }
+      // a record without currency (written by code from before the currencies) is in the
+      // account's first currency, for a migrated account too
+      const first = a.currency ?? a.balances[0]?.currency;
+      if (first) accountCurrency.set(id, first);
     } else {
       accountCurrency.set(id, a.currency);
       pockets.set(key(id, a.currency), round2(Number(a.balance ?? 0)));
