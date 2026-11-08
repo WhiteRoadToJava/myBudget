@@ -165,9 +165,9 @@ public class AccountService {
         List<Transaction> transactions = new ArrayList<>();
         transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
+        // one row per pocket of this account the transfer touches (two for an exchange inside it)
         transactions.addAll(transferList.stream()
-                .map(t -> mapTransferToTransaction(t, requestAccount))
-                .filter(java.util.Objects::nonNull)
+                .flatMap(t -> accountMapper.mapTransferForAccount(t, requestAccount).stream())
                 .toList());
         transactions.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
@@ -248,9 +248,6 @@ public class AccountService {
     }
 
 
-    private Transaction mapTransferToTransaction(Transfer transfer, Account account) {
-        return accountMapper.mapTransferToTransaction(transfer, account);
-    }
 
     private Transaction mapExpenseToTransaction(Expense expense) {
         return accountMapper.mapExpenseToTransaction(expense);

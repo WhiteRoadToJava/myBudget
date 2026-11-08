@@ -25,50 +25,42 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AccountMapper {
 
-    public Transaction mapTransferToTransaction(Transfer transfer, Account account){
-        String type = "";
-        String category = "";
-        Double amount = 0.0;
-        LocalDateTime dateTime = transfer.getCreatedAt() != null ? transfer.getCreatedAt() : LocalDateTime.of(2011, 1,1,0,0);
+    // One row per pocket of this account that the transfer touches. Usually one; an exchange
+    // inside the account (USD -> SYP) gives two: what left one currency, what came into the other.
+    public List<Transaction> mapTransferForAccount(Transfer transfer, Account account){
+        List<Transaction> rows = new ArrayList<>();
+        for (TransferEffects.Effect effect : TransferEffects.of(transfer)) {
+            if (isSameAccount(effect.account(), account)) {
+                rows.add(rowFor(transfer, effect));
+            }
+        }
+        return rows;
+    }
 
+    // a row for one pocket: the source pocket is "out-transfer", the destination pocket
+    // "in-transfer", any other pocket only paid or got a fee
+    private Transaction rowFor(Transfer transfer, TransferEffects.Effect effect) {
+        String type;
+        if (effect.isPocket(transfer.getSourceAccount(), TransferEffects.sourceCurrency(transfer))) {
+            type = "out-transfer";
+        } else if (effect.isPocket(transfer.getDestinationAccount(), TransferEffects.destinationCurrency(transfer))) {
+            type = "in-transfer";
+        } else {
+            type = effect.amount() > 0 ? "transfer-fee-in" : "transfer-fee-out";
+        }
 
         Map<String, String> imageUrl = transfer.getImage();
         Map<String, String> image = new HashMap<>();
-        if (imageUrl != null && imageUrl.get("url") != null) {
-            image.put("url", imageUrl.get("url"));
-            image.put("filename", imageUrl.get("filename"));
-        } else{
-            image.put("url","");
-            image.put("filename", "");
-        }
+        image.put("url", imageUrl != null && imageUrl.get("url") != null ? imageUrl.get("url") : "");
+        image.put("filename", imageUrl != null && imageUrl.get("filename") != null ? imageUrl.get("filename") : "");
+        LocalDateTime dateTime = transfer.getCreatedAt() != null ? transfer.getCreatedAt() : LocalDateTime.of(2011, 1, 1, 0, 0);
 
-        Account realSource = transfer.getSourceAccount();
-        Account realDestination = transfer.getDestinationAccount();
-
-        // the amount is what the transfer did to this account, fees included
-        double net = TransferEffects.netFor(transfer, account.getId());
-        if (isSameAccount(realSource, account)){
-            category = "transfer";
-            type = "out-transfer";
-            amount = Math.abs(net);
-        } else if (isSameAccount(realDestination, account)){
-            category = "transfer";
-            type = "in-transfer";
-            amount = Math.abs(net);
-        } else if (net != 0) {
-            // only a fee was paid from or into this account
-            category = "transfer";
-            type = net > 0 ? "transfer-fee-in" : "transfer-fee-out";
-            amount = Math.abs(net);
-        } else {
-            return null;
-        }
-        Account sourceAccount = realSource != null ? realSource : deletedAccount();
-        Account destinationAccount = realDestination != null ? realDestination : deletedAccount();
+        Account sourceAccount = transfer.getSourceAccount() != null ? transfer.getSourceAccount() : deletedAccount();
+        Account destinationAccount = transfer.getDestinationAccount() != null ? transfer.getDestinationAccount() : deletedAccount();
         Transaction row = new Transaction(
                 transfer.getId(),
-                amount,
-                category,
+                Math.abs(effect.amount()),   // what the transfer did to this pocket, fees included
+                "transfer",
                 sourceAccount,
                 destinationAccount,
                 type,
@@ -76,20 +68,10 @@ public class AccountMapper {
                 transfer.getDescription(),
                 image
         );
-        // the currency on this account's side of the transfer
-        String side;
-        if ("out-transfer".equals(type)) {
-            side = currencyOf(transfer.getSourceCurrency(), realSource);
-        } else if ("in-transfer".equals(type)) {
-            side = currencyOf(transfer.getDestinationCurrency(), realDestination);
-        } else if (isSameAccount(transfer.getSendFeeAccount(), account)) {
-            side = currencyOf(transfer.getSendFeeCurrency(), transfer.getSendFeeAccount());
-        } else {
-            side = currencyOf(transfer.getReceiveFeeCurrency(), transfer.getReceiveFeeAccount());
-        }
-        row.setCurrency(side);
+        row.setCurrency(effect.currency());
         return row;
     }
+
     private boolean isSameAccount(Account candidate, Account account){
         return candidate != null && candidate.getId() != null
                 && candidate.getId().equals(account.getId());
@@ -188,22 +170,21 @@ public class AccountMapper {
         return row;
     }
 
-    // Lists of all accounts: the transfer once (from the source, or the destination
-    // when the source was deleted), plus one fee row for every other account a fee touched.
+    // Lists of all accounts: the transfer once (from its source pocket, or the destination
+    // when the source account was deleted), plus one row for every other pocket a fee touched.
+    // The destination pocket is not listed separately, so nothing is counted twice.
     public List<Transaction> mapTransferForUser(Transfer transfer){
         List<Transaction> rows = new ArrayList<>();
-        Account main = transfer.getSourceAccount() != null ? transfer.getSourceAccount() : transfer.getDestinationAccount();
-        if (main != null) {
-            rows.add(mapTransferToTransaction(transfer, main));
-        }
+        String sourceCurrency = TransferEffects.sourceCurrency(transfer);
+        String destinationCurrency = TransferEffects.destinationCurrency(transfer);
+        boolean sourceGone = transfer.getSourceAccount() == null;
         for (TransferEffects.Effect effect : TransferEffects.of(transfer)) {
-            Account feeAccount = effect.account();
-            if (!isSameAccount(transfer.getSourceAccount(), feeAccount)
-                    && !isSameAccount(transfer.getDestinationAccount(), feeAccount)) {
-                rows.add(mapTransferToTransaction(transfer, feeAccount));
+            boolean isSource = effect.isPocket(transfer.getSourceAccount(), sourceCurrency);
+            boolean isDestination = effect.isPocket(transfer.getDestinationAccount(), destinationCurrency);
+            if (isSource || (isDestination && sourceGone) || (!isSource && !isDestination)) {
+                rows.add(rowFor(transfer, effect));
             }
         }
-        rows.removeIf(Objects::isNull);
         return rows;
     }
 

@@ -10,6 +10,7 @@ import com.mybudget.server.modules.enums.CashFlow;
 import com.mybudget.server.modules.enums.FeeDirection;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.TransferRepository;
+import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -99,8 +100,12 @@ public class TransferService {
         validate(request);
         Account source = findOwnedAccount(request.getSourceAccount(), user);
         Account destination = findOwnedAccount(request.getDestinationAccount(), user);
-        if (source.getId().equals(destination.getId())) {
-            throw new IllegalArgumentException("A transfer needs two different accounts");
+        // a currency of each account; none given = the account's first currency
+        String sourceCurrency = AccountBalances.resolve(source, request.getSourceCurrency());
+        String destinationCurrency = AccountBalances.resolve(destination, request.getDestinationCurrency());
+        // the same account is fine in two currencies (an exchange), not twice the same pocket
+        if (source.getId().equals(destination.getId()) && sourceCurrency.equals(destinationCurrency)) {
+            throw new IllegalArgumentException("A transfer needs two different accounts or two different currencies");
         }
 
         transfer.setSourceAccount(source);
@@ -108,19 +113,27 @@ public class TransferService {
         transfer.setAmountSent(request.getAmountSent());
         transfer.setExChangeRate(request.getExChangeRate());
         transfer.setAmountReceived(round(request.getAmountSent() * request.getExChangeRate()));
-        transfer.setCurrency(source.getCurrency());
+        transfer.setSourceCurrency(sourceCurrency);
+        transfer.setDestinationCurrency(destinationCurrency);
+        transfer.setCurrency(sourceCurrency);
         transfer.setDescription(request.getDescription());
         transfer.setImage(request.getImage());
 
         double sendFee = feeValue(request.getSendFee());
         transfer.setSendFee(sendFee);
         transfer.setSendFeeDirection(direction(request.getSendFeeDirection()));
-        transfer.setSendFeeAccount(sendFee > 0 ? feeAccount(request.getSendFeeAccount(), source, user) : null);
+        Account sendFeeAccount = sendFee > 0 ? feeAccount(request.getSendFeeAccount(), source, user) : null;
+        transfer.setSendFeeAccount(sendFeeAccount);
+        transfer.setSendFeeCurrency(sendFeeAccount == null ? null
+                : feeCurrency(sendFeeAccount, request.getSendFeeCurrency(), source, sourceCurrency));
 
         double receiveFee = feeValue(request.getReceiveFee());
         transfer.setReceiveFee(receiveFee);
         transfer.setReceiveFeeDirection(direction(request.getReceiveFeeDirection()));
-        transfer.setReceiveFeeAccount(receiveFee > 0 ? feeAccount(request.getReceiveFeeAccount(), destination, user) : null);
+        Account receiveFeeAccount = receiveFee > 0 ? feeAccount(request.getReceiveFeeAccount(), destination, user) : null;
+        transfer.setReceiveFeeAccount(receiveFeeAccount);
+        transfer.setReceiveFeeCurrency(receiveFeeAccount == null ? null
+                : feeCurrency(receiveFeeAccount, request.getReceiveFeeCurrency(), destination, destinationCurrency));
     }
 
     private void validate(TransferRequest request) {
@@ -134,6 +147,16 @@ public class TransferService {
                 || request.getReceiveFee() != null && request.getReceiveFee() < 0) {
             throw new IllegalArgumentException("A fee can not be negative");
         }
+    }
+
+    // a fee on its side's account is in that side's currency unless another one is chosen;
+    // a fee on another account is in the chosen currency, or that account's first one
+    private String feeCurrency(Account feeAccount, String requested, Account sideAccount, String sideCurrency) {
+        boolean onSide = feeAccount.getId().equals(sideAccount.getId());
+        if (onSide && (requested == null || requested.isBlank())) {
+            return sideCurrency;
+        }
+        return AccountBalances.resolve(feeAccount, requested);
     }
 
     // the chosen account, or the account on the fee's side when none is chosen
@@ -156,7 +179,7 @@ public class TransferService {
     private void apply(List<TransferEffects.Effect> effects, int sign) {
         for (TransferEffects.Effect effect : effects) {
             accountRepository.findById(effect.account().getId())
-                    .ifPresent(account -> accountService.applyCashFlow(account, CashFlow.IN, sign * effect.amount()));
+                    .ifPresent(account -> accountService.applyCashFlow(account, effect.currency(), CashFlow.IN, sign * effect.amount()));
         }
     }
 
@@ -182,7 +205,11 @@ public class TransferService {
                 transfer.getSendFeeAccount(),
                 transfer.getReceiveFee(),
                 transfer.getReceiveFeeDirection(),
-                transfer.getReceiveFeeAccount()
+                transfer.getReceiveFeeAccount(),
+                TransferEffects.sourceCurrency(transfer),
+                TransferEffects.destinationCurrency(transfer),
+                TransferEffects.sendFeeCurrency(transfer),
+                TransferEffects.receiveFeeCurrency(transfer)
         );
     }
 

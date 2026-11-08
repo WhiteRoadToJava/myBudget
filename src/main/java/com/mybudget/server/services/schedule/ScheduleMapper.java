@@ -1,5 +1,7 @@
 package com.mybudget.server.services.schedule;
 
+import com.mybudget.server.modules.Account;
+import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.schedule.ScheduleResponse;
@@ -10,6 +12,18 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class ScheduleMapper {
+
+    // a schedule from before the migration has no currency: its account's first one
+    private String currencyOr(String currency, Account account) {
+        if (currency != null || account == null) {
+            return currency;
+        }
+        return AccountBalances.primaryCurrency(account);
+    }
+
+    private Double balanceOf(Account account, String currency) {
+        return AccountBalances.find(account, currency).map(p -> p.getTotalBalance()).orElse(null);
+    }
 
     public ScheduleResponse mapToResponse(Schedule schedule) {
         ScheduleResponse response = new ScheduleResponse();
@@ -23,6 +37,8 @@ public class ScheduleMapper {
         response.setExChangeRate(schedule.getExChangeRate());
         response.setAmountReceived(schedule.getAmountReceived());
         response.setDebtId(schedule.getDebtId());
+        response.setSourceCurrency(currencyOr(schedule.getSourceCurrency(), schedule.getSourceAccount()));
+        response.setDestinationCurrency(currencyOr(schedule.getDestinationCurrency(), schedule.getDestinationAccount()));
         response.setExecutionDate(schedule.getNextExecutionDate());
         response.setActive(schedule.isActive());
         response.setCreatedAt(schedule.getCreatedAt());
@@ -33,7 +49,8 @@ public class ScheduleMapper {
             ScheduleResponse.AccountSummary source = new ScheduleResponse.AccountSummary();
             source.setId(schedule.getSourceAccount().getId());
             source.setName(schedule.getSourceAccount().getName());
-            source.setTotalBalance(schedule.getSourceAccount().getTotalBalance());
+            source.setCurrency(response.getSourceCurrency());
+            source.setTotalBalance(balanceOf(schedule.getSourceAccount(), response.getSourceCurrency()));
             response.setSourceAccount(source);
         }
 
@@ -42,7 +59,8 @@ public class ScheduleMapper {
             ScheduleResponse.AccountSummary destination = new ScheduleResponse.AccountSummary();
             destination.setId(schedule.getDestinationAccount().getId());
             destination.setName(schedule.getDestinationAccount().getName());
-            destination.setTotalBalance(schedule.getDestinationAccount().getTotalBalance());
+            destination.setCurrency(response.getDestinationCurrency());
+            destination.setTotalBalance(balanceOf(schedule.getDestinationAccount(), response.getDestinationCurrency()));
             response.setDestinationAccount(destination);
         }
 
@@ -92,6 +110,8 @@ public class ScheduleMapper {
         request.setExChangeRate(schedule.getExChangeRate().doubleValue());
         request.setAmountReceived(schedule.getAmountReceived().doubleValue());
         request.setDescription(schedule.getDescription());
+        request.setSourceCurrency(schedule.getSourceCurrency());
+        request.setDestinationCurrency(schedule.getDestinationCurrency());
         return request;
     }
 }

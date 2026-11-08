@@ -14,6 +14,7 @@ import com.mybudget.server.repositories.ExpenseRepository;
 import com.mybudget.server.repositories.IncomseRepository;
 import com.mybudget.server.repositories.DebtMovementRepository;
 
+import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.services.account.AccountService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -129,19 +130,20 @@ public class DebtService {
         movement.setAmount(toMoney(request.getAmount()));
         movement.setDate(request.getDate());
         movement.setDescription(request.getDescription());
+        movement.setCurrency(debt.getCurrency());
 
         List<DebtMovement> history = new ArrayList<>(debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt));
         history.add(movement);
         calculate(debt, history);
 
         CashFlow cashFlow = debt.getDirection().cashFlowOf(movement.getMovementType());
-        accountService.applyCashFlow(account, cashFlow, movement.getAmount());
+        accountService.applyCashFlow(account, currencyOf(movement, debt), cashFlow, movement.getAmount());
         try {
             createIncomeOrExpenseIfRequested(debt, movement, cashFlow);
             debtMovementRepository.save(movement);
         } catch (RuntimeException e) {
             deleteIncomeOrExpense(movement);
-            accountService.revertCashFlow(account, cashFlow, movement.getAmount());
+            accountService.revertCashFlow(account, currencyOf(movement, debt), cashFlow, movement.getAmount());
             throw e;
         }
         return detailsOf(debt);
@@ -164,7 +166,7 @@ public class DebtService {
         Account account = movement.getAccount();
         if (account != null) {
             CashFlow cashFlow = debt.getDirection().cashFlowOf(movement.getMovementType());
-            accountService.revertCashFlow(account, cashFlow, movement.getAmount());
+            accountService.revertCashFlow(account, currencyOf(movement, debt), cashFlow, movement.getAmount());
         }
         deleteIncomeOrExpense(movement);
         debtMovementRepository.delete(movement);
@@ -177,7 +179,8 @@ public class DebtService {
 
     public enum ScheduledPayment {PAID, FINISHED, NOTHING_TO_PAY}
 
-    public void checkScheduledPayment (String debtId, String accountId, User user){
+    // checks a scheduled debt payment and gives the currency it is paid in (the debt's)
+    public String checkScheduledPayment (String debtId, String accountId, User user){
         Debt debt = findDebt(debtId, user);
         Account account = accountRepository.findByIdAndUser(accountId, user);
         if (account == null) {
@@ -187,6 +190,7 @@ public class DebtService {
         if (owedToday(debt).signum() <= 0){
             throw   new IllegalArgumentException("The debt has nothing left to pay");
         }
+        return debt.getCurrency();
     }
 
     public ScheduledPayment payScheduled(String debtId, String accountId, BigDecimal amount, User user){
@@ -228,14 +232,20 @@ public class DebtService {
         debt.setNote(request.getNote());
     }
 
+    // the money of a debt moves in the debt's currency: the account must have it
     private void checkAccountCanBeUsed(Debt debt, Account account) {
         if (account.getStatus() != null && account.getStatus().contains(AccountStatus.ARCHIVED)) {
             throw new IllegalArgumentException("The account is archived");
         }
-        if (account.getCurrency().trim() == null || !account.getCurrency().trim().equalsIgnoreCase(debt.getCurrency())) {
-            throw new IllegalArgumentException("The currency of the account (" + account.getCurrency()
-                    + ") must be the same as the currency of the debt (" + debt.getCurrency() + ")");
+        if (AccountBalances.find(account, debt.getCurrency()).isEmpty()) {
+            throw new IllegalArgumentException("The account has no " + debt.getCurrency()
+                    + " (the currency of the debt). Add it to the account first");
         }
+    }
+
+    // a movement from before the migration has no currency: it is in the debt's currency
+    private String currencyOf(DebtMovement movement, Debt debt) {
+        return movement.getCurrency() != null ? movement.getCurrency() : debt.getCurrency();
     }
 
     private void validateDebtRequest(DebtRequest request) {

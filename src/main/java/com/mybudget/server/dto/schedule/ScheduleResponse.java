@@ -29,6 +29,8 @@ private BigDecimal amountSend;
 private BigDecimal exChangeRate;
 private BigDecimal amountReceived;
 private String debtId;
+private String sourceCurrency;
+private String destinationCurrency;
 private LocalDateTime executionDate;
 @JsonProperty("isActive")
 private boolean active;
@@ -40,7 +42,9 @@ private LocalDateTime updatedAt;
 public static class AccountSummary {
     private String id;
     private String name;
+    // the balance of the schedule's currency in that account
     private Double totalBalance;
+    private String currency;
 }
 
 @Data
