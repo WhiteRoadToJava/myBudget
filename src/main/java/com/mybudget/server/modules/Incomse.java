@@ -21,6 +21,8 @@ public class Incomse {
     private double amount;
     private String category;
     private String description;
+    // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
+    private String currency;
     @DBRef
     private User user;
     @DBRef

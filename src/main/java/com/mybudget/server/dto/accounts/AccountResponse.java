@@ -18,5 +18,4 @@ public class AccountResponse {
     private Double totalBalance;
     private Set<AccountStatus> status;
     private String createdAt;
-    private String groupId;
 }

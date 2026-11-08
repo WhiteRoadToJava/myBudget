@@ -104,8 +104,7 @@ public class AccountMapper {
                 account.getBalance(),
                 account.getTotalBalance(),
                 status,
-                date,
-                account.getGroupId()
+                date
         );
     }
     public Transaction mapIToTransaction(Incomse incomse){

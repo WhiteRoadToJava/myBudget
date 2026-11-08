@@ -32,6 +32,9 @@ public class Schedule {
     @DBRef
     private  Account destinationAccount;
     @DBRef
+    // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
+    private String sourceCurrency;
+    private String destinationCurrency;
     private  User user;
     private String category;
     private Set<TransactionType> transactionTypes;

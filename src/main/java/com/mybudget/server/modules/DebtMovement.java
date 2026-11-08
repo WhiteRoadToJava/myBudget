@@ -29,6 +29,8 @@ public class DebtMovement {
 
     private DebtMovementType movementType;
     private double amount;
+    // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
+    private String currency;
     private LocalDate date;
     private String description;
     private Map<String, String> image;

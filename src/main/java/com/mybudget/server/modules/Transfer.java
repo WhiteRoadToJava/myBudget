@@ -40,6 +40,12 @@ public class Transfer {
     // Fees. Missing values mean "no fee". The fee account is stored explicitly
     // (the source / destination when the user does not choose another one), so a
     // null account with a fee means that account was deleted.
+    // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
+    private String sourceCurrency;
+    private String destinationCurrency;
+    private String sendFeeCurrency;
+    private String receiveFeeCurrency;
+
     private Double sendFee;
     private FeeDirection sendFeeDirection;
     @DBRef

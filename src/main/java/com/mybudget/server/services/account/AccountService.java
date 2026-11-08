@@ -34,18 +34,11 @@ public class AccountService {
     private final AccountMapper accountMapper;
     private final DebtMovementRepository debtMovementRepository;
     private final ScheduleRepository scheduleRepository;
-    private final AccountGroupRepository accountGroupRepository;
 
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         if (findAccountByNameAndUser(accountRequest.getName(), currentUser)) {
-            throw new ResourceNotFoundException("Account already exists");
-        }
-        // a basket is shown as an account: its name can not be taken by a new account either
-        boolean basketName = accountGroupRepository.findAllByUser(currentUser).stream()
-                .anyMatch(g -> g.getName() != null && g.getName().equalsIgnoreCase(accountRequest.getName().trim()));
-        if (basketName) {
             throw new ResourceNotFoundException("Account already exists");
         }
         Date createdAt = new Date();
@@ -107,10 +100,6 @@ public class AccountService {
         scheduleRepository.deleteAllBySourceAccountOrDestinationAccount(account, account);
 
         accountRepository.delete(account);
-        // the last currency of a basket: the empty basket goes too
-        if (account.getGroupId() != null && accountRepository.findAllByGroupId(account.getGroupId()).isEmpty()) {
-            accountGroupRepository.deleteById(account.getGroupId());
-        }
     }
 
 
