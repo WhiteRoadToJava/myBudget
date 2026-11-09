@@ -300,8 +300,12 @@ public class ScheduleService {
     private void applyTransferAmounts(Schedule schedule, BigDecimal requestedRate) {
         BigDecimal rate = requestedRate;
         if (!isPositive(rate)) {
-            String from = schedule.getSourceAccount() != null ? schedule.getSourceAccount().getCurrency() : null;
-            String to = schedule.getDestinationAccount() != null ? schedule.getDestinationAccount().getCurrency() : null;
+            // the currencies of the schedule, not of the accounts: one account can hold both
+            // (an exchange), and an account's first currency is not the one being moved
+            String from = schedule.getSourceCurrency() != null ? schedule.getSourceCurrency()
+                    : schedule.getSourceAccount() != null ? AccountBalances.primaryCurrency(schedule.getSourceAccount()) : null;
+            String to = schedule.getDestinationCurrency() != null ? schedule.getDestinationCurrency()
+                    : schedule.getDestinationAccount() != null ? AccountBalances.primaryCurrency(schedule.getDestinationAccount()) : null;
             if (from != null && Objects.equals(from, to)) {
                 rate = BigDecimal.ONE;
             } else {
