@@ -9,6 +9,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import lombok.Data;
 
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -28,8 +29,8 @@ public class Account {
     @CreatedDate
     private String createdAt;
     private Set<AccountStatus> status;
-    // the basket this account belongs to; null = a basket of its own (one currency)
-    private String groupId;
+    // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
+    private List<CurrencyBalance> balances;
 
 
     public Account(String name, String description, Double balance, Double totalBalance, String currency, String type,  User currentUser, String createdAt) {

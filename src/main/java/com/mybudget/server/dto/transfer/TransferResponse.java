@@ -31,4 +31,8 @@ public class TransferResponse {
     private Double receiveFee;
     private FeeDirection receiveFeeDirection;
     private Account receiveFeeAccount;
+    private String sourceCurrency;
+    private String destinationCurrency;
+    private String sendFeeCurrency;
+    private String receiveFeeCurrency;
 }

@@ -29,6 +29,9 @@ public class ScheduleRequest {
         private BigDecimal exChangeRate;
         private BigDecimal amountReceived;
         private String debtId;
+        // a currency of each account; empty = the account's first currency
+        private String sourceCurrency;
+        private String destinationCurrency;
         private LocalDateTime nextExecutionDate ;
         @JsonProperty("isActive")
         private boolean isActive;

@@ -19,4 +19,6 @@ public class IncomseRequset {
     private Account account;
     private  String description;
     private Map<String, String> image;
+    // which currency of the account; empty = the account's first currency
+    private String currency;
 }

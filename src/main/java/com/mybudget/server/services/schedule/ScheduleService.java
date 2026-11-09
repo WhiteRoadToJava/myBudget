@@ -1,5 +1,6 @@
 package com.mybudget.server.services.schedule;
 
+import com.mybudget.server.services.account.AccountBalances;
 
 import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.incomse.IncomseRequset;
@@ -59,13 +60,17 @@ public class ScheduleService {
         boolean isDebtPayment = request.getTransactionTypes().contains(TransactionType.DEBT_PAYMENT);
         Account sourceAccount = findOwnedAccount(request.getSourceAccountId(), currentUser);
         Account destinationAccount = sourceAccount;
-        if (isDebtPayment) {
-            debtService.checkScheduledPayment(request.getDebtId(), sourceAccount.getId(), currentUser);
-        }
+        // a debt payment is in the debt's currency; anything else in the chosen currency of the account
+        String sourceCurrency = isDebtPayment
+                ? debtService.checkScheduledPayment(request.getDebtId(), sourceAccount.getId(), currentUser)
+                : AccountBalances.resolve(sourceAccount, request.getSourceCurrency());
+        String destinationCurrency = sourceCurrency;
         if (isTransfer) {
             destinationAccount = findOwnedAccount(request.getDestinationAccountId(), currentUser);
-            if (destinationAccount.getId().equals(sourceAccount.getId())) {
-                throw new IllegalArgumentException("A transfer needs two different accounts");
+            destinationCurrency = AccountBalances.resolve(destinationAccount, request.getDestinationCurrency());
+            // the same account is fine in two currencies (an exchange), not twice the same pocket
+            if (destinationAccount.getId().equals(sourceAccount.getId()) && destinationCurrency.equals(sourceCurrency)) {
+                throw new IllegalArgumentException("A transfer needs two different accounts or two different currencies");
             }
         }
 
@@ -76,6 +81,8 @@ public class ScheduleService {
                 .debtId(isDebtPayment ? request.getDebtId() : null)
                 .sourceAccount(sourceAccount)
                 .destinationAccount(destinationAccount)
+                .sourceCurrency(sourceCurrency)
+                .destinationCurrency(destinationCurrency)
                 .transactionTypes(request.getTransactionTypes())
                 .scheduleIntervals(request.getScheduleIntervals())
                 .amountSend(request.getAmountSend())
@@ -293,8 +300,12 @@ public class ScheduleService {
     private void applyTransferAmounts(Schedule schedule, BigDecimal requestedRate) {
         BigDecimal rate = requestedRate;
         if (!isPositive(rate)) {
-            String from = schedule.getSourceAccount() != null ? schedule.getSourceAccount().getCurrency() : null;
-            String to = schedule.getDestinationAccount() != null ? schedule.getDestinationAccount().getCurrency() : null;
+            // the currencies of the schedule, not of the accounts: one account can hold both
+            // (an exchange), and an account's first currency is not the one being moved
+            String from = schedule.getSourceCurrency() != null ? schedule.getSourceCurrency()
+                    : schedule.getSourceAccount() != null ? AccountBalances.primaryCurrency(schedule.getSourceAccount()) : null;
+            String to = schedule.getDestinationCurrency() != null ? schedule.getDestinationCurrency()
+                    : schedule.getDestinationAccount() != null ? AccountBalances.primaryCurrency(schedule.getDestinationAccount()) : null;
             if (from != null && Objects.equals(from, to)) {
                 rate = BigDecimal.ONE;
             } else {

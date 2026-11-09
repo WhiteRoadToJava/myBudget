@@ -18,5 +18,6 @@ public class AccountResponse {
     private Double totalBalance;
     private Set<AccountStatus> status;
     private String createdAt;
-    private String groupId;
+    // every currency of the account, with its opening balance and its balance now
+    private java.util.List<com.mybudget.server.modules.CurrencyBalance> balances;
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
+import com.mybudget.server.dto.accounts.CurrencyRequest;
 import com.mybudget.server.services.account.AccountService;
 
 import jakarta.validation.Valid;
@@ -82,5 +83,27 @@ public class AccountController {
     public ResponseEntity<?> getAllUserTransactions(){
         List<Transaction> transactions = accountService.getUserAllTransaction();
         return  ResponseEntity.status(HttpStatus.OK).body(transactions);
+    }
+
+    // ---------- currencies of an account ----------
+
+    // body: { "currency": "USD", "openingBalance": 50 }
+    @PostMapping("/{accountId}/currencies")
+    public ResponseEntity<AccountResponse> addCurrency(@PathVariable String accountId, @RequestBody CurrencyRequest request) {
+        AccountResponse response = accountService.addCurrency(accountId, request.getCurrency(), request.getOpeningBalance());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // body: { "openingBalance": 100 }
+    @PatchMapping("/{accountId}/currencies/{currency}")
+    public ResponseEntity<AccountResponse> setOpeningBalance(@PathVariable String accountId, @PathVariable String currency,
+                                                             @RequestBody CurrencyRequest request) {
+        return ResponseEntity.ok(accountService.setOpeningBalance(accountId, currency, request.getOpeningBalance()));
+    }
+
+    // only a currency without any transaction, and never the last one (409 otherwise)
+    @DeleteMapping("/{accountId}/currencies/{currency}")
+    public ResponseEntity<AccountResponse> removeCurrency(@PathVariable String accountId, @PathVariable String currency) {
+        return ResponseEntity.ok(accountService.removeCurrency(accountId, currency));
     }
 }

@@ -15,6 +15,9 @@ import com.mybudget.server.util.UserUtils;
 import com.mybudget.server.mapMappers.AccountMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Range;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,18 +37,12 @@ public class AccountService {
     private final AccountMapper accountMapper;
     private final DebtMovementRepository debtMovementRepository;
     private final ScheduleRepository scheduleRepository;
-    private final AccountGroupRepository accountGroupRepository;
+    private final MongoTemplate mongoTemplate;
 
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         if (findAccountByNameAndUser(accountRequest.getName(), currentUser)) {
-            throw new ResourceNotFoundException("Account already exists");
-        }
-        // a basket is shown as an account: its name can not be taken by a new account either
-        boolean basketName = accountGroupRepository.findAllByUser(currentUser).stream()
-                .anyMatch(g -> g.getName() != null && g.getName().equalsIgnoreCase(accountRequest.getName().trim()));
-        if (basketName) {
             throw new ResourceNotFoundException("Account already exists");
         }
         Date createdAt = new Date();
@@ -61,6 +58,8 @@ public class AccountService {
                 currentUser,
                 createdAt.toString()
         );
+        // the first currency of the account
+        AccountBalances.pockets(account);
         AccountResponse accountResponse = accountMapper.mapToAccountResponse(accountRepository.save(account));
         return accountResponse;
     }
@@ -71,23 +70,20 @@ public class AccountService {
         if (existedAccount == null) {
             throw new ResourceNotFoundException("Account not found");
         }
+        String primary = AccountBalances.primaryCurrency(existedAccount);
+        // the records of a currency are in that currency: another currency is added, not switched to
+        if (accouunt.getCurrency() != null && primary != null && !accouunt.getCurrency().equalsIgnoreCase(primary)) {
+            throw new IllegalArgumentException("The currency of an account can not be changed. Add a currency instead");
+        }
         existedAccount.setName(accouunt.getName());
         existedAccount.setDescription(accouunt.getDescription());
-        existedAccount.setCurrency(accouunt.getCurrency());
         existedAccount.setType(accouunt.getType());
-
-        double oldBalance = existedAccount.getBalance() != null ? existedAccount.getBalance() : 0.0;
-        double newBalance = accouunt.getBalance() != null ? accouunt.getBalance() : oldBalance;
-        double oldTotalBalance = existedAccount.getTotalBalance();
-        existedAccount.setTotalBalance(calculateNewTotal(oldBalance, newBalance, oldTotalBalance));
-        existedAccount.setBalance(newBalance);
+        if (accouunt.getBalance() != null && primary != null) {
+            AccountBalances.setOpening(existedAccount, primary, accouunt.getBalance());
+        }
         return accountMapper.mapToAccountResponse(accountRepository.save(existedAccount));
     }
 
-    private Double calculateNewTotal(Double oldBalance, Double newBalance, Double currentTotal) {
-
-        return currentTotal + (newBalance - oldBalance);
-    }
 
 
 
@@ -107,10 +103,6 @@ public class AccountService {
         scheduleRepository.deleteAllBySourceAccountOrDestinationAccount(account, account);
 
         accountRepository.delete(account);
-        // the last currency of a basket: the empty basket goes too
-        if (account.getGroupId() != null && accountRepository.findAllByGroupId(account.getGroupId()).isEmpty()) {
-            accountGroupRepository.deleteById(account.getGroupId());
-        }
     }
 
 
@@ -129,11 +121,10 @@ public class AccountService {
             }
 
             // ✅ Group and sum by currency
-            totalBalanceByCurrency.merge(
-                    account.getCurrency(),
-                    account.getTotalBalance(),
-                    Double::sum
-            );
+            for (CurrencyBalance pocket : AccountBalances.pockets(account)) {
+                totalBalanceByCurrency.merge(pocket.getCurrency(),
+                        pocket.getTotalBalance() == null ? 0.0 : pocket.getTotalBalance(), Double::sum);
+            }
         }
 
         AllAccounts allAccounts = new AllAccounts(accounts, totalAccounts, totalBalanceByCurrency);
@@ -174,9 +165,9 @@ public class AccountService {
         List<Transaction> transactions = new ArrayList<>();
         transactions.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactions.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
+        // one row per pocket of this account the transfer touches (two for an exchange inside it)
         transactions.addAll(transferList.stream()
-                .map(t -> mapTransferToTransaction(t, requestAccount))
-                .filter(java.util.Objects::nonNull)
+                .flatMap(t -> accountMapper.mapTransferForAccount(t, requestAccount).stream())
                 .toList());
         transactions.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
@@ -233,37 +224,6 @@ public class AccountService {
     }
 
 
-    public Account updateTotalBalanaceWithExpense(Account account, double amount) {
-        account.setTotalBalance(account.getTotalBalance() - amount);
-        return accountRepository.save(account);
-    }
-
-    public void updateTotalBalanceWithIncome(Account account, double amount) {
-        if (account != null) {
-            if (account.getBalance() == null) {
-                throw new ResourceNotFoundException("Balance is null");
-            }
-            account.setTotalBalance(account.getTotalBalance() + amount);
-            accountRepository.save(account);
-        }
-    }
-
-    @Transactional
-    public void updateTotalBalanceWithDeleteIncome(Account account, Double amount) {
-        if (account != null) {
-            account.setTotalBalance(account.getTotalBalance() - amount);
-            accountRepository.save(account);
-        }
-    }
-
-    @Transactional
-    public void updateTotalBalanceWithDeleteExpense(Account account, Double amount) {
-        if (account != null) {
-            account.setTotalBalance(account.getTotalBalance() + amount);
-            accountRepository.save(account);
-        }
-    }
-
     @Transactional
     public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
@@ -288,9 +248,6 @@ public class AccountService {
     }
 
 
-    private Transaction mapTransferToTransaction(Transfer transfer, Account account) {
-        return accountMapper.mapTransferToTransaction(transfer, account);
-    }
 
     private Transaction mapExpenseToTransaction(Expense expense) {
         return accountMapper.mapExpenseToTransaction(expense);
@@ -302,20 +259,98 @@ public class AccountService {
 
 
 
-    public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {
-        double current = account.getTotalBalance() == null ? 0.0 : account.getTotalBalance();
-        double change = cashFlow == CashFlow.IN ? amount : -amount;
-        account.setTotalBalance(roundToCents(current + change));
+    // money in or out of one currency of an account
+    public void applyCashFlow(Account account, String currency, CashFlow cashFlow, double amount) {
+        if (account == null) {
+            return; // a record of a deleted account moves no balance
+        }
+        AccountBalances.change(account, currency, cashFlow == CashFlow.IN ? amount : -amount);
         accountRepository.save(account);
+    }
+
+    public void revertCashFlow(Account account, String currency, CashFlow cashFlow, double amount) {
+        applyCashFlow(account, currency, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
+    }
+
+    // still used by transfers and debts until they move to currencies (next phases): the first currency
+    public void applyCashFlow(Account account, CashFlow cashFlow, double amount) {
+        applyCashFlow(account, account == null ? null : AccountBalances.primaryCurrency(account), cashFlow, amount);
     }
 
     public void revertCashFlow(Account account, CashFlow cashFlow, double amount) {
         applyCashFlow(account, cashFlow == CashFlow.IN ? CashFlow.OUT : CashFlow.IN, amount);
     }
 
-    private double roundToCents(double value) {
-        return Math.round(value * 100.0) / 100.0;
+    // ---------- currencies of an account ----------
+
+    public AccountResponse addCurrency(String accountId, String currency, Double openingBalance) {
+        Account account = findOwnedAccount(accountId);
+        AccountBalances.add(account, currency, openingBalance == null ? 0.0 : openingBalance);
+        return accountMapper.mapToAccountResponse(accountRepository.save(account));
     }
+
+    public AccountResponse setOpeningBalance(String accountId, String currency, Double openingBalance) {
+        Account account = findOwnedAccount(accountId);
+        String code = AccountBalances.resolve(account, currency);
+        AccountBalances.setOpening(account, code, openingBalance == null ? 0.0 : openingBalance);
+        return accountMapper.mapToAccountResponse(accountRepository.save(account));
+    }
+
+    // only a currency nothing was recorded in, and never the last one
+    public AccountResponse removeCurrency(String accountId, String currency) {
+        Account account = findOwnedAccount(accountId);
+        String code = AccountBalances.resolve(account, currency);
+        List<CurrencyBalance> pockets = AccountBalances.pockets(account);
+        if (pockets.size() <= 1) {
+            throw new ConflictException("An account needs at least one currency");
+        }
+        if (isCurrencyUsed(account, code)) {
+            throw new ConflictException("This currency has transactions. It can only be removed when it has none");
+        }
+        pockets.removeIf(p -> code.equalsIgnoreCase(p.getCurrency()));
+        // the old single-currency fields follow the first remaining currency
+        if (code.equalsIgnoreCase(account.getCurrency())) {
+            CurrencyBalance first = pockets.get(0);
+            account.setCurrency(first.getCurrency());
+            account.setBalance(first.getOpeningBalance());
+            account.setTotalBalance(first.getTotalBalance());
+        }
+        return accountMapper.mapToAccountResponse(accountRepository.save(account));
+    }
+
+    // any income, expense, transfer (or fee), schedule or debt movement in that currency of the account;
+    // a record without currency (from before the migration) belongs to the first currency
+    private boolean isCurrencyUsed(Account account, String currency) {
+        boolean primary = currency.equalsIgnoreCase(AccountBalances.primaryCurrency(account));
+        Criteria inCurrency = primary
+                ? new Criteria().orOperator(Criteria.where("currency").is(currency), Criteria.where("currency").is(null))
+                : Criteria.where("currency").is(currency);
+        java.util.function.BiFunction<String, String, Criteria> side = (accountField, currencyField) -> new Criteria().andOperator(
+                Criteria.where(accountField).is(account),
+                primary ? new Criteria().orOperator(Criteria.where(currencyField).is(currency), Criteria.where(currencyField).is(null))
+                        : Criteria.where(currencyField).is(currency));
+
+        Query records = new Query(new Criteria().andOperator(Criteria.where("account").is(account), inCurrency));
+        if (mongoTemplate.exists(records, Incomse.class) || mongoTemplate.exists(records, Expense.class)
+                || mongoTemplate.exists(records, DebtMovement.class)) {
+            return true;
+        }
+        Query transfers = new Query(new Criteria().orOperator(
+                side.apply("sourceAccount", "sourceCurrency"), side.apply("destinationAccount", "destinationCurrency"),
+                side.apply("sendFeeAccount", "sendFeeCurrency"), side.apply("receiveFeeAccount", "receiveFeeCurrency")));
+        Query schedules = new Query(new Criteria().orOperator(
+                side.apply("sourceAccount", "sourceCurrency"), side.apply("destinationAccount", "destinationCurrency")));
+        return mongoTemplate.exists(transfers, Transfer.class) || mongoTemplate.exists(schedules, Schedule.class);
+    }
+
+    private Account findOwnedAccount(String accountId) {
+        Account account = accountRepository.findByIdAndUser(accountId, userUtils.getCurrentAuthenticatedUser());
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        return account;
+    }
+
 
     // Income and expense records created by a debt movement get the id of their debt,
     // so the frontend can open the debt instead of offering edit/delete (which answer 409).

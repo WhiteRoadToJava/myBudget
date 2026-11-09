@@ -31,4 +31,9 @@ public class TransferRequest {
     private Double receiveFee;
     private FeeDirection receiveFeeDirection;
     private Account receiveFeeAccount;
+    // a currency of each account; empty = the account's first currency (fees: their side's currency)
+    private String sourceCurrency;
+    private String destinationCurrency;
+    private String sendFeeCurrency;
+    private String receiveFeeCurrency;
 }

@@ -20,4 +20,6 @@ public class ExpenseRequest {
     private String description;
     private LocalDateTime createdAt;
     private Map<String, String> image;
+    // which currency of the account; empty = the account's first currency
+    private String currency;
 }
