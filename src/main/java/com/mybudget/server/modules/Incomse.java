@@ -29,6 +29,9 @@ public class Incomse {
     private Account account;
     @CreatedDate
     private LocalDateTime createdAt;
+    private Boolean cancelled;
+    private LocalDateTime cancelledAt;
+    private String cancelReason;
     private String type = "incomse";
     private Map<String, String> image;
 }

@@ -4,7 +4,7 @@ package com.mybudget.server.controllers;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.services.IncomseService;
+import com.mybudget.server.services.transactions.IncomseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

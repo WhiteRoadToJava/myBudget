@@ -27,6 +27,9 @@ public class Expense {
     private String currency;
     @CreatedDate
     private LocalDateTime createdAt;
+    private Boolean cancelled;
+    private LocalDateTime cancelledAt;
+    private String cancelReason;
     @DBRef
     private User user;
     @DBRef

@@ -3,6 +3,7 @@ package com.mybudget.server.services;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.modules.Transfer;
 import com.mybudget.server.modules.enums.FeeDirection;
+import com.mybudget.server.services.transactions.TransferEffects;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

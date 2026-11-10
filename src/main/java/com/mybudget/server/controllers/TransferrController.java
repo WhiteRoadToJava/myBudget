@@ -2,7 +2,7 @@ package com.mybudget.server.controllers;
 
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
-import com.mybudget.server.services.TransferService;
+import com.mybudget.server.services.transactions.TransferService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

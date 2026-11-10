@@ -1,4 +1,4 @@
-package com.mybudget.server.services;
+package com.mybudget.server.services.transactions;
 
 import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;

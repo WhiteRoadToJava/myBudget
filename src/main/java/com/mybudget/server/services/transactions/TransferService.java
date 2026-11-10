@@ -1,4 +1,4 @@
-package com.mybudget.server.services;
+package com.mybudget.server.services.transactions;
 
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;

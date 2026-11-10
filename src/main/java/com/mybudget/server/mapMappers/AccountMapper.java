@@ -6,7 +6,7 @@ import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
-import com.mybudget.server.services.TransferEffects;
+import com.mybudget.server.services.transactions.TransferEffects;
 import com.mybudget.server.services.account.AccountBalances;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 @Component

@@ -3,7 +3,7 @@ package com.mybudget.server.controllers;
 import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.services.ExpenseService;
+import com.mybudget.server.services.transactions.ExpenseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
