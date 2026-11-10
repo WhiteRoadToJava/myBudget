@@ -161,7 +161,7 @@ public class ExpenseService {
         if (!Cancellation.isCancelled(expense.getCancelled())){
             accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
         }
-            expenseRepository.delete(expense);
+        expenseRepository.delete(expense);
         return "Expense deleted successfully";
     }
 

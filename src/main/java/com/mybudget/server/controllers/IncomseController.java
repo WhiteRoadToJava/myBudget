@@ -42,7 +42,7 @@ public class IncomseController {
         return ResponseEntity.ok(incomseService.cancelIncome(incomeId, request == null ? null : request.getReason()));
     }
 
-    @PatchMapping("/cancel/{incomeId}")
+    @PatchMapping("/restore/{incomeId}")
     public ResponseEntity<IncomseResponse> restoreIncome(@PathVariable String incomeId){
         return ResponseEntity.ok(incomseService.restoreIncome(incomeId));
     }

@@ -28,7 +28,7 @@ public class Transaction {
     private String currency;
     private boolean cancelled;
     private LocalDateTime cancelledAt;
-    private String cancelledReason;
+    private String cancelReason;
 
 
     public Transaction(String id, double amount, String category, Account sourceAccount,

@@ -87,7 +87,7 @@ public class AccountMapper {
         if (Boolean.TRUE.equals(cancelled)){
             row.setCancelled(true);
             row.setCancelledAt(at);
-            row.setCancelledReason(reason);
+            row.setCancelReason(reason);
         }
     }
 
@@ -145,7 +145,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(currencyOf(incomse.getCurrency(), incomse.getAccount()));
-        markCancelled(row, incomse.getCancelled(), incomse.getCreatedAt(), incomse.getCancelReason());
+        markCancelled(row, incomse.getCancelled(), incomse.getCancelledAt(), incomse.getCancelReason());
         return row;
     }
     public Transaction mapExpenseToTransaction(Expense expense) {
