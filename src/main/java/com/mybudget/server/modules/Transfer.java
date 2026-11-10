@@ -32,6 +32,9 @@ public class Transfer {
     private String description;
     @CreatedDate
     private LocalDateTime createdAt;
+    private Boolean cancelled;
+    private LocalDateTime cancelledAt;
+    private String cancelReason;
     private String currency;
     private String type = "transfer";
     private double exChangeRate;

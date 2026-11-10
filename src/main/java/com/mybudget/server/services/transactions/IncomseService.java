@@ -1,4 +1,4 @@
-package com.mybudget.server.services;
+package com.mybudget.server.services.transactions;
 
 
 import com.mybudget.server.dto.incomse.IncomseRequset;
@@ -91,11 +91,12 @@ public class IncomseService {
     }
 
     @Transactional
-    public IncomseResponse updateIncomse(String incomseId, IncomseRequset requset) {
+    public IncomseResponse updateIncome(String incomseId, IncomseRequset requset) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Incomse incomse = findOwnedIncomse(incomseId, currentUser);
         Account newAccount = findOwnedAccount(requset.getAccount(), currentUser);
         ensureNotDebtMirror(incomseId);
+        Cancellation.ensureActive(incomse.getCancelled(), "income");
 
         // the old and the new place of the money: (account, currency)
         Account oldAccount = incomse.getAccount();
@@ -153,10 +154,39 @@ public class IncomseService {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Incomse incomse = findOwnedIncomse(incomseId, currentUser);
         ensureNotDebtMirror(incomse.getId());
-        accountService.revertCashFlow(incomse.getAccount(), currencyOf(incomse), CashFlow.IN, incomse.getAmount());
+        if (!Cancellation.isCancelled(incomse.getCancelled())){
+            accountService.revertCashFlow(incomse.getAccount(),currencyOf(incomse), CashFlow.IN, incomse.getAmount());
+        }
         incomseRepository.delete(incomse);
         return "Income deleted successfully";
     }
+    @Transactional
+    public IncomseResponse cancelIncome(String incomeId, String reason){
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
+        ensureNotDebtMirror(income.getId());
+        Cancellation.ensureActive(income.getCancelled(), "income");
+
+        accountService.revertCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
+        income.setCancelled(true);
+        income.setCancelledAt(LocalDateTime.now());
+        income.setCancelReason(Cancellation.reason(reason));
+        return mapToIncomseResponse(incomseRepository.save(income));
+    }
+
+    @Transactional
+    public IncomseResponse restoreIncome(String incomeId){
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
+        Cancellation.ensureCancelled(income.getCancelled(), "income");
+        accountService.applyCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
+        income.setCancelled(null);
+        income.setCancelledAt(null);
+        income.setCancelReason(null);
+        return mapToIncomseResponse(incomseRepository.save(income));
+    }
+
+
     private void ensureNotDebtMirror(String recordId){
         if (debtMovementRepository.existsByMirroredTransactionId(recordId)){
             throw new ConflictException("This income was created by a debt movement. Edit or delete it from the debt");

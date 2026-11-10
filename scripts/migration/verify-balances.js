@@ -67,6 +67,11 @@ function expectedBalances({ accounts, incomes, expenses, transfers, movements, d
   const currencyOf = (record, accountId, field = "currency") => record[field] ?? accountCurrency.get(accountId);
 
   const mirrored = new Set(movements.map((m) => m.mirroredTransactionId).filter(Boolean).map(String));
+  // a cancelled transaction moves no balance
+  const active = (r) => r.cancelled !== true;
+  incomes = incomes.filter(active);
+  expenses = expenses.filter(active);
+  transfers = transfers.filter(active);
 
   for (const r of incomes) {
     if (mirrored.has(String(r._id))) continue;

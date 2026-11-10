@@ -1,4 +1,4 @@
-package com.mybudget.server.services;
+package com.mybudget.server.services.transactions;
 
 import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;
@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,7 @@ public class ExpenseService {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, currentUser);
         ensureNotDebtMirror(expense.getId());
+        Cancellation.ensureActive(expense.getCancelled(), "expense");
         Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
 
         // the old and the new place of the money: (account, currency)
@@ -156,9 +158,42 @@ public class ExpenseService {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, currentUser);
         ensureNotDebtMirror(expense.getId());
-        accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        if (!Cancellation.isCancelled(expense.getCancelled())){
+            accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        }
         expenseRepository.delete(expense);
         return "Expense deleted successfully";
+    }
+
+
+
+    @Transactional
+    public ExpenseResponse cancelExpense(String expenseId, String reason){
+        User authenticatedUse = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, authenticatedUse);
+        ensureNotDebtMirror(expense.getId());
+        Cancellation.ensureActive(expense.getCancelled(), "expense");
+
+        accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        expense.setCancelled(true);
+        expense.setCancelledAt(LocalDateTime.now());
+        expense.setCancelReason(Cancellation.reason(reason));
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+
+
+
+    @Transactional
+    public ExpenseResponse restoreExpense(String expenseId){
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, authenticatedUser);
+        Cancellation.ensureCancelled(expense.getCancelled(), "expense");
+
+        accountService.applyCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        expense.setCancelled(null);
+        expense.setCancelledAt(null);
+        expense.setCancelReason(null);
+        return mapToExpenseResponse(expenseRepository.save(expense));
     }
 
     public ExpenseResponse getExpenseById(String expenseId) {

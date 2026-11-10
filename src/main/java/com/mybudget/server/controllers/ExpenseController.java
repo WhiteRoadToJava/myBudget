@@ -1,9 +1,10 @@
 package com.mybudget.server.controllers;
 
+import com.mybudget.server.dto.common.CancelRequest;
 import com.mybudget.server.dto.expense.ExpenseRequest;
 import com.mybudget.server.dto.expense.ExpenseResponse;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.services.ExpenseService;
+import com.mybudget.server.services.transactions.ExpenseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +40,17 @@ public class ExpenseController {
     public ResponseEntity<?> deleteExpense(@PathVariable String expenseId){
         String response = expenseService.deleteExpense(expenseId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+    // body (optional): { "reason": "..." }
+    @PatchMapping("/cancel/{expenseId}")
+    public ResponseEntity<ExpenseResponse> cancelExpense(@PathVariable String expenseId,
+                                                         @RequestBody(required = false) CancelRequest request) {
+        return ResponseEntity.ok(expenseService.cancelExpense(expenseId, request == null ? null : request.getReason()));
+    }
+
+    @PatchMapping("/restore/{expenseId}")
+    public ResponseEntity<ExpenseResponse> restoreExpense(@PathVariable String expenseId) {
+        return ResponseEntity.ok(expenseService.restoreExpense(expenseId));
     }
 
     @GetMapping("/account")

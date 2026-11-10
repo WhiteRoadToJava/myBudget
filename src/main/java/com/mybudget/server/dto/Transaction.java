@@ -26,11 +26,14 @@ public class Transaction {
     private String debtId;
     // the currency of the money moved on this row's account
     private String currency;
+    private boolean cancelled;
+    private LocalDateTime cancelledAt;
+    private String cancelReason;
 
 
     public Transaction(String id, double amount, String category, Account sourceAccount,
                        Account destinationAccount, String type, LocalDateTime createdAt,
                        String description, Map<String, String> image) {
-        this(id, amount, category, sourceAccount, destinationAccount, type, createdAt, description, image, null, null);
+        this(id, amount, category, sourceAccount, destinationAccount, type, createdAt, description, image, null, null, false, null, null);
     }
 }

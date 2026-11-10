@@ -1,0 +1,8 @@
+package com.mybudget.server.dto.common;
+
+import lombok.Data;
+
+@Data
+public class CancelRequest {
+    private String reason;
+}

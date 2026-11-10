@@ -6,7 +6,7 @@ import com.mybudget.server.dto.accounts.AccountResponse;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
-import com.mybudget.server.services.TransferEffects;
+import com.mybudget.server.services.transactions.TransferEffects;
 import com.mybudget.server.services.account.AccountBalances;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -69,6 +68,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(effect.currency());
+        markCancelled(row, transfer.getCancelled(), transfer.getCancelledAt(), transfer.getCancelReason() );
         return row;
     }
 
@@ -83,6 +83,13 @@ public class AccountMapper {
         return placedHolder;
     }
 
+    private void markCancelled(Transaction row, Boolean cancelled, LocalDateTime at, String reason){
+        if (Boolean.TRUE.equals(cancelled)){
+            row.setCancelled(true);
+            row.setCancelledAt(at);
+            row.setCancelReason(reason);
+        }
+    }
 
 
     // a record's currency; one from before the migration is in its account's first currency
@@ -138,6 +145,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(currencyOf(incomse.getCurrency(), incomse.getAccount()));
+        markCancelled(row, incomse.getCancelled(), incomse.getCancelledAt(), incomse.getCancelReason());
         return row;
     }
     public Transaction mapExpenseToTransaction(Expense expense) {
@@ -167,6 +175,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(currencyOf(expense.getCurrency(), expense.getAccount()));
+        markCancelled(row, expense.getCancelled(), expense.getCancelledAt() ,expense.getCancelReason());
         return row;
     }
 
@@ -225,7 +234,10 @@ public class AccountMapper {
                 description,
                 image,
                 debt.getId(),
-                debt.getCurrency()
+                debt.getCurrency(),
+                false,
+                null,
+                null
         );
     }
 

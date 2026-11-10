@@ -42,4 +42,13 @@ const mixed = {
 };
 rows = compare(mixed.accounts, expectedBalances(mixed));
 assert.deepStrictEqual(rows.map((r) => [r.currency, r.expected, r.diff]), [["SEK", 1050, 0]]);
+// cancelled transactions move no balance
+const withCancelled = {
+  accounts: [{ _id: "C", name: "C", currency: "SEK", balances: [{ currency: "SEK", openingBalance: 100, totalBalance: 100 }] }],
+  incomes: [{ _id: "x", account: ref("C"), amount: 50, cancelled: true }],
+  expenses: [], movements: [], debts: [],
+  transfers: [{ sourceAccount: ref("C"), destinationAccount: ref("GONE"), amountSent: 30, amountReceived: 30, cancelled: true }],
+};
+rows = compare(withCancelled.accounts, expectedBalances(withCancelled));
+assert.deepStrictEqual(rows.map((r) => [r.expected, r.diff]), [[100, 0]]);
 console.log("verify-balances: all checks passed");
