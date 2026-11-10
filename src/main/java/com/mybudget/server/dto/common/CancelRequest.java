@@ -3,6 +3,6 @@ package com.mybudget.server.dto.common;
 import lombok.Data;
 
 @Data
-public class cancelRequest {
+public class CancelRequest {
     private String reason;
 }

@@ -1,5 +1,6 @@
 package com.mybudget.server.controllers;
 
+import com.mybudget.server.dto.common.CancelRequest;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
 import com.mybudget.server.services.transactions.TransferService;
@@ -34,6 +35,18 @@ public ResponseEntity<?> executeTranfer (@RequestBody TransferRequest request){
     public ResponseEntity<?> deleteTransfer(@PathVariable String transferId){
         String response = transferService.deleteTransfer(transferId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    // body (optional): { "reason": "..." }; the fees are given back too
+    @PatchMapping("/cancel/{transferId}")
+    public ResponseEntity<TransferResponse> cancelTransfer(@PathVariable String transferId,
+                                                           @RequestBody(required = false) CancelRequest request) {
+        return ResponseEntity.ok(transferService.cancelTransfer(transferId, request == null ? null : request.getReason()));
+    }
+
+    @PatchMapping("/restore/{transferId}")
+    public ResponseEntity<TransferResponse> restoreTransfer(@PathVariable String transferId) {
+        return ResponseEntity.ok(transferService.restoreTransfer(transferId));
     }
 
 }

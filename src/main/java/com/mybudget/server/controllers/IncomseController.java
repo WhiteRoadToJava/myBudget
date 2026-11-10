@@ -4,6 +4,7 @@ package com.mybudget.server.controllers;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.dto.common.CancelRequest;
 import com.mybudget.server.services.transactions.IncomseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,13 +27,24 @@ public class IncomseController {
     }
     @PatchMapping("/update-incomse/{incomseId}")
     public ResponseEntity<?> updateIncomse(@RequestBody IncomseRequset incomseRequest, @PathVariable String incomseId)   {
-        IncomseResponse response = incomseService.updateIncomse(incomseId, incomseRequest);
+        IncomseResponse response = incomseService.updateIncome(incomseId, incomseRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @DeleteMapping("/delete-incomse/{incomseId}")
     public ResponseEntity<?> deleteIncomse(@PathVariable String incomseId){
         String response = incomseService.deleteIncomse(incomseId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PatchMapping("/cancel/{incomeId}")
+    public ResponseEntity<IncomseResponse> cancelIncome(@PathVariable String incomeId,
+                                                        @RequestBody(required = false) CancelRequest request){
+        return ResponseEntity.ok(incomseService.cancelIncome(incomeId, request == null ? null : request.getReason()));
+    }
+
+    @PatchMapping("/cancel/{incomeId}")
+    public ResponseEntity<IncomseResponse> restoreIncome(@PathVariable String incomeId){
+        return ResponseEntity.ok(incomseService.restoreIncome(incomeId));
     }
 
 

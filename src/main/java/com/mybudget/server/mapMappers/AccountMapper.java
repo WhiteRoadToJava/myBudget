@@ -68,6 +68,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(effect.currency());
+        markCancelled(row, transfer.getCancelled(), transfer.getCancelledAt(), transfer.getCancelReason() );
         return row;
     }
 
@@ -82,6 +83,13 @@ public class AccountMapper {
         return placedHolder;
     }
 
+    private void markCancelled(Transaction row, Boolean cancelled, LocalDateTime at, String reason){
+        if (Boolean.TRUE.equals(cancelled)){
+            row.setCancelled(true);
+            row.setCancelledAt(at);
+            row.setCancelledReason(reason);
+        }
+    }
 
 
     // a record's currency; one from before the migration is in its account's first currency
@@ -137,6 +145,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(currencyOf(incomse.getCurrency(), incomse.getAccount()));
+        markCancelled(row, incomse.getCancelled(), incomse.getCreatedAt(), incomse.getCancelReason());
         return row;
     }
     public Transaction mapExpenseToTransaction(Expense expense) {
@@ -166,6 +175,7 @@ public class AccountMapper {
                 image
         );
         row.setCurrency(currencyOf(expense.getCurrency(), expense.getAccount()));
+        markCancelled(row, expense.getCancelled(), expense.getCancelledAt() ,expense.getCancelReason());
         return row;
     }
 
@@ -224,7 +234,10 @@ public class AccountMapper {
                 description,
                 image,
                 debt.getId(),
-                debt.getCurrency()
+                debt.getCurrency(),
+                false,
+                null,
+                null
         );
     }
 

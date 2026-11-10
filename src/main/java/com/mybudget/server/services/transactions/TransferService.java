@@ -16,6 +16,7 @@ import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,7 +39,7 @@ public class TransferService {
     public TransferResponse updateTransfer(String transferId, TransferRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = findOwnedTransfer(transferId, user);
-
+        Cancellation.ensureActive(transfer.getCancelled(), "transfer");
         // what the transfer did before the change, so it can be undone exactly
         List<TransferEffects.Effect> before = TransferEffects.of(transfer);
         fill(transfer, request, user);
@@ -66,7 +67,9 @@ public class TransferService {
     public String deleteTransfer(String transferId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = findOwnedTransfer(transferId, currentUser);
-        List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
+        List<TransferEffects.Effect> effects = Cancellation.isCancelled(transfer.getCancelled())
+                ? List.of()
+                : TransferEffects.of(transfer);
 
         apply(effects, -1);
         try {
@@ -76,6 +79,42 @@ public class TransferService {
             throw e;
         }
         return "Transfer deleted successfully";
+    }
+
+    public TransferResponse cancelTransfer(String transferId, String reason) {
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Transfer transfer = findOwnedTransfer(transferId, authenticatedUser);
+        Cancellation.ensureActive(transfer.getCancelled(), "transfer");
+        List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
+
+        apply(effects, -1);
+        transfer.setCancelled(true);
+        transfer.setCancelledAt(LocalDateTime.now());
+        transfer.setCancelReason(reason);
+        try {
+            return mapToTransferResponse(transferRepository.save(transfer));
+        } catch (RuntimeException e) {
+            apply(effects, +1);
+            throw e;
+        }
+    }
+
+    public TransferResponse restoreTransfer(String transferId) {
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Transfer transfer = findOwnedTransfer(transferId, authenticatedUser);
+        Cancellation.ensureCancelled(transfer.getCancelled(), "transfer");
+        List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
+
+        apply(effects, +1);
+        transfer.setCancelled(null);
+        transfer.setCancelledAt(null);
+        transfer.setCancelReason(null);
+        try {
+            return mapToTransferResponse(transferRepository.save(transfer));
+        } catch (RuntimeException e){
+            apply(effects, -1);
+            throw e;
+        }
     }
 
     // ---------- create / fill ----------
