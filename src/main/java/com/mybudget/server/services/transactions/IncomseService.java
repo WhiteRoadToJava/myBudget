@@ -32,6 +32,7 @@ public class IncomseService {
     private final IncomseRepository incomseRepository;
     private final AccountRepository accountRepository;
     private final DebtMovementRepository debtMovementRepository;
+    private final ReferenceNumbers referenceNumbers;
 
     @Transactional
     public IncomseResponse addInccmse(IncomseRequset incomseRequest) {
@@ -52,7 +53,7 @@ public class IncomseService {
         String currency = AccountBalances.resolve(account, incomseRequest.getCurrency());
         incomse.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.IN, incomseRequest.getAmount());
-
+        incomse.setNumber(referenceNumbers.next(incomse.getUser()));
         return mapToIncomseResponse(incomseRepository.save(incomse));
     }
 
@@ -74,7 +75,7 @@ public class IncomseService {
         String currency = AccountBalances.resolve(account, request.getCurrency());
         incomse.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.IN, request.getAmount());
-
+        incomse.setNumber(referenceNumbers.next(incomse.getUser()));
         return mapToIncomseResponse(incomseRepository.save(incomse));
     }
 
@@ -154,14 +155,15 @@ public class IncomseService {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Incomse incomse = findOwnedIncomse(incomseId, currentUser);
         ensureNotDebtMirror(incomse.getId());
-        if (!Cancellation.isCancelled(incomse.getCancelled())){
-            accountService.revertCashFlow(incomse.getAccount(),currencyOf(incomse), CashFlow.IN, incomse.getAmount());
+        if (!Cancellation.isCancelled(incomse.getCancelled())) {
+            accountService.revertCashFlow(incomse.getAccount(), currencyOf(incomse), CashFlow.IN, incomse.getAmount());
         }
         incomseRepository.delete(incomse);
         return "Income deleted successfully";
     }
+
     @Transactional
-    public IncomseResponse cancelIncome(String incomeId, String reason){
+    public IncomseResponse cancelIncome(String incomeId, String reason) {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
         Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
         ensureNotDebtMirror(income.getId());
@@ -175,7 +177,7 @@ public class IncomseService {
     }
 
     @Transactional
-    public IncomseResponse restoreIncome(String incomeId){
+    public IncomseResponse restoreIncome(String incomeId) {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
         Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
         Cancellation.ensureCancelled(income.getCancelled(), "income");
@@ -187,8 +189,8 @@ public class IncomseService {
     }
 
 
-    private void ensureNotDebtMirror(String recordId){
-        if (debtMovementRepository.existsByMirroredTransactionId(recordId)){
+    private void ensureNotDebtMirror(String recordId) {
+        if (debtMovementRepository.existsByMirroredTransactionId(recordId)) {
             throw new ConflictException("This income was created by a debt movement. Edit or delete it from the debt");
         }
     }
@@ -247,8 +249,8 @@ public class IncomseService {
     }
 
 
-    private String cleanDescription(String description){
-        return description == null || description.isBlank() ? null :  description.trim();
+    private String cleanDescription(String description) {
+        return description == null || description.isBlank() ? null : description.trim();
     }
 
 }

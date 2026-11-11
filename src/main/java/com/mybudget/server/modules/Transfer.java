@@ -35,6 +35,7 @@ public class Transfer {
     private Boolean cancelled;
     private LocalDateTime cancelledAt;
     private String cancelReason;
+    private Long number;     // the reference number shown to people and in the statement (ReferenceNumbers)
     private String currency;
     private String type = "transfer";
     private double exChangeRate;

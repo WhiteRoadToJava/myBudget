@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${lang}" th:dir="${dir}">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${t.title}">Statement</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 14mm 12mm 16mm 12mm;
+            @bottom-center {
+                content: counter(page) " / " counter(pages);
+                font-family: 'NotoSans';
+                font-size: 9pt;
+                color: #555;
+            }
+        }
+
+        body {
+            font-family: 'Naskh', 'NotoSans';
+            font-size: 10pt;
+            color: #1b1f2a;
+            margin: 0;
+        }
+
+        .num {
+            font-family: 'NotoSans', 'Naskh';
+            direction: ltr;
+        }
+
+        .head {
+            width: 100%;
+            border-bottom: 3px solid #3d3a8c;
+            padding-bottom: 6pt;
+            margin-bottom: 8pt;
+        }
+
+        .head td {
+            vertical-align: top;
+        }
+
+        .owner {
+            font-size: 13pt;
+            font-weight: 700;
+        }
+
+        .title {
+            font-size: 22pt;
+            font-weight: 700;
+            color: #3d3a8c;
+        }
+
+        .printed {
+            font-size: 8.5pt;
+            color: #555;
+        }
+
+        /* the far side of the line: left in Arabic, right in English and Swedish */
+        html[dir="rtl"] .end {
+            text-align: left;
+        }
+
+        html[dir="ltr"] .end {
+            text-align: right;
+        }
+
+        .info {
+            width: 100%;
+            margin-bottom: 10pt;
+        }
+
+        .info td {
+            padding: 2pt 4pt;
+            vertical-align: top;
+        }
+
+        .customer {
+            font-size: 14pt;
+            font-weight: 700;
+        }
+
+        .label {
+            color: #555;
+            width: 22%;
+        }
+
+        .value {
+            font-weight: 700;
+        }
+
+        .side {
+            color: #555;
+            font-size: 8.5pt;
+            font-weight: 400;
+        }
+
+        table.rows {
+            width: 100%;
+            border-collapse: collapse;
+            -fs-table-paginate: paginate;
+        }
+
+        table.rows thead {
+            display: table-header-group;
+        }
+
+        table.rows th {
+            background: #3d3a8c;
+            color: #fff;
+            padding: 5pt 4pt;
+            font-weight: 700;
+            font-size: 9.5pt;
+        }
+
+        table.rows td {
+            padding: 5pt 4pt;
+            border-bottom: 1px solid #d6d8e4;
+            vertical-align: top;
+        }
+
+        table.rows tr {
+            page-break-inside: avoid;
+        }
+
+        table.rows tbody tr:nth-child(even) td {
+            background: #eceaf6;
+        }
+
+        .in {
+            color: #2a3c9c;
+        }
+
+        .out {
+            color: #c42b2b;
+        }
+
+        .balance {
+            color: #2a3c9c;
+            font-weight: 700;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .operation {
+            font-size: 8.5pt;
+            color: #333;
+        }
+
+        .cancelled td {
+            color: #8a8f9c;
+        }
+
+        .cancelled .amount {
+            text-decoration: line-through;
+        }
+
+        .tag {
+            font-size: 8pt;
+            border: 1px solid #8a8f9c;
+            padding: 0 3pt;
+        }
+
+        .reason {
+            font-size: 8pt;
+            color: #8a8f9c;
+        }
+
+        .opening td {
+            font-weight: 700;
+            background: #eceaf6;
+        }
+
+        .totals {
+            width: 100%;
+            margin-top: 8pt;
+        }
+
+        .totals td {
+            padding: 2pt 4pt;
+        }
+
+        /* several currencies: a summary, then each currency from a new page */
+        .sectionTitle {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #3d3a8c;
+            margin: 4pt 0;
+        }
+
+        table.summary {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10pt;
+        }
+
+        table.summary th {
+            background: #3d3a8c;
+            color: #fff;
+            padding: 4pt;
+            font-size: 9.5pt;
+        }
+
+        table.summary td {
+            padding: 4pt;
+            border-bottom: 1px solid #d6d8e4;
+        }
+
+        .newPage {
+            page-break-before: always;
+        }
+
+        .currencyCode {
+            font-size: 12pt;
+            color: #3d3a8c;
+        }
+
+        .sign {
+            margin-top: 28pt;
+            width: 35%;
+            border-top: 1px solid #1b1f2a;
+            padding-top: 3pt;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<table class="head">
+    <tr>
+        <td>
+            <div class="owner" th:text="${owner}">Owner</div>
+        </td>
+        <td class="end">
+            <div class="title" th:text="${t.title}">Statement</div>
+            <div class="printed"><span th:text="${t.printed}">Printed</span>: <span class="num" th:text="${printed}">01/01/2026 10:00</span>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table class="info">
+    <tr>
+        <td class="customer" th:text="${account}">Customer</td>
+        <td class="label" th:text="${t.period}">Period</td>
+        <td class="value"><span class="num" th:text="${from}">01/01/2026</span> – <span class="num" th:text="${to}">31/01/2026</span>
+        </td>
+    </tr>
+</table>
+
+<!-- every currency at a glance, when the statement has more than one -->
+<div th:if="${several}">
+    <div class="sectionTitle" th:text="${t.summary}">Balances</div>
+    <table class="summary">
+        <thead>
+        <tr>
+            <th th:text="${t.currency}">Currency</th>
+            <th th:text="${t.previous}">Opening</th>
+            <th th:text="${t.final}">Closing</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="s : ${sections}">
+            <td class="center num value" th:text="${s.currency}">USD</td>
+            <td class="center"><span class="num balance" th:text="${s.opening}">0.00</span> <span class="side"
+                                                                                                  th:text="${s.openingSide}"></span>
+            </td>
+            <td class="center"><span class="num balance" th:text="${s.closing}">0.00</span> <span class="side"
+                                                                                                  th:text="${s.closingSide}"></span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- one section per currency -->
+<div th:each="s, it : ${sections}" class="section" th:classappend="${several and !it.first} ? 'newPage'">
+    <table class="info">
+        <tr>
+            <td class="label" th:text="${t.currency}">Currency</td>
+            <td class="value num currencyCode" th:text="${s.currency}">USD</td>
+            <td class="label" th:text="${t.previous}">Opening</td>
+            <td class="value"><span class="num balance" th:text="${s.opening}">0.00</span> <span class="side"
+                                                                                                 th:text="${s.openingSide}"></span>
+            </td>
+            <td class="label" th:text="${t.final}">Closing</td>
+            <td class="value"><span class="num balance" th:text="${s.closing}">0.00</span> <span class="side"
+                                                                                                 th:text="${s.closingSide}"></span>
+            </td>
+        </tr>
+    </table>
+
+    <table class="rows">
+        <thead>
+        <tr>
+            <th th:text="${t.date}">Date</th>
+            <th th:text="${t.amount}">Amount</th>
+            <th th:text="${t.balance}">Balance</th>
+            <th th:text="${t.description}">Description</th>
+            <th th:text="${t.operation}">Operation</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(s.rows)}">
+            <td colspan="5" class="center" th:text="${t.noTransactions}">No transactions</td>
+        </tr>
+        <tr th:each="r : ${s.rows}" th:classappend="${r.cancelled} ? 'cancelled'">
+            <td class="center num" th:text="${r.date}">01/01/2026</td>
+            <td class="center num amount" th:classappend="${r.incoming} ? 'in' : 'out'" th:text="${r.amount}">0.00</td>
+            <td class="center num balance" th:text="${r.balance}">0.00</td>
+            <td>
+                <span th:text="${r.description}">Description</span>
+                <span th:if="${r.cancelled}" class="tag" th:text="${t.cancelled}">cancelled</span>
+                <div th:if="${r.cancelled and r.reason != ''}" class="reason"><span th:text="${t.reason}">Reason</span>:
+                    <span th:text="${r.reason}"></span></div>
+            </td>
+            <td class="operation" th:text="${r.operation}">Transfer 1</td>
+        </tr>
+        <tr class="opening">
+            <td class="center num" th:text="${s.openingDate}">01/01/2026</td>
+            <td></td>
+            <td class="center num balance" th:text="${s.opening}">0.00</td>
+            <td></td>
+            <td class="operation" th:text="${t.previousRow}">Opening balance</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td class="label" th:text="${t.totalIn}">Total in</td>
+            <td class="value num in" th:text="${s.totalIn}">0.00</td>
+            <td class="label" th:text="${t.totalOut}">Total out</td>
+            <td class="value num out" th:text="${s.totalOut}">0.00</td>
+        </tr>
+    </table>
+</div>
+<div class="sign" th:text="${t.management}">Management</div>
+
+</body>
+</html>

@@ -4,9 +4,9 @@ import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.services.statement.StatementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import com.mybudget.server.dto.accounts.AccountRequest;
@@ -16,6 +16,7 @@ import com.mybudget.server.services.account.AccountService;
 
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -24,6 +25,7 @@ import java.util.List;
 public class AccountController {
 
     public final AccountService accountService;
+    public final StatementService statementService;
 
 
     @PostMapping("/add-account")
@@ -105,5 +107,26 @@ public class AccountController {
     @DeleteMapping("/{accountId}/currencies/{currency}")
     public ResponseEntity<AccountResponse> removeCurrency(@PathVariable String accountId, @PathVariable String currency) {
         return ResponseEntity.ok(accountService.removeCurrency(accountId, currency));
+    }
+
+
+
+
+
+
+
+    @GetMapping("/{accountId}/statement.pdf")
+    public ResponseEntity<byte[]> statementPdf(@PathVariable String accountId,
+                                               @RequestParam(required = false) String currency,
+                                               @RequestParam LocalDate from,
+                                               @RequestParam LocalDate to,
+                                               @RequestParam(defaultValue = "ar") String lang) {
+        byte[] pdf = statementService.statementPdf(accountId, currency, from, to, lang);
+        String name = StatementService.fileName("Statement", currency == null ? "" : currency, from, to);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(name).build().toString())
+                .body(pdf);
     }
 }

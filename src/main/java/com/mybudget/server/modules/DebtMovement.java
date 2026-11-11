@@ -29,6 +29,7 @@ public class DebtMovement {
 
     private DebtMovementType movementType;
     private double amount;
+    private Long number;     // the reference number shown to people and in the statement (ReferenceNumbers)
     // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
     private String currency;
     private LocalDate date;

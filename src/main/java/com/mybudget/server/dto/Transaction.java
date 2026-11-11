@@ -29,11 +29,12 @@ public class Transaction {
     private boolean cancelled;
     private LocalDateTime cancelledAt;
     private String cancelReason;
+    private Long number;
 
 
     public Transaction(String id, double amount, String category, Account sourceAccount,
                        Account destinationAccount, String type, LocalDateTime createdAt,
                        String description, Map<String, String> image) {
-        this(id, amount, category, sourceAccount, destinationAccount, type, createdAt, description, image, null, null, false, null, null);
+        this(id, amount, category, sourceAccount, destinationAccount, type, createdAt, description, image, null, null, false, null, null, null);
     }
 }

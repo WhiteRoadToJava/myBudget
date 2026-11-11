@@ -69,6 +69,7 @@ public class AccountMapper {
         );
         row.setCurrency(effect.currency());
         markCancelled(row, transfer.getCancelled(), transfer.getCancelledAt(), transfer.getCancelReason() );
+        row.setNumber(transfer.getNumber());
         return row;
     }
 
@@ -146,6 +147,7 @@ public class AccountMapper {
         );
         row.setCurrency(currencyOf(incomse.getCurrency(), incomse.getAccount()));
         markCancelled(row, incomse.getCancelled(), incomse.getCancelledAt(), incomse.getCancelReason());
+        row.setNumber(incomse.getNumber());
         return row;
     }
     public Transaction mapExpenseToTransaction(Expense expense) {
@@ -176,6 +178,7 @@ public class AccountMapper {
         );
         row.setCurrency(currencyOf(expense.getCurrency(), expense.getAccount()));
         markCancelled(row, expense.getCancelled(), expense.getCancelledAt() ,expense.getCancelReason());
+        row.setNumber(expense.getNumber());
         return row;
     }
 
@@ -237,7 +240,8 @@ public class AccountMapper {
                 debt.getCurrency(),
                 false,
                 null,
-                null
+                null,
+                movement.getNumber()
         );
     }
 

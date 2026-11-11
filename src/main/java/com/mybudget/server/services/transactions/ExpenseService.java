@@ -31,6 +31,7 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final AccountService accountService;
     private final DebtMovementRepository debtMovementRepository;
+    private final ReferenceNumbers referenceNumbers;
 
     @Transactional
     public ExpenseResponse addExpense(ExpenseRequest expenseRequest) {
@@ -51,7 +52,7 @@ public class ExpenseService {
         String currency = AccountBalances.resolve(account, expenseRequest.getCurrency());
         expense.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.OUT, expenseRequest.getAmount());
-
+        expense.setNumber(referenceNumbers.next(expense.getUser()));
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
 
@@ -73,7 +74,7 @@ public class ExpenseService {
         String currency = AccountBalances.resolve(account, requset.getCurrency());
         expense.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.OUT, requset.getAmount());
-
+        expense.setNumber(referenceNumbers.next(expense.getUser()));
         return mapToExpenseResponse(expenseRepository.save(expense));
     }
 

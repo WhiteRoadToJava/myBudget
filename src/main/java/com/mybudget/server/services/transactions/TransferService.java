@@ -26,6 +26,7 @@ public class TransferService {
     private final UserUtils userUtils;
     private final TransferRepository transferRepository;
     private final AccountService accountService;
+    private final ReferenceNumbers referenceNumbers;
 
     public TransferResponse executeTransfer(TransferRequest request) {
         return create(request, userUtils.getCurrentAuthenticatedUser());
@@ -123,6 +124,7 @@ public class TransferService {
         Transfer transfer = new Transfer();
         transfer.setUser(user);
         fill(transfer, request, user);
+        transfer.setNumber(referenceNumbers.next(user));
 
         List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
         apply(effects, +1);

@@ -23,6 +23,7 @@ public class Expense {
     private double amount;
     private String category;
     private String description;
+    private Long number;     // the reference number shown to people and in the statement (ReferenceNumbers)
     // multi-currency (filled by scripts/migration; the services switch to it in the next phases)
     private String currency;
     @CreatedDate
