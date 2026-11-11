@@ -6,10 +6,7 @@ import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.services.statement.StatementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import com.mybudget.server.dto.accounts.AccountRequest;
@@ -128,7 +125,8 @@ public class AccountController {
         String name = StatementService.fileName("Statement", currency == null ? "" : currency, from, to);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment, filename=\"" + name + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(name).build().toString())
                 .body(pdf);
     }
 }
