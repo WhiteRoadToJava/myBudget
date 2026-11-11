@@ -3,6 +3,7 @@ package com.mybudget.server.services.statement;
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.CurrencyBalance;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.services.account.AccountBalances;
@@ -30,8 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The account statement as a PDF (one account, one currency, one period), like the ledgers
@@ -50,6 +50,7 @@ public class StatementService {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter MOMENT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final ZoneId ZONE = ZoneId.of("Asia/Damascus");
+    private static final String ALL = "ALL";
 
     private final AccountRepository accountRepository;
     private final AccountService accountService;
@@ -65,13 +66,22 @@ public class StatementService {
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
-        String code = AccountBalances.resolve(account, currency);
-        double balanceNow = AccountBalances.find(account, code).map(p -> p.getTotalBalance()).orElse(0.0);
+        // String code = AccountBalances.resolve(account, currency);
         Map<String, String> words = StatementTexts.of(lang);
+        List<Transaction> transactions = accountService.getAllAccountTransactions(account);
 
-        StatementCalculator.Result result = StatementCalculator.calculate(
-                accountService.getAllAccountTransactions(account), code, from, to, balanceNow,
-                t -> describe(t, account, words));
+        // one currency, or every currency of the account (currency "ALL"), one section each
+        List<String> codes = ALL.equalsIgnoreCase(currency)
+                ? AccountBalances.pockets(account).stream().map(CurrencyBalance::getCurrency).toList()
+                : List.of(AccountBalances.resolve(account, currency));
+
+        List<Map<String, Object>> sections = new ArrayList<>();
+        for (String code : codes) {
+            double balanceNow = AccountBalances.find(account, code).map(CurrencyBalance::getTotalBalance).orElse(0.0);
+            StatementCalculator.Result result = StatementCalculator.calculate(
+                    transactions, code, from, to, balanceNow, t -> describe(t, account, words));
+            sections.add(section(code, result, from, words));
+        }
 
         Context context = new Context();
         context.setVariable("t", words);
@@ -79,18 +89,28 @@ public class StatementService {
         context.setVariable("lang", StatementTexts.language(lang));
         context.setVariable("owner", ownerName(user));
         context.setVariable("account", account.getName());
-        context.setVariable("currency", code);
         context.setVariable("from", from.format(DAY));
         context.setVariable("to", to.format(DAY));
         context.setVariable("printed", LocalDateTime.now(ZONE).format(MOMENT));
-        context.setVariable("opening", money(result.opening()));
-        context.setVariable("openingSide", side(result.opening(), words));
-        context.setVariable("closing", money(result.closing()));
-        context.setVariable("closingSide", side(result.closing(), words));
-        context.setVariable("totalIn", money(result.totalIn()));
-        context.setVariable("totalOut", money(result.totalOut()));
-        context.setVariable("openingDate", from.format(DAY));
-        context.setVariable("rows", result.rows().stream().map(r -> Map.of(
+        context.setVariable("sections", sections);
+        // the summary of every currency at the top, when there is more than one
+        context.setVariable("several", sections.size() > 1);
+        String html = templateEngine.process("statement", context);
+        return render(html, StatementTexts.isRtl(lang));
+    }
+    // what the template shows for one currency
+    private static Map<String, Object> section(String code, StatementCalculator.Result result, LocalDate from,
+                                               Map<String, String> words) {
+        Map<String, Object> section = new HashMap<>();
+        section.put("currency", code);
+        section.put("opening", money(result.opening()));
+        section.put("openingSide", side(result.opening(), words));
+        section.put("closing", money(result.closing()));
+        section.put("closingSide", side(result.closing(), words));
+        section.put("totalIn", money(result.totalIn()));
+        section.put("totalOut", money(result.totalOut()));
+        section.put("openingDate", from.format(DAY));
+        section.put("rows", result.rows().stream().map(r -> Map.of(
                 "date", r.date().format(DAY),
                 "operation", words.getOrDefault(r.type(), r.type()) + (r.number() != null ? " " + r.number() : ""),
                 "description", r.description() == null ? "" : r.description(),
@@ -100,9 +120,7 @@ public class StatementService {
                 "cancelled", r.cancelled(),
                 "reason", r.cancelReason() == null ? "" : r.cancelReason()
         )).toList());
-
-        String html = templateEngine.process("statement", context);
-        return render(html, StatementTexts.isRtl(lang));
+        return section;
     }
 
     // a file name the browser can save: "statement-USD-2026-11-01_2026-11-05.pdf" (no Arabic, no spaces)
