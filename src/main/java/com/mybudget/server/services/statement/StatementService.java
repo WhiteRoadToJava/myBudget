@@ -92,8 +92,13 @@ public class StatementService {
         context.setVariable("from", from.format(DAY));
         context.setVariable("to", to.format(DAY));
         context.setVariable("printed", LocalDateTime.now(ZONE).format(MOMENT));
-        context.setVariable("sections", sections);
-        // the summary of every currency at the top, when there is more than one
+        // the summary lists every currency; a currency without movements in the period has no
+        // section of its own (no empty pages). A one-currency statement keeps its section always.
+        List<Map<String, Object>> withMovements = sections.stream()
+                .filter(s -> !((List<?>) s.get("rows")).isEmpty())
+                .toList();
+        context.setVariable("summary", sections);
+        context.setVariable("sections", sections.size() > 1 ? withMovements : sections);
         context.setVariable("several", sections.size() > 1);
         String html = templateEngine.process("statement", context);
         return render(html, StatementTexts.isRtl(lang));

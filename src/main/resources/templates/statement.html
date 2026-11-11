@@ -9,6 +9,7 @@
             margin: 14mm 12mm 16mm 12mm;
             @bottom-center {
                 content: counter(page) " / " counter(pages);
+                direction: ltr;
                 font-family: 'NotoSans';
                 font-size: 9pt;
                 color: #555;
@@ -260,7 +261,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="s : ${sections}">
+        <tr th:each="s : ${summary}">
             <td class="center num value" th:text="${s.currency}">USD</td>
             <td class="center"><span class="num balance" th:text="${s.opening}">0.00</span> <span class="side"
                                                                                                   th:text="${s.openingSide}"></span>
@@ -272,6 +273,7 @@
         </tbody>
     </table>
 </div>
+<p th:if="${several and #lists.isEmpty(sections)}" class="center" th:text="${t.noTransactions}">No transactions</p>
 
 <!-- one section per currency -->
 <div th:each="s, it : ${sections}" class="section" th:classappend="${several and !it.first} ? 'newPage'">
