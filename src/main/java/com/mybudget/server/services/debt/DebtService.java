@@ -16,6 +16,7 @@ import com.mybudget.server.repositories.DebtMovementRepository;
 
 import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.services.account.AccountService;
+import com.mybudget.server.services.transactions.ReferenceNumbers;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class DebtService {
     private final AccountService accountService;
     private final IncomseRepository incomseRepository;
     private final ExpenseRepository expenseRepository;
+    private final ReferenceNumbers referenceNumbers;
 
 
     public DebtResponse createDebt(DebtRequest request) {
@@ -131,6 +133,7 @@ public class DebtService {
         movement.setDate(request.getDate());
         movement.setDescription(request.getDescription());
         movement.setCurrency(debt.getCurrency());
+        movement.setNumber(referenceNumbers.next(user));
 
         List<DebtMovement> history = new ArrayList<>(debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt));
         history.add(movement);
@@ -381,6 +384,7 @@ public class DebtService {
             incomse.setAmount(movement.getAmount());
             incomse.setCategory(DEBT_CATEGORY);
             incomse.setCurrency(debt.getCurrency());
+            incomse.setNumber(movement.getNumber());
             incomse.setDescription(movement.getDescription());
             incomse.setUser(movement.getUser());
             incomse.setAccount(movement.getAccount());
@@ -396,6 +400,7 @@ public class DebtService {
             expense.setAmount(movement.getAmount());
             expense.setCategory(DEBT_CATEGORY);
             expense.setCurrency(debt.getCurrency());
+            expense.setNumber(movement.getNumber());
             expense.setDescription(movement.getDescription());
             expense.setUser(movement.getUser());
             expense.setAccount(movement.getAccount());
