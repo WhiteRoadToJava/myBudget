@@ -11,6 +11,8 @@ public final class StatementTexts {
     private static final Map<String, Map<String, String>> TEXTS = Map.of(
             "ar", Map.ofEntries(
                     Map.entry("title", "كشف حساب"),
+                    Map.entry("summary", "ملخص الأرصدة"),
+                    Map.entry("allCurrencies", "كل العملات"),
                     Map.entry("printed", "طُبع بتاريخ"),
                     Map.entry("currency", "العملة"),
                     Map.entry("period", "الفترة"),
@@ -44,6 +46,8 @@ public final class StatementTexts {
                     Map.entry("from", "من")),
             "en", Map.ofEntries(
                     Map.entry("title", "Account statement"),
+                    Map.entry("summary", "Balances"),
+                    Map.entry("allCurrencies", "All currencies"),
                     Map.entry("printed", "Printed"),
                     Map.entry("currency", "Currency"),
                     Map.entry("period", "Period"),
@@ -77,6 +81,8 @@ public final class StatementTexts {
                     Map.entry("from", "From")),
             "sv", Map.ofEntries(
                     Map.entry("title", "Kontoutdrag"),
+                    Map.entry("summary", "Saldon"),
+                    Map.entry("allCurrencies", "Alla valutor"),
                     Map.entry("printed", "Utskrivet"),
                     Map.entry("currency", "Valuta"),
                     Map.entry("period", "Period"),

@@ -120,8 +120,8 @@ public class AccountController {
                                                @RequestParam(required = false) String currency,
                                                @RequestParam LocalDate from,
                                                @RequestParam LocalDate to,
-                                               @RequestParam(defaultValue = "ar") String language){
-        byte[] pdf = statementService.statementPdf(accountId, currency, from, to, language);
+                                               @RequestParam(defaultValue = "ar") String lang) {
+        byte[] pdf = statementService.statementPdf(accountId, currency, from, to, lang);
         String name = StatementService.fileName("Statement", currency == null ? "" : currency, from, to);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
