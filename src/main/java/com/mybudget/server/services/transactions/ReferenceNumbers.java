@@ -28,7 +28,7 @@ public class ReferenceNumbers {
     private final MongoTemplate mongoTemplate;
 
     private static String counterId(String userId){
-        return "transaction:" + userId;
+        return "transactions:" + userId;
     }
 
     public long next(User user) {
