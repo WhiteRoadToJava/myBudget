@@ -8,12 +8,20 @@ public class RegisterResponse {
     private String message;
     private String username;
     private Set<Role> roles;
+    private boolean requiresActivation;
 
     public RegisterResponse(String message, String username, Set<Role> roles) {
         this.message = message;
         this.username = username;
 
         this.roles = roles;
+    }
+
+    public RegisterResponse(String message, String username, Set<Role> roles, boolean requiresActivation){
+        this.message = message;
+        this.username = username;
+        this.roles = roles;
+        this.requiresActivation = requiresActivation;
     }
 
 
@@ -42,6 +50,14 @@ public class RegisterResponse {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public boolean isRequiresActivation() {
+        return requiresActivation;
+    }
+
+    public void setRequiresActivation(boolean requiresActivation) {
+        this.requiresActivation = requiresActivation;
     }
 
 }

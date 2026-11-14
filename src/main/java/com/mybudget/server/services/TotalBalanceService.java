@@ -1,6 +1,8 @@
 package com.mybudget.server.services;
 
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.CurrencyBalance;
+import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.modules.TotalBalance;
 import com.mybudget.server.modules.User;
 import com.mybudget.server.repositories.AccountRepository;
@@ -31,8 +33,6 @@ public class TotalBalanceService {
 
         for (Account account : accountList) {
             String userId = account.getUser().getId();
-            String currency = account.getCurrency();
-            Double amount = account.getTotalBalance();
 
             // Get existing TotalBalance for this user, or create a new one
             TotalBalance totalBalance = balanceByUser.getOrDefault(
@@ -40,9 +40,11 @@ public class TotalBalanceService {
                     new TotalBalance(null, new HashMap<>(), userId, null)
             );
 
-            // Merge the amount into the currency key
-            totalBalance.getTotalBalanceByCurrency()
-                    .merge(currency, amount, Double::sum);
+            // every currency of the account
+            for (CurrencyBalance pocket : AccountBalances.pockets(account)) {
+                totalBalance.getTotalBalanceByCurrency().merge(pocket.getCurrency(),
+                        pocket.getTotalBalance() == null ? 0.0 : pocket.getTotalBalance(), Double::sum);
+            }
 
             balanceByUser.put(userId, totalBalance);
         }

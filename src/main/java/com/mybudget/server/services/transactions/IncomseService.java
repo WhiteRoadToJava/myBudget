@@ -1,0 +1,256 @@
+package com.mybudget.server.services.transactions;
+
+
+import com.mybudget.server.dto.incomse.IncomseRequset;
+import com.mybudget.server.dto.incomse.IncomseResponse;
+import com.mybudget.server.exeptions.ConflictException;
+import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.Incomse;
+import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.enums.CashFlow;
+import com.mybudget.server.repositories.AccountRepository;
+import com.mybudget.server.repositories.DebtMovementRepository;
+import com.mybudget.server.repositories.IncomseRepository;
+import com.mybudget.server.services.account.AccountBalances;
+import com.mybudget.server.services.account.AccountService;
+import com.mybudget.server.util.UserUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class IncomseService {
+    private final UserUtils userUtils;
+    private final AccountService accountService;
+    private final IncomseRepository incomseRepository;
+    private final AccountRepository accountRepository;
+    private final DebtMovementRepository debtMovementRepository;
+    private final ReferenceNumbers referenceNumbers;
+
+    @Transactional
+    public IncomseResponse addInccmse(IncomseRequset incomseRequest) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse incomse = new Incomse();
+        incomse.setAmount(incomseRequest.getAmount());
+        incomse.setCategory(incomseRequest.getCategory());
+        incomse.setDescription(cleanDescription(incomseRequest.getDescription()));
+        incomse.setImage(incomseRequest.getImage());
+        incomse.setUser(currentUser);
+
+        String accountId = incomseRequest.getAccount().getId();
+        Account account = accountRepository.findByIdAndUser(accountId, currentUser);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        incomse.setAccount(account);
+        String currency = AccountBalances.resolve(account, incomseRequest.getCurrency());
+        incomse.setCurrency(currency);
+        accountService.applyCashFlow(account, currency, CashFlow.IN, incomseRequest.getAmount());
+        incomse.setNumber(referenceNumbers.next(incomse.getUser()));
+        return mapToIncomseResponse(incomseRepository.save(incomse));
+    }
+
+    // this method is used with schedule
+    @Transactional
+    public IncomseResponse excuteIncomse(IncomseRequset request, User user) {
+        Incomse incomse = new Incomse();
+        incomse.setAmount(request.getAmount());
+        incomse.setCategory(request.getCategory());
+        incomse.setDescription(cleanDescription(request.getDescription()));
+        incomse.setUser(user);
+
+        String accountId = request.getAccount().getId();
+        Account account = accountRepository.findByIdAndUser(accountId, user);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        incomse.setAccount(account);
+        String currency = AccountBalances.resolve(account, request.getCurrency());
+        incomse.setCurrency(currency);
+        accountService.applyCashFlow(account, currency, CashFlow.IN, request.getAmount());
+        incomse.setNumber(referenceNumbers.next(incomse.getUser()));
+        return mapToIncomseResponse(incomseRepository.save(incomse));
+    }
+
+    public IncomseResponse getIncomseById(String incomseId) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse incomse = incomseRepository.findById(incomseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Incomse not found or access denied"));
+
+        if (!incomse.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Incomse not found or access denied");
+        } else {
+            return mapToIncomseResponse(incomse);
+        }
+    }
+
+    @Transactional
+    public IncomseResponse updateIncome(String incomseId, IncomseRequset requset) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse incomse = findOwnedIncomse(incomseId, currentUser);
+        Account newAccount = findOwnedAccount(requset.getAccount(), currentUser);
+        ensureNotDebtMirror(incomseId);
+        Cancellation.ensureActive(incomse.getCancelled(), "income");
+
+        // the old and the new place of the money: (account, currency)
+        Account oldAccount = incomse.getAccount();
+        String oldCurrency = oldAccount == null ? null
+                : (incomse.getCurrency() != null ? incomse.getCurrency() : AccountBalances.primaryCurrency(oldAccount));
+        double oldAmount = incomse.getAmount();
+        double newAmount = requset.getAmount();
+        String newCurrency = AccountBalances.resolve(newAccount, requset.getCurrency());
+
+        // undo the old record, then apply the new one (same account: both on the same object)
+        if (oldAccount != null) {
+            Account oldTarget = oldAccount.getId().equals(newAccount.getId()) ? newAccount : oldAccount;
+            accountService.revertCashFlow(oldTarget, oldCurrency, CashFlow.IN, oldAmount);
+        }
+        accountService.applyCashFlow(newAccount, newCurrency, CashFlow.IN, newAmount);
+        try {
+            incomse.setAccount(newAccount);
+            incomse.setAmount(newAmount);
+            incomse.setCategory(requset.getCategory());
+            incomse.setImage(requset.getImage());
+            incomse.setDescription(requset.getDescription());
+            incomse.setCurrency(newCurrency);
+            return mapToIncomseResponse(incomseRepository.save(incomse));
+        } catch (RuntimeException e) {
+            accountService.revertCashFlow(newAccount, newCurrency, CashFlow.IN, newAmount);
+            if (oldAccount != null) {
+                Account oldTarget = oldAccount.getId().equals(newAccount.getId()) ? newAccount : oldAccount;
+                accountService.applyCashFlow(oldTarget, oldCurrency, CashFlow.IN, oldAmount);
+            }
+            throw e;
+        }
+    }
+
+    // the currency of a record; a record from before the migration is in the account's first currency
+    private String currencyOf(Incomse incomse) {
+        if (incomse.getCurrency() != null || incomse.getAccount() == null) {
+            return incomse.getCurrency();
+        }
+        return AccountBalances.primaryCurrency(incomse.getAccount());
+    }
+
+    private Account findOwnedAccount(Account requesstAccount, User currentUser) {
+        if (requesstAccount == null || requesstAccount.getId() == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(requesstAccount.getId(), currentUser);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        return account;
+    }
+
+    @Transactional
+    public String deleteIncomse(String incomseId) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse incomse = findOwnedIncomse(incomseId, currentUser);
+        ensureNotDebtMirror(incomse.getId());
+        if (!Cancellation.isCancelled(incomse.getCancelled())) {
+            accountService.revertCashFlow(incomse.getAccount(), currencyOf(incomse), CashFlow.IN, incomse.getAmount());
+        }
+        incomseRepository.delete(incomse);
+        return "Income deleted successfully";
+    }
+
+    @Transactional
+    public IncomseResponse cancelIncome(String incomeId, String reason) {
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
+        ensureNotDebtMirror(income.getId());
+        Cancellation.ensureActive(income.getCancelled(), "income");
+
+        accountService.revertCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
+        income.setCancelled(true);
+        income.setCancelledAt(LocalDateTime.now());
+        income.setCancelReason(Cancellation.reason(reason));
+        return mapToIncomseResponse(incomseRepository.save(income));
+    }
+
+    @Transactional
+    public IncomseResponse restoreIncome(String incomeId) {
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
+        Cancellation.ensureCancelled(income.getCancelled(), "income");
+        accountService.applyCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
+        income.setCancelled(null);
+        income.setCancelledAt(null);
+        income.setCancelReason(null);
+        return mapToIncomseResponse(incomseRepository.save(income));
+    }
+
+
+    private void ensureNotDebtMirror(String recordId) {
+        if (debtMovementRepository.existsByMirroredTransactionId(recordId)) {
+            throw new ConflictException("This income was created by a debt movement. Edit or delete it from the debt");
+        }
+    }
+
+    private Incomse findOwnedIncomse(String incomseId, User currentUser) {
+        Incomse incomse = incomseRepository.findById(incomseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Income not found"));
+        if (incomse.getUser() == null || !incomse.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Income not found");
+        }
+        return incomse;
+    }
+
+    public List<IncomseResponse> getAllIncomseByAccount(Account account) {
+        List<Incomse> incomseResponses = incomseRepository.findAllByAccount(account);
+        return incomseResponses.stream().map(this::mapToIncomseResponse).toList();
+    }
+
+
+    public List<IncomseResponse> getAllIncomseByUser() {
+        User user = userUtils.getCurrentAuthenticatedUser();
+        List<Incomse> incomseResponses = incomseRepository.findAllByUser(user);
+        return incomseResponses.stream().map(this::mapToIncomseResponse).toList();
+    }
+
+
+    private IncomseResponse mapToIncomseResponse(Incomse incomse) {
+        String type;
+        if (incomse.getType() == null) {
+            type = "inocmse";
+        } else type = incomse.getType();
+        LocalDateTime date = incomse.getCreatedAt();
+        if (incomse.getCreatedAt() == null)
+            date = date.now();
+        Map<String, String> image = incomse.getImage();
+        Map<String, String> imageUrl = new HashMap<>();
+        if (image != null && image.get("url") != null) {
+            imageUrl.put("url", image.get("url"));
+            imageUrl.put("filename", image.get("filename"));
+        } else {
+            imageUrl.put("url", "");
+            imageUrl.put("filename", "");
+        }
+        return new IncomseResponse(
+                incomse.getId(),
+                incomse.getAmount(),
+                incomse.getCategory(),
+                incomse.getUser(),
+                incomse.getAccount(),
+                type,
+                date,
+                image,
+                incomse.getDescription(),
+                currencyOf(incomse)
+        );
+    }
+
+
+    private String cleanDescription(String description) {
+        return description == null || description.isBlank() ? null : description.trim();
+    }
+
+}

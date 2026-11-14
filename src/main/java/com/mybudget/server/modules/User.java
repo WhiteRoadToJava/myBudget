@@ -1,5 +1,7 @@
 package com.mybudget.server.modules;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mybudget.server.modules.enums.Role;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.data.annotation.CreatedDate;
@@ -8,6 +10,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
@@ -32,15 +36,25 @@ public class User {
             message = "Password must be at least 8 characters long and contain at least "
             + "one uppercase letter, one number, and one special character"
     )
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private Set<Role> roles;
     private String firstName;
     private String lastName;
     private String phone;
+    // old free-text end date, read only as a fallback for subscriptionEndsAt
     private String expireDate;
+    // last day with full access (Damascus time); null = not set yet
+    private LocalDate subscriptionEndsAt;
+    // true from registration until the first recorded payment
+    private Boolean onTrial;
     @CreatedDate
     private String createdAt;
+    // null = legacy account (treated as enabled), false = waiting for email activation, true = active
+    private Boolean enabled;
+    @JsonIgnore
+    private Instant passwordCreatedAt;
 
     public User() {
     }
@@ -51,4 +65,12 @@ public class User {
         this.roles = roles;
     }
 
+    public User(String username, String password, String firstName, String lastName, String phone, String expireDate) {
+        this.password = password;
+        this.username = username;
+        this.lastName = lastName;
+        this.firstName = firstName;
+        this.phone = phone;
+        this.expireDate = expireDate;
+    }
 }

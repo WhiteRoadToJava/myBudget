@@ -1,6 +1,10 @@
 package com.mybudget.server.dto.transfer;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.enums.FeeDirection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,4 +21,19 @@ public class TransferRequest {
     private Double amountReceived ;
 
     private String description;
+    private LocalDateTime createdAt;
+    private Map<String, String> image;
+
+    // optional fees; an account left empty means the account on the fee's side
+    private Double sendFee;
+    private FeeDirection sendFeeDirection;
+    private Account sendFeeAccount;
+    private Double receiveFee;
+    private FeeDirection receiveFeeDirection;
+    private Account receiveFeeAccount;
+    // a currency of each account; empty = the account's first currency (fees: their side's currency)
+    private String sourceCurrency;
+    private String destinationCurrency;
+    private String sendFeeCurrency;
+    private String receiveFeeCurrency;
 }

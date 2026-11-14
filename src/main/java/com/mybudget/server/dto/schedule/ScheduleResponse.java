@@ -1,5 +1,6 @@
 package com.mybudget.server.dto.schedule;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mybudget.server.modules.enums.ScheduleInterval;
 import com.mybudget.server.modules.enums.TransactionType;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,7 @@ public class ScheduleResponse {
 private String id;
 private String name;
 private String description;
+private String category;
 private AccountSummary sourceAccount;
 private AccountSummary destinationAccount;
 private TransactionType transactionType;
@@ -26,7 +28,11 @@ private ScheduleInterval scheduleInterval;
 private BigDecimal amountSend;
 private BigDecimal exChangeRate;
 private BigDecimal amountReceived;
+private String debtId;
+private String sourceCurrency;
+private String destinationCurrency;
 private LocalDateTime executionDate;
+@JsonProperty("isActive")
 private boolean active;
 private UserSummary createdBy;
 private LocalDateTime createdAt;
@@ -36,7 +42,9 @@ private LocalDateTime updatedAt;
 public static class AccountSummary {
     private String id;
     private String name;
+    // the balance of the schedule's currency in that account
     private Double totalBalance;
+    private String currency;
 }
 
 @Data

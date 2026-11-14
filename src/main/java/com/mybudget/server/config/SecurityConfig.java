@@ -1,5 +1,6 @@
 package com.mybudget.server.config;
 
+import com.mybudget.server.filter.RelateLimitFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,25 +43,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // تفعيل الـ CORS باستخدام الإعدادات المعرفة بالأسفل
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // سطر مهم جداً: السماح بطلبات OPTIONS لكل المسارات بدون توثيق
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasRole("USER")
-                        .requestMatchers("/auth/**", "/healthy/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/mongo/**").hasRole("ADMIN")
+                        .requestMatchers("/api/user/**").hasRole("USER")
+                        .requestMatchers("/api/auth/**", "/api/healthy/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .addFilterBefore(new RelateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
-@Value("${app.frontend.url}")
+@Value("${app.frontend.url:http://192.168.0.*:5173}")
 private String frontendUrl;
     // cors config
     @Bean
@@ -68,11 +68,8 @@ private String frontendUrl;
         CorsConfiguration configuration = new CorsConfiguration();
 
         // only allow request from our future react client
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "https://my-budget-frontend.vercel.app",
-                "https://dreamy-cajeta-ce3d15.netlify.app",
-                "https://my-budget-frontend-production-271c.up.railway.app"
+        configuration.setAllowedOriginPatterns(List.of(
+                frontendUrl
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

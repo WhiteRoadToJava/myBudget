@@ -4,27 +4,28 @@ import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.modules.Account;
-import com.mybudget.server.modules.enums.AccountStatus;
+import com.mybudget.server.services.statement.StatementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
+import com.mybudget.server.dto.accounts.CurrencyRequest;
 import com.mybudget.server.services.account.AccountService;
 
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/accounts")
+@RequestMapping("/api/user/accounts")
 public class AccountController {
 
     public final AccountService accountService;
+    public final StatementService statementService;
 
 
     @PostMapping("/add-account")
@@ -34,7 +35,7 @@ public class AccountController {
     }
 @PatchMapping("/update-account")
     public ResponseEntity<?> updateAccount(@RequestBody Account account){
-        AccountResponse response = accountService.updateAcoount(account);
+        AccountResponse response = accountService.updateAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @DeleteMapping("/delete-account/{accountId}")
@@ -61,7 +62,7 @@ public class AccountController {
     }
     @GetMapping("/all-incomse-and-expense-transactions")
     public ResponseEntity<?> getAllTransations(){
-        List<Transaction> transactionList = accountService.getAllTransactions();
+        List<Transaction> transactionList = accountService.getAllIncomeExpenseTransactions();
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 
@@ -77,5 +78,55 @@ public class AccountController {
     public ResponseEntity<?> updateAccountStatus(@PathVariable String accountId, @RequestBody UpdateAccountStatus statusSet){
         AccountResponse response = accountService.updateAccountStatus(accountId, statusSet);
         return  ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+
+    @GetMapping("/user-all-transactions")
+    public ResponseEntity<?> getAllUserTransactions(){
+        List<Transaction> transactions = accountService.getUserAllTransaction();
+        return  ResponseEntity.status(HttpStatus.OK).body(transactions);
+    }
+
+    // ---------- currencies of an account ----------
+
+    // body: { "currency": "USD", "openingBalance": 50 }
+    @PostMapping("/{accountId}/currencies")
+    public ResponseEntity<AccountResponse> addCurrency(@PathVariable String accountId, @RequestBody CurrencyRequest request) {
+        AccountResponse response = accountService.addCurrency(accountId, request.getCurrency(), request.getOpeningBalance());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // body: { "openingBalance": 100 }
+    @PatchMapping("/{accountId}/currencies/{currency}")
+    public ResponseEntity<AccountResponse> setOpeningBalance(@PathVariable String accountId, @PathVariable String currency,
+                                                             @RequestBody CurrencyRequest request) {
+        return ResponseEntity.ok(accountService.setOpeningBalance(accountId, currency, request.getOpeningBalance()));
+    }
+
+    // only a currency without any transaction, and never the last one (409 otherwise)
+    @DeleteMapping("/{accountId}/currencies/{currency}")
+    public ResponseEntity<AccountResponse> removeCurrency(@PathVariable String accountId, @PathVariable String currency) {
+        return ResponseEntity.ok(accountService.removeCurrency(accountId, currency));
+    }
+
+
+
+
+
+
+
+    @GetMapping("/{accountId}/statement.pdf")
+    public ResponseEntity<byte[]> statementPdf(@PathVariable String accountId,
+                                               @RequestParam(required = false) String currency,
+                                               @RequestParam LocalDate from,
+                                               @RequestParam LocalDate to,
+                                               @RequestParam(defaultValue = "ar") String lang) {
+        byte[] pdf = statementService.statementPdf(accountId, currency, from, to, lang);
+        String name = StatementService.fileName("Statement", currency == null ? "" : currency, from, to);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(name).build().toString())
+                .body(pdf);
     }
 }

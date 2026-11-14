@@ -1,0 +1,252 @@
+package com.mybudget.server.services.transactions;
+
+import com.mybudget.server.dto.expense.ExpenseRequest;
+import com.mybudget.server.dto.expense.ExpenseResponse;
+import com.mybudget.server.exeptions.ConflictException;
+import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.modules.Account;
+import com.mybudget.server.modules.Expense;
+import com.mybudget.server.modules.User;
+import com.mybudget.server.modules.enums.CashFlow;
+import com.mybudget.server.repositories.AccountRepository;
+import com.mybudget.server.repositories.DebtMovementRepository;
+import com.mybudget.server.repositories.ExpenseRepository;
+import com.mybudget.server.services.account.AccountBalances;
+import com.mybudget.server.services.account.AccountService;
+import com.mybudget.server.util.UserUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class ExpenseService {
+    private final UserUtils userUtils;
+    private final AccountRepository accountRepository;
+    private final ExpenseRepository expenseRepository;
+    private final AccountService accountService;
+    private final DebtMovementRepository debtMovementRepository;
+    private final ReferenceNumbers referenceNumbers;
+
+    @Transactional
+    public ExpenseResponse addExpense(ExpenseRequest expenseRequest) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = new Expense();
+        expense.setAmount(expenseRequest.getAmount());
+        expense.setCategory(expenseRequest.getCategory());
+        expense.setDescription(expenseRequest.getDescription());
+        expense.setUser(currentUser);
+        expense.setImage(expenseRequest.getImage());
+
+        String accountId = expenseRequest.getAccount().getId();
+        Account account = accountRepository.findByIdAndUser(accountId, currentUser);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        expense.setAccount(account);
+        String currency = AccountBalances.resolve(account, expenseRequest.getCurrency());
+        expense.setCurrency(currency);
+        accountService.applyCashFlow(account, currency, CashFlow.OUT, expenseRequest.getAmount());
+        expense.setNumber(referenceNumbers.next(expense.getUser()));
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+
+    // this method is used with schedule
+    @Transactional
+    public ExpenseResponse addExpense(ExpenseRequest requset, User user) {
+        Expense expense = new Expense();
+        expense.setAmount(requset.getAmount());
+        expense.setCategory(requset.getCategory());
+        expense.setDescription(cleanDescription(requset.getDescription()));
+        expense.setUser(user);
+
+        String accountId = requset.getAccount().getId();
+        Account account = accountRepository.findByIdAndUser(accountId, user);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        expense.setAccount(account);
+        String currency = AccountBalances.resolve(account, requset.getCurrency());
+        expense.setCurrency(currency);
+        accountService.applyCashFlow(account, currency, CashFlow.OUT, requset.getAmount());
+        expense.setNumber(referenceNumbers.next(expense.getUser()));
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+
+    @Transactional
+    public ExpenseResponse updateExpense(String expenseId, ExpenseRequest expenseRequest) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, currentUser);
+        ensureNotDebtMirror(expense.getId());
+        Cancellation.ensureActive(expense.getCancelled(), "expense");
+        Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
+
+        // the old and the new place of the money: (account, currency)
+        Account oldAccount = expense.getAccount();
+        String oldCurrency = oldAccount == null ? null
+                : (expense.getCurrency() != null ? expense.getCurrency() : AccountBalances.primaryCurrency(oldAccount));
+        double oldAmount = expense.getAmount();
+        double newAmount = expenseRequest.getAmount();
+        String newCurrency = AccountBalances.resolve(newAccount, expenseRequest.getCurrency());
+
+        // undo the old record, then apply the new one (same account: both on the same object)
+        if (oldAccount != null) {
+            Account oldTarget = oldAccount.getId().equals(newAccount.getId()) ? newAccount : oldAccount;
+            accountService.revertCashFlow(oldTarget, oldCurrency, CashFlow.OUT, oldAmount);
+        }
+        accountService.applyCashFlow(newAccount, newCurrency, CashFlow.OUT, newAmount);
+        try {
+            expense.setAccount(newAccount);
+            expense.setAmount(newAmount);
+            expense.setCategory(expenseRequest.getCategory());
+            expense.setImage(expenseRequest.getImage());
+            expense.setDescription(cleanDescription(expenseRequest.getDescription()));
+            if (expenseRequest.getCreatedAt() != null) {
+                expense.setCreatedAt(expenseRequest.getCreatedAt());
+            }
+            expense.setCurrency(newCurrency);
+            return mapToExpenseResponse(expenseRepository.save(expense));
+        } catch (RuntimeException e) {
+            accountService.revertCashFlow(newAccount, newCurrency, CashFlow.OUT, newAmount);
+            if (oldAccount != null) {
+                Account oldTarget = oldAccount.getId().equals(newAccount.getId()) ? newAccount : oldAccount;
+                accountService.applyCashFlow(oldTarget, oldCurrency, CashFlow.OUT, oldAmount);
+            }
+            throw e;
+        }
+    }
+
+    private void ensureNotDebtMirror(String recordId){
+        if (debtMovementRepository.existsByMirroredTransactionId(recordId)){
+            throw new ConflictException("This Expense was Created by debt movement, Edit or delete it from the debt");
+        }
+    }
+    private Expense findOwnedExpense(String expenseId, User currentUser) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
+        if (expense.getUser() == null || !expense.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Expense not found");
+        }
+        return expense;
+    }
+
+    // the currency of a record; a record from before the migration is in the account's first currency
+    private String currencyOf(Expense expense) {
+        if (expense.getCurrency() != null || expense.getAccount() == null) {
+            return expense.getCurrency();
+        }
+        return AccountBalances.primaryCurrency(expense.getAccount());
+    }
+
+    private Account findOwnedAccount(Account requesstAccount, User currentUser) {
+        if (requesstAccount == null || requesstAccount.getId() == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        Account account = accountRepository.findByIdAndUser(requesstAccount.getId(), currentUser);
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
+        }
+        return account;
+    }
+
+    @Transactional
+    public String deleteExpense(String expenseId) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, currentUser);
+        ensureNotDebtMirror(expense.getId());
+        if (!Cancellation.isCancelled(expense.getCancelled())){
+            accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        }
+        expenseRepository.delete(expense);
+        return "Expense deleted successfully";
+    }
+
+
+
+    @Transactional
+    public ExpenseResponse cancelExpense(String expenseId, String reason){
+        User authenticatedUse = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, authenticatedUse);
+        ensureNotDebtMirror(expense.getId());
+        Cancellation.ensureActive(expense.getCancelled(), "expense");
+
+        accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        expense.setCancelled(true);
+        expense.setCancelledAt(LocalDateTime.now());
+        expense.setCancelReason(Cancellation.reason(reason));
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+
+
+
+    @Transactional
+    public ExpenseResponse restoreExpense(String expenseId){
+        User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = findOwnedExpense(expenseId, authenticatedUser);
+        Cancellation.ensureCancelled(expense.getCancelled(), "expense");
+
+        accountService.applyCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
+        expense.setCancelled(null);
+        expense.setCancelledAt(null);
+        expense.setCancelReason(null);
+        return mapToExpenseResponse(expenseRepository.save(expense));
+    }
+
+    public ExpenseResponse getExpenseById(String expenseId) {
+        User currentUser = userUtils.getCurrentAuthenticatedUser();
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found or access denied"));
+
+        if (!expense.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Expense not found or access denied");
+        } else {
+            return mapToExpenseResponse(expense);
+        }
+    }
+
+    public List<ExpenseResponse> getAllExpensesByUser() {
+        User user = userUtils.getCurrentAuthenticatedUser();
+        List<Expense> expenses = expenseRepository.findAllByUser(user);
+        return expenses.stream().map(this::mapToExpenseResponse).toList();
+    }
+
+    public List<ExpenseResponse> getAllExpensesByAccount(Account account) {
+        List<Expense> expenses = expenseRepository.findAllByAccount(account);
+        return expenses.stream().map(this::mapToExpenseResponse).toList();
+    }
+
+
+    private ExpenseResponse mapToExpenseResponse(Expense expense) {
+        Map<String, String> image = expense.getImage();
+        Map<String, String> imageUrl = new HashMap<>();
+        if (image != null && image.get("url") != null) {
+            imageUrl.put("url", image.get("url"));
+            imageUrl.put("filename", image.get("filename"));
+        } else {
+            imageUrl.put("url", "");
+            imageUrl.put("filename", "");
+        }
+        return new ExpenseResponse(
+                expense.getId(),
+                expense.getAmount(),
+                expense.getCategory(),
+                expense.getCreatedAt(),
+                expense.getUser(),
+                expense.getAccount(),
+                imageUrl,
+                expense.getDescription(),
+                currencyOf(expense)
+        );
+    }
+
+
+
+    private String cleanDescription(String description){
+        return description == null || description.isBlank() ? null: description.trim();
+    }
+}
