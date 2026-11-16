@@ -48,7 +48,7 @@ public class ExchangeRateService {
 
     public ExchangeRateResponse add(ExchangeRateRequest request){
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
-        if (request.getRate() == null || request.getRate() == 0) {
+        if (request.getRate() == null || request.getRate() <= 0) {
             throw new IllegalArgumentException("The exchange rate must be greater than zero ");
         }
         String from  = code(request.getFrom());
