@@ -11,5 +11,5 @@ public record ExchangeRateResponse(
         double rate,
         LocalDateTime updatedAt,
         Long transferNumber,
-        boolean interval
+        boolean inverted
 ){}

@@ -26,7 +26,7 @@ public class ExchangeRateService {
 
     public List<ExchangeRateResponse> list() {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
-        return exchangeRateRepository.findAllByUserIdOrderByUpdateAtDes(authenticatedUser.getId())
+        return exchangeRateRepository.findAllByUserIdOrderByUpdatedAtDesc(authenticatedUser.getId())
                 .stream().map(r -> toResponse(r, false))
                 .toList();
     }
@@ -68,7 +68,7 @@ public class ExchangeRateService {
 
 
     public void remember(User user, String from, String to, Double rate, Long transferNumber){
-        if (user == null || from == null || to == null || rate == null || rate == 0 ){
+        if (user == null || from == null || to == null || from.equals(to) || rate == null || rate <= 0) {
             return;
         }
         try {
@@ -80,7 +80,7 @@ public class ExchangeRateService {
 
 
     private ExchangeRate save(User user, String from, String to, Double rate, Long transferNumber){
-        exchangeRateRepository.findByUserIdAndFromCurrencyAndToCurrency(user.getId(), from, to)
+        exchangeRateRepository.findByUserIdAndFromCurrencyAndToCurrency(user.getId(), to, from)
                 .ifPresent(exchangeRateRepository::delete);
         ExchangeRate row = exchangeRateRepository.findByUserIdAndFromCurrencyAndToCurrency(user.getId(), from, to)
                 .orElseGet(ExchangeRate::new);

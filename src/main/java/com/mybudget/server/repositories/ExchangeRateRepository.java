@@ -8,7 +8,6 @@ import java.util.Optional;
 
 public interface ExchangeRateRepository extends MongoRepository<ExchangeRate, String> {
     Optional<ExchangeRate> findByUserIdAndFromCurrencyAndToCurrency(String userId, String fromCurrency, String toCurrency);
-    List<ExchangeRate> findAllByUserIdOrderByUpdateAtDes(String userId);
-
+    List<ExchangeRate> findAllByUserIdOrderByUpdatedAtDesc(String userId);
     Optional<ExchangeRate> findByIdAndUserId(String id, String userId);
 }
