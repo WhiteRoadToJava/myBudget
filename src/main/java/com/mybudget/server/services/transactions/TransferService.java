@@ -1,5 +1,6 @@
 package com.mybudget.server.services.transactions;
 
+import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.TransferRepository;
 import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.services.account.AccountService;
+import com.mybudget.server.services.exchange.ExchangeRateService;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,14 +29,15 @@ public class TransferService {
     private final TransferRepository transferRepository;
     private final AccountService accountService;
     private final ReferenceNumbers referenceNumbers;
+    private final ExchangeRateService exchangeRateService;
 
     public TransferResponse executeTransfer(TransferRequest request) {
-        return create(request, userUtils.getCurrentAuthenticatedUser());
+        return create(request, userUtils.getCurrentAuthenticatedUser(), true);
     }
 
     // used by the schedules, which run without a logged-in user
     public TransferResponse executeTransfer(TransferRequest request, User user) {
-        return create(request, user);
+        return create(request, user, false);
     }
 
     public TransferResponse updateTransfer(String transferId, TransferRequest request) {
@@ -51,13 +54,16 @@ public class TransferService {
 
         apply(before, -1);
         apply(after, +1);
+        Transfer saved;
         try {
-            return mapToTransferResponse(transferRepository.save(transfer));
+            saved = transferRepository.save(transfer);
         } catch (RuntimeException e) {
             apply(after, -1);
             apply(before, +1);
             throw e;
         }
+        rememberRate(saved, user);
+        return mapToTransferResponse(saved);
     }
 
     public TransferResponse getTransferById(String transferId) {
@@ -120,7 +126,7 @@ public class TransferService {
 
     // ---------- create / fill ----------
 
-    private TransferResponse create(TransferRequest request, User user) {
+    private TransferResponse create(TransferRequest request, User user, boolean rememberRate) {
         Transfer transfer = new Transfer();
         transfer.setUser(user);
         fill(transfer, request, user);
@@ -128,12 +134,22 @@ public class TransferService {
 
         List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
         apply(effects, +1);
+        Transfer saved;
         try {
-            return mapToTransferResponse(transferRepository.save(transfer));
+    saved = transferRepository.save(transfer);
         } catch (RuntimeException e) {
             apply(effects, -1);
             throw e;
         }
+        if (rememberRate){
+            rememberRate(saved, user);
+        }
+        return mapToTransferResponse(saved);
+    }
+
+    private void rememberRate(Transfer transfer, User user){
+        exchangeRateService.remember(user, transfer.getSourceCurrency(), transfer.getDestinationCurrency(),
+                transfer.getExChangeRate(), transfer.getNumber());
     }
 
     // validates the request and copies it into the transfer; changes no balance
@@ -153,7 +169,7 @@ public class TransferService {
         transfer.setDestinationAccount(destination);
         transfer.setAmountSent(request.getAmountSent());
         transfer.setExChangeRate(request.getExChangeRate());
-        transfer.setAmountReceived(round(request.getAmountSent() * request.getExChangeRate()));
+        transfer.setAmountReceived(amountReceived(request));
         transfer.setSourceCurrency(sourceCurrency);
         transfer.setDestinationCurrency(destinationCurrency);
         transfer.setCurrency(sourceCurrency);
@@ -175,6 +191,16 @@ public class TransferService {
         transfer.setReceiveFeeAccount(receiveFeeAccount);
         transfer.setReceiveFeeCurrency(receiveFeeAccount == null ? null
                 : feeCurrency(receiveFeeAccount, request.getReceiveFeeCurrency(), destination, destinationCurrency));
+    }
+
+    private double amountReceived(TransferRequest request){
+        double computed = round(request.getAmountSent() * request.getExChangeRate());
+        Double given = request.getAmountReceived();
+        double tolerance = 0.005 * request.getExChangeRate() + 0.01;
+        if (given != null && given > 0 && Math.abs(given -computed) <= tolerance){
+            return round(given);
+        }
+        return computed;
     }
 
     private void validate(TransferRequest request) {

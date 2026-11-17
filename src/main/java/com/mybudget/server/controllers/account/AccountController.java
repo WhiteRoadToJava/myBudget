@@ -1,17 +1,13 @@
 package com.mybudget.server.controllers.account;
 
 import com.mybudget.server.dto.Transaction;
-import com.mybudget.server.dto.accounts.AllAccounts;
-import com.mybudget.server.dto.accounts.UpdateAccountStatus;
+import com.mybudget.server.dto.accounts.*;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.services.statement.StatementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import com.mybudget.server.dto.accounts.AccountRequest;
-import com.mybudget.server.dto.accounts.AccountResponse;
-import com.mybudget.server.dto.accounts.CurrencyRequest;
 import com.mybudget.server.services.account.AccountService;
 
 import jakarta.validation.Valid;
@@ -33,14 +29,17 @@ public class AccountController {
         AccountResponse response = accountService.createAccount(accountRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-@PatchMapping("/update-account")
-    public ResponseEntity<?> updateAccount(@RequestBody Account account){
+
+    @PatchMapping("/update-account")
+    public ResponseEntity<?> updateAccount(@RequestBody Account account) {
         AccountResponse response = accountService.updateAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
     @DeleteMapping("/delete-account/{accountId}")
-    public ResponseEntity<?> deleteAccount(@PathVariable String accountId) {
-         accountService.deleteAccount(accountId);
+    public ResponseEntity<?> deleteAccount(@PathVariable String accountId,
+                                           @RequestBody(required = false) DeleteAccountRequest request) {
+         accountService.deleteAccount(accountId, request==null ? null : request.getConfirm());
         return ResponseEntity.status(HttpStatus.OK).body("Account deleted successfully");
     }
 
@@ -49,42 +48,43 @@ public class AccountController {
         AllAccounts response = accountService.getAllAccounts();
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
     @GetMapping("/{accountId}")
-    public ResponseEntity<?> getAccountById(@PathVariable String accountId){
+    public ResponseEntity<?> getAccountById(@PathVariable String accountId) {
         AccountResponse response = accountService.getAccountById(accountId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PostMapping("/allaccount-transactions")
-    public ResponseEntity<?> getAllaccountTransations(@RequestBody Account account){
+    public ResponseEntity<?> getAllaccountTransations(@RequestBody Account account) {
         List<Transaction> response = accountService.getAllAccountTransactions(account);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
     @GetMapping("/all-incomse-and-expense-transactions")
-    public ResponseEntity<?> getAllTransations(){
+    public ResponseEntity<?> getAllTransations() {
         List<Transaction> transactionList = accountService.getAllIncomeExpenseTransactions();
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 
     @GetMapping("/all-transactionsbetweenTwoDates/{fromDate}/{toDate}")
-    public ResponseEntity<?> getTransactionsBetweenTwoDates(@PathVariable String fromDate, @PathVariable String toDate){
+    public ResponseEntity<?> getTransactionsBetweenTwoDates(@PathVariable String fromDate, @PathVariable String toDate) {
         List<Transaction> transactionList = accountService.getTransactionsBetweenTwoDates(fromDate, toDate);
         return ResponseEntity.status(HttpStatus.OK).body(transactionList);
     }
 
 
-
     @PatchMapping("/{accountId}/update-status")
-    public ResponseEntity<?> updateAccountStatus(@PathVariable String accountId, @RequestBody UpdateAccountStatus statusSet){
+    public ResponseEntity<?> updateAccountStatus(@PathVariable String accountId, @RequestBody UpdateAccountStatus statusSet) {
         AccountResponse response = accountService.updateAccountStatus(accountId, statusSet);
-        return  ResponseEntity.status(HttpStatus.OK).body(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 
     @GetMapping("/user-all-transactions")
-    public ResponseEntity<?> getAllUserTransactions(){
+    public ResponseEntity<?> getAllUserTransactions() {
         List<Transaction> transactions = accountService.getUserAllTransaction();
-        return  ResponseEntity.status(HttpStatus.OK).body(transactions);
+        return ResponseEntity.status(HttpStatus.OK).body(transactions);
     }
 
     // ---------- currencies of an account ----------
@@ -108,11 +108,6 @@ public class AccountController {
     public ResponseEntity<AccountResponse> removeCurrency(@PathVariable String accountId, @PathVariable String currency) {
         return ResponseEntity.ok(accountService.removeCurrency(accountId, currency));
     }
-
-
-
-
-
 
 
     @GetMapping("/{accountId}/statement.pdf")

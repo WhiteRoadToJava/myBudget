@@ -38,6 +38,7 @@ public class AccountService {
     private final DebtMovementRepository debtMovementRepository;
     private final ScheduleRepository scheduleRepository;
     private final MongoTemplate mongoTemplate;
+    private static final Set<String> DELETE_WORDS = Set.of("delete", "حذف", "radera");
 
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
@@ -85,16 +86,15 @@ public class AccountService {
     }
 
 
-
-
     @Transactional
-    public void deleteAccount(String accountId) {
+    public void deleteAccount(String accountId, String confirm) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Account account = accountRepository.findByIdAndUser(accountId, currentUser);
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
-        if (debtMovementRepository.existsByAccount(account)){
+        checkDeleteConfirmed(account, confirm);
+        if (debtMovementRepository.existsByAccount(account)) {
             throw new ConflictException("This account has debt movements. Delete or move them before deleting the account");
         }
         incomseRepository.deleteAllByAccount(account);
@@ -105,6 +105,19 @@ public class AccountService {
         accountRepository.delete(account);
     }
 
+
+    private void checkDeleteConfirmed(Account account, String confirm) {
+        String typed = normalize(confirm);
+        boolean confirmed = !typed.isEmpty()
+                && (typed.equals(normalize(account.getName())) || DELETE_WORDS.contains(typed));
+        if (!confirmed) {
+            throw new IllegalArgumentException("Type the account name or the word \"delete\" to delete this account");
+        }
+    }
+
+    private String normalize(String text) {
+        return text == null ? "" : text.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
 
     public AllAccounts getAllAccounts() {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
@@ -151,12 +164,12 @@ public class AccountService {
 
     public List<Transaction> getAllAccountTransactions(Account requestAccount) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
-        if (requestAccount == null || requestAccount.getId() == null){
+        if (requestAccount == null || requestAccount.getId() == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         Account account = accountRepository.findByIdAndUser(requestAccount.getId(), currentUser);
-        if (account == null){
-            throw  new ResourceNotFoundException("Account not found");
+        if (account == null) {
+            throw new ResourceNotFoundException("Account not found");
         }
         List<Incomse> incomseList = incomseRepository.findAllByAccount(account);
         List<Expense> expenseList = expenseRepository.findAllByAccount(account);
@@ -248,7 +261,6 @@ public class AccountService {
     }
 
 
-
     private Transaction mapExpenseToTransaction(Expense expense) {
         return accountMapper.mapExpenseToTransaction(expense);
     }
@@ -256,7 +268,6 @@ public class AccountService {
     private Transaction mapIToTransaction(Incomse incomse) {
         return accountMapper.mapIToTransaction(incomse);
     }
-
 
 
     // money in or out of one currency of an account
@@ -372,7 +383,7 @@ public class AccountService {
         return transactions;
     }
 
-    private List<Transaction> mapDebtMovements(List<DebtMovement> movements){
+    private List<Transaction> mapDebtMovements(List<DebtMovement> movements) {
         return movements.stream()
                 .map(accountMapper::mapDebtMovementToTransaction)
                 .filter(java.util.Objects::nonNull)
