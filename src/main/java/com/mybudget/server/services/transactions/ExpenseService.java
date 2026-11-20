@@ -114,7 +114,9 @@ public class ExpenseService {
             expense.setCategory(expenseRequest.getCategory());
             expense.setImage(expenseRequest.getImage());
             expense.setDescription(cleanDescription(expenseRequest.getDescription()));
-            expense.setCreatedAt(expenseRequest.getCreatedAt());
+            if (expenseRequest.getCreatedAt() != null) {
+                expense.setCreatedAt(expenseRequest.getCreatedAt());
+            }
             expense.setCurrency(newCurrency);
             return mapToExpenseResponse(expenseRepository.save(expense));
         } catch (RuntimeException e) {

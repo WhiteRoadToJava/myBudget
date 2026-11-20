@@ -1,6 +1,5 @@
 package com.mybudget.server.services.transactions;
 
-import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
@@ -143,7 +142,7 @@ public class TransferService {
             apply(effects, -1);
             throw e;
         }
-        if (request.getExChangeRate() != null){
+        if (request.getCreatedAt() != null){
             saved.setCreatedAt(request.getCreatedAt());
             saved = transferRepository.save(saved);
         }
