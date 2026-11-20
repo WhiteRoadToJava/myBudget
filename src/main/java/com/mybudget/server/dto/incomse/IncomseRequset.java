@@ -5,7 +5,9 @@ import com.mybudget.server.modules.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.cglib.core.Local;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 
@@ -18,6 +20,7 @@ public class IncomseRequset {
     private User user;
     private Account account;
     private  String description;
+    private LocalDateTime createdAt;
     private Map<String, String> image;
     // which currency of the account; empty = the account's first currency
     private String currency;

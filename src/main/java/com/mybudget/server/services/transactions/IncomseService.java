@@ -37,6 +37,7 @@ public class IncomseService {
     @Transactional
     public IncomseResponse addInccmse(IncomseRequset incomseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
+        TransactionDates.ensureNtFuture(incomseRequest.getCreatedAt());
         Incomse incomse = new Incomse();
         incomse.setAmount(incomseRequest.getAmount());
         incomse.setCategory(incomseRequest.getCategory());
@@ -54,7 +55,12 @@ public class IncomseService {
         incomse.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.IN, incomseRequest.getAmount());
         incomse.setNumber(referenceNumbers.next(incomse.getUser()));
-        return mapToIncomseResponse(incomseRepository.save(incomse));
+        Incomse saved = incomseRepository.save(incomse);
+        if (incomseRequest.getCreatedAt() != null){
+            saved.setCreatedAt(incomseRequest.getCreatedAt());
+            saved = incomseRepository.save(saved);
+        }
+        return mapToIncomseResponse(saved);
     }
 
     // this method is used with schedule
@@ -119,6 +125,9 @@ public class IncomseService {
             incomse.setCategory(requset.getCategory());
             incomse.setImage(requset.getImage());
             incomse.setDescription(requset.getDescription());
+            if (requset.getCreatedAt()!= null){
+                incomse.setCreatedAt(requset.getCreatedAt());
+            }
             incomse.setCurrency(newCurrency);
             return mapToIncomseResponse(incomseRepository.save(incomse));
         } catch (RuntimeException e) {
