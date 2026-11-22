@@ -11,7 +11,9 @@ import java.util.List;
 public interface ExpenseRepository extends MongoRepository<Expense, String> {
     List<Expense> findAllByUser(User user);
     List<Expense> findAllByAccount(Account account);
+    boolean existsByUserAndCategory(User user, String category);
     void deleteAllByAccount(Account account);
+
 
     List<Expense> findByUserAndCreatedAtBetween(User user, LocalDateTime date1, LocalDateTime date2);
 }
