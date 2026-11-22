@@ -12,6 +12,8 @@ public interface IncomseRepository extends MongoRepository<Incomse, String> {
 
     List<Incomse> findAllByAccount(Account account);
     List<Incomse> findAllByUser(User user);
+
+    boolean existsByUserAndCategory(User user, String category);
     void deleteAllByAccount(Account account);
 
     List<Incomse> findByUserAndCreatedAtBetween(User user, LocalDateTime fromDate, LocalDateTime toDate);
