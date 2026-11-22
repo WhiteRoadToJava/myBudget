@@ -12,7 +12,7 @@ import java.awt.*;
 
 @Data
 @NoArgsConstructor
-@Document(collation = "categories")
+@Document(collection = "categories")
 public class Category {
     @Id
     private String id;
