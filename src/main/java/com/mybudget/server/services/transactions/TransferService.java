@@ -1,6 +1,5 @@
 package com.mybudget.server.services.transactions;
 
-import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.transfer.TransferRequest;
 import com.mybudget.server.dto.transfer.TransferResponse;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
@@ -44,6 +43,7 @@ public class TransferService {
         User user = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = findOwnedTransfer(transferId, user);
         Cancellation.ensureActive(transfer.getCancelled(), "transfer");
+        TransactionDates.ensureNtFuture(request.getCreatedAt());
         // what the transfer did before the change, so it can be undone exactly
         List<TransferEffects.Effect> before = TransferEffects.of(transfer);
         fill(transfer, request, user);
@@ -127,6 +127,7 @@ public class TransferService {
     // ---------- create / fill ----------
 
     private TransferResponse create(TransferRequest request, User user, boolean rememberRate) {
+        TransactionDates.ensureNtFuture(request.getCreatedAt());
         Transfer transfer = new Transfer();
         transfer.setUser(user);
         fill(transfer, request, user);
@@ -140,6 +141,10 @@ public class TransferService {
         } catch (RuntimeException e) {
             apply(effects, -1);
             throw e;
+        }
+        if (request.getCreatedAt() != null){
+            saved.setCreatedAt(request.getCreatedAt());
+            saved = transferRepository.save(saved);
         }
         if (rememberRate){
             rememberRate(saved, user);

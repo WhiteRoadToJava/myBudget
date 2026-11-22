@@ -36,10 +36,12 @@ public class ExpenseService {
     @Transactional
     public ExpenseResponse addExpense(ExpenseRequest expenseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
+        TransactionDates.ensureNtFuture(expenseRequest.getCreatedAt());
         Expense expense = new Expense();
         expense.setAmount(expenseRequest.getAmount());
         expense.setCategory(expenseRequest.getCategory());
         expense.setDescription(expenseRequest.getDescription());
+
         expense.setUser(currentUser);
         expense.setImage(expenseRequest.getImage());
 
@@ -53,7 +55,12 @@ public class ExpenseService {
         expense.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.OUT, expenseRequest.getAmount());
         expense.setNumber(referenceNumbers.next(expense.getUser()));
-        return mapToExpenseResponse(expenseRepository.save(expense));
+        Expense saved = expenseRepository.save(expense);
+        if (expenseRequest.getCreatedAt() != null){
+            saved.setCreatedAt(expenseRequest.getCreatedAt());
+            saved = expenseRepository.save(saved);
+        }
+        return mapToExpenseResponse(saved);
     }
 
     // this method is used with schedule
@@ -84,6 +91,7 @@ public class ExpenseService {
         Expense expense = findOwnedExpense(expenseId, currentUser);
         ensureNotDebtMirror(expense.getId());
         Cancellation.ensureActive(expense.getCancelled(), "expense");
+        TransactionDates.ensureNtFuture(expenseRequest.getCreatedAt());
         Account newAccount = findOwnedAccount(expenseRequest.getAccount(), currentUser);
 
         // the old and the new place of the money: (account, currency)

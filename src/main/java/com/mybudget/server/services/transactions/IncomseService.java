@@ -1,6 +1,7 @@
 package com.mybudget.server.services.transactions;
 
 
+import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.exeptions.ConflictException;
@@ -37,6 +38,7 @@ public class IncomseService {
     @Transactional
     public IncomseResponse addInccmse(IncomseRequset incomseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
+        TransactionDates.ensureNtFuture(incomseRequest.getCreatedAt());
         Incomse incomse = new Incomse();
         incomse.setAmount(incomseRequest.getAmount());
         incomse.setCategory(incomseRequest.getCategory());
@@ -54,7 +56,12 @@ public class IncomseService {
         incomse.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.IN, incomseRequest.getAmount());
         incomse.setNumber(referenceNumbers.next(incomse.getUser()));
-        return mapToIncomseResponse(incomseRepository.save(incomse));
+        Incomse saved = incomseRepository.save(incomse);
+        if (incomseRequest.getCreatedAt() != null){
+            saved.setCreatedAt(incomseRequest.getCreatedAt());
+            saved = incomseRepository.save(saved);
+        }
+        return mapToIncomseResponse(saved);
     }
 
     // this method is used with schedule
@@ -98,7 +105,7 @@ public class IncomseService {
         Account newAccount = findOwnedAccount(requset.getAccount(), currentUser);
         ensureNotDebtMirror(incomseId);
         Cancellation.ensureActive(incomse.getCancelled(), "income");
-
+        TransactionDates.ensureNtFuture(requset.getCreatedAt());
         // the old and the new place of the money: (account, currency)
         Account oldAccount = incomse.getAccount();
         String oldCurrency = oldAccount == null ? null
@@ -119,6 +126,9 @@ public class IncomseService {
             incomse.setCategory(requset.getCategory());
             incomse.setImage(requset.getImage());
             incomse.setDescription(requset.getDescription());
+            if (requset.getCreatedAt()!= null){
+                incomse.setCreatedAt(requset.getCreatedAt());
+            }
             incomse.setCurrency(newCurrency);
             return mapToIncomseResponse(incomseRepository.save(incomse));
         } catch (RuntimeException e) {
