@@ -15,7 +15,6 @@ import com.mybudget.server.repositories.*;
 import com.mybudget.server.util.UserUtils;
 import com.mybudget.server.mapMappers.AccountMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Range;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -238,7 +237,6 @@ public class AccountService {
     }
 
 
-    @Transactional
     public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
         LocalDateTime start = LocalDate.parse(fromDate).atStartOfDay();
         LocalDateTime end = LocalDate.parse(toDate).atStartOfDay();

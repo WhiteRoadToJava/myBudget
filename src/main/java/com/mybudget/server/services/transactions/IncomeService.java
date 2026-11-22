@@ -181,7 +181,6 @@ public class IncomeService {
         accountService.revertCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
         income.setCancelled(true);
         income.setCancelledAt(at);
-        income.setCancelledAt(LocalDateTime.now());
         income.setCancelReason(Cancellation.reason(reason));
         return mapToIncomseResponse(incomseRepository.save(income));
     }

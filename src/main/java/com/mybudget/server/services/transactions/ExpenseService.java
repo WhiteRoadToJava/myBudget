@@ -187,7 +187,6 @@ public class ExpenseService {
         accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
         expense.setCancelled(true);
         expense.setCancelledAt(at);
-        expense.setCancelledAt(LocalDateTime.now());
         expense.setCancelReason(Cancellation.reason(reason));
         return mapToExpenseResponse(expenseRepository.save(expense));
     }

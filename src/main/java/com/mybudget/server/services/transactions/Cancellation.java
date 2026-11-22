@@ -49,7 +49,7 @@ public class Cancellation {
         }
         if (createdAt != null && chosen.isBefore(createdAt)) {
             if (chosen.toLocalDate().isBefore(createdAt.toLocalDate())) {
-                throw new IllegalArgumentException("hte cancellation date can not be before the transaction.");
+                throw new IllegalArgumentException("The cancellation date can not be before the transaction.");
             }
             return createdAt;
         }

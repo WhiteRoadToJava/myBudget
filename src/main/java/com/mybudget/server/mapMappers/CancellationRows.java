@@ -1,7 +1,6 @@
 package com.mybudget.server.mapMappers;
 
 import com.mybudget.server.dto.Transaction;
-import com.mybudget.server.services.transactions.Cancellation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,7 @@ public final class CancellationRows {
     }
 
     public static List<Transaction> withReversals(List<Transaction> rows) {
-        List<Transaction> result = new ArrayList<>();
+        List<Transaction> result = new ArrayList<>(rows);
         for (Transaction row : rows) {
             if (row.isCancelled() && !row.isReversal() && row.getCancelledAt() != null) {
                 result.add(reversalOf(row));
@@ -25,7 +24,7 @@ public final class CancellationRows {
     public static Transaction reversalOf(Transaction row) {
         Transaction reversal = new Transaction(row.getId(), row.getAmount(), row.getCategory(),
                 row.getSourceAccount(), row.getDestinationAccount(), row.getType(),
-                row.getCreatedAt(), row.getDescription(), row.getImage());
+                row.getCancelledAt(), row.getDescription(), row.getImage());
         reversal.setDebtId(row.getDebtId());
         reversal.setCurrency(row.getCurrency());
         reversal.setCancelled(row.isCancelled());

@@ -98,7 +98,6 @@ public class TransferService {
         apply(effects, -1);
         transfer.setCancelled(true);
         transfer.setCancelledAt(at);
-        transfer.setCancelledAt(LocalDateTime.now());
         transfer.setCancelReason(Cancellation.reason(reason));
         try {
             return mapToTransferResponse(transferRepository.save(transfer));
