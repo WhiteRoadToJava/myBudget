@@ -26,7 +26,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class IncomseService {
+public class IncomeService {
     private final UserUtils userUtils;
     private final AccountService accountService;
     private final IncomseRepository incomseRepository;
@@ -180,7 +180,7 @@ public class IncomseService {
         LocalDateTime at = Cancellation.date(cancelledAt, income.getCreatedAt());
         accountService.revertCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
         income.setCancelled(true);
-        income.setCreatedAt(at);
+        income.setCancelledAt(at);
         income.setCancelledAt(LocalDateTime.now());
         income.setCancelReason(Cancellation.reason(reason));
         return mapToIncomseResponse(incomseRepository.save(income));

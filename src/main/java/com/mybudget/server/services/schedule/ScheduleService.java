@@ -18,7 +18,7 @@ import com.mybudget.server.modules.enums.TransactionType;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.ScheduleRepository;
 import com.mybudget.server.services.transactions.ExpenseService;
-import com.mybudget.server.services.transactions.IncomseService;
+import com.mybudget.server.services.transactions.IncomeService;
 import com.mybudget.server.services.transactions.TransferService;
 import com.mybudget.server.services.debt.DebtService;
 import com.mybudget.server.services.subscription.SubscriptionService;
@@ -41,7 +41,7 @@ import java.util.Set;
 @Slf4j
 public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
-    private final IncomseService incomseService;
+    private final IncomeService incomeService;
     private final ExpenseService expenseService;
     private final TransferService transferService;
     private final AccountRepository accountRepository;
@@ -173,7 +173,7 @@ public class ScheduleService {
         switch (type) {
             case INCOMSE -> {
                 IncomseRequset request = mapToIncomeRequest(schedule);
-                incomseService.excuteIncomse(request, user);
+                incomeService.excuteIncomse(request, user);
                 updateNextExecutionDate(schedule);
             }
             case EXPENSE -> {

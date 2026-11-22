@@ -35,13 +35,12 @@ public final class StatementCalculator {
         return INCOMING.contains(t.getType());
     }
 
-    // what the row did to the balance (0 when cancelled)
+    // what the row did to the balance: a cancelled transaction still counts on its own day,
+    // and its reversal takes it back on the day it was cancelled
     public static double counted(Transaction t) {
-        if (t.isCancelled()) {
-            return 0.0;
-        }
         double amount = Math.abs(t.getAmount());
-        return t.isReversal() ? amount : -amount;
+        double signed = isIncoming(t) ? amount : -amount;
+        return t.isReversal() ? -signed : signed;
     }
 
     public static Result calculate(List<Transaction> transactions, String currency,

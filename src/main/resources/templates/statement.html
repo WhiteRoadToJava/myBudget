@@ -302,15 +302,15 @@
         <tr th:if="${#lists.isEmpty(s.rows)}">
             <td colspan="5" class="center" th:text="${t.noTransactions}">No transactions</td>
         </tr>
-        <tr th:each="r : ${s.rows}" th:classappend="${r.cancelled} ? 'cancelled'">
+        <tr th:each="r : ${s.rows}" th:classappend="${r.reversal} ? 'reversal'">
             <td class="center num" th:text="${r.date}">01/01/2026</td>
             <td class="center num amount" th:classappend="${r.incoming} ? 'in' : 'out'" th:text="${r.amount}">0.00</td>
             <td class="center num balance" th:text="${r.balance}">0.00</td>
             <td>
                 <span th:text="${r.description}">Description</span>
-                <span th:if="${r.cancelled}" class="tag" th:text="${t.cancelled}">cancelled</span>
                 <span th:if="${r.cancelled and !r.reversal}" class="tag" th:text="${t.cancelled}">cancelled</span>
                 <div th:if="${r.reversal and r.reason != ''}" class="reason"><span th:text="${t.reason}">Reason</span>:
+                    <span th:text="${r.reason}"></span></div>
             </td>
             <td class="operation" th:text="${r.operation}">Transfer 1</td>
         </tr>

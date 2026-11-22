@@ -97,7 +97,7 @@ public class TransferService {
 
         apply(effects, -1);
         transfer.setCancelled(true);
-        transfer.setCreatedAt(at);
+        transfer.setCancelledAt(at);
         transfer.setCancelledAt(LocalDateTime.now());
         transfer.setCancelReason(Cancellation.reason(reason));
         try {

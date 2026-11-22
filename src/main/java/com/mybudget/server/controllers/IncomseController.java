@@ -5,7 +5,7 @@ import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.modules.Account;
 import com.mybudget.server.dto.common.CancelRequest;
-import com.mybudget.server.services.transactions.IncomseService;
+import com.mybudget.server.services.transactions.IncomeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,36 +17,36 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("api/user/incomse")
 public class IncomseController {
-    private final IncomseService incomseService;
+    private final IncomeService incomeService;
 
 
     @PostMapping("/add-incomse")
     public ResponseEntity<?> addIncomse(@RequestBody IncomseRequset incomseRequest){
-        IncomseResponse response = incomseService.addInccme(incomseRequest);
+        IncomseResponse response = incomeService.addInccme(incomseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @PatchMapping("/update-incomse/{incomseId}")
     public ResponseEntity<?> updateIncomse(@RequestBody IncomseRequset incomseRequest, @PathVariable String incomseId)   {
-        IncomseResponse response = incomseService.updateIncome(incomseId, incomseRequest);
+        IncomseResponse response = incomeService.updateIncome(incomseId, incomseRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @DeleteMapping("/delete-incomse/{incomseId}")
     public ResponseEntity<?> deleteIncomse(@PathVariable String incomseId){
-        String response = incomseService.deleteIncome(incomseId);
+        String response = incomeService.deleteIncome(incomseId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PatchMapping("/cancel/{incomeId}")
     public ResponseEntity<IncomseResponse> cancelIncome(@PathVariable String incomeId,
                                                         @RequestBody(required = false) CancelRequest request){
-        return ResponseEntity.ok(incomseService.cancelIncome(incomeId,
+        return ResponseEntity.ok(incomeService.cancelIncome(incomeId,
                 request == null ? null : request.getReason(),
                 request == null ? null : request.getCancelledAt()));
     }
 
     @PatchMapping("/restore/{incomeId}")
     public ResponseEntity<IncomseResponse> restoreIncome(@PathVariable String incomeId){
-        return ResponseEntity.ok(incomseService.restoreIncome(incomeId));
+        return ResponseEntity.ok(incomeService.restoreIncome(incomeId));
     }
 
 
@@ -57,19 +57,19 @@ public class IncomseController {
 
     @GetMapping("/find-incomse/{incomseId}")
     public ResponseEntity<?> getIncomseById(@PathVariable String incomseId){
-        IncomseResponse response = incomseService.getIncomeById(incomseId);
+        IncomseResponse response = incomeService.getIncomeById(incomseId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @GetMapping("/account")
     public ResponseEntity<?> getAllIncomseAccount(@RequestBody Account account){
-        List<IncomseResponse> list = incomseService.getAllIncomseByAccount(account);
+        List<IncomseResponse> list = incomeService.getAllIncomseByAccount(account);
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 
 
     @GetMapping("/user")
     public ResponseEntity<?> getAllIncomseByUser(){
-        List<IncomseResponse> list = incomseService.getAllIncomseByUser();
+        List<IncomseResponse> list = incomeService.getAllIncomseByUser();
         return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 }
