@@ -88,15 +88,16 @@ public class TransferService {
         return "Transfer deleted successfully";
     }
 
-    public TransferResponse cancelTransfer(String transferId, String reason) {
+    public TransferResponse cancelTransfer(String transferId, String reason, LocalDateTime cancelledAt) {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
         Transfer transfer = findOwnedTransfer(transferId, authenticatedUser);
         Cancellation.ensureActive(transfer.getCancelled(), "transfer");
+        LocalDateTime at = Cancellation.date(cancelledAt, transfer.getCreatedAt());
         List<TransferEffects.Effect> effects = TransferEffects.of(transfer);
 
         apply(effects, -1);
         transfer.setCancelled(true);
-        transfer.setCancelledAt(LocalDateTime.now());
+        transfer.setCancelledAt(at);
         transfer.setCancelReason(Cancellation.reason(reason));
         try {
             return mapToTransferResponse(transferRepository.save(transfer));

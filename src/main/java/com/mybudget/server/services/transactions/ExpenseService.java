@@ -177,15 +177,16 @@ public class ExpenseService {
 
 
     @Transactional
-    public ExpenseResponse cancelExpense(String expenseId, String reason){
+    public ExpenseResponse cancelExpense(String expenseId, String reason, LocalDateTime cancelledAt){
         User authenticatedUse = userUtils.getCurrentAuthenticatedUser();
         Expense expense = findOwnedExpense(expenseId, authenticatedUse);
         ensureNotDebtMirror(expense.getId());
         Cancellation.ensureActive(expense.getCancelled(), "expense");
+        LocalDateTime at = Cancellation.date(cancelledAt, expense.getCreatedAt());
 
         accountService.revertCashFlow(expense.getAccount(), currencyOf(expense), CashFlow.OUT, expense.getAmount());
         expense.setCancelled(true);
-        expense.setCancelledAt(LocalDateTime.now());
+        expense.setCancelledAt(at);
         expense.setCancelReason(Cancellation.reason(reason));
         return mapToExpenseResponse(expenseRepository.save(expense));
     }

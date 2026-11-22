@@ -98,6 +98,7 @@ public class StatementService {
         String html = templateEngine.process("statement", context);
         return render(html, StatementTexts.isRtl(lang));
     }
+
     // what the template shows for one currency
     private static Map<String, Object> section(String code, StatementCalculator.Result result, LocalDate from,
                                                Map<String, String> words) {
@@ -112,13 +113,15 @@ public class StatementService {
         section.put("openingDate", from.format(DAY));
         section.put("rows", result.rows().stream().map(r -> Map.of(
                 "date", r.date().format(DAY),
-                "operation", words.getOrDefault(r.type(), r.type()) + (r.number() != null ? " " + r.number() : ""),
+                "operation", (r.reversal() ? words.get("reversal") + " " : "")
+                        + words.getOrDefault(r.type(), r.type()) + (r.number() != null ? " " + r.number() : ""),
                 "description", r.description() == null ? "" : r.description(),
                 "amount", money(r.amount()),
                 "incoming", r.incoming(),
                 "balance", money(r.balance()),
                 "cancelled", r.cancelled(),
-                "reason", r.cancelReason() == null ? "" : r.cancelReason()
+                "reason", r.cancelReason() == null ? "" : r.cancelReason(),
+                "reversal", r.reversal()
         )).toList());
         return section;
     }

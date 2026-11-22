@@ -11,6 +11,7 @@ public record StatementRow(
         boolean incoming,
         double balance,
         boolean cancelled,
-        String cancelReason
+        String cancelReason,
+        boolean reversal
 ) {
 }
