@@ -1,6 +1,7 @@
 package com.mybudget.server.services.transactions;
 
 
+import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.incomse.IncomseRequset;
 import com.mybudget.server.dto.incomse.IncomseResponse;
 import com.mybudget.server.exeptions.ConflictException;
@@ -104,7 +105,7 @@ public class IncomseService {
         Account newAccount = findOwnedAccount(requset.getAccount(), currentUser);
         ensureNotDebtMirror(incomseId);
         Cancellation.ensureActive(incomse.getCancelled(), "income");
-
+        TransactionDates.ensureNtFuture(requset.getCreatedAt());
         // the old and the new place of the money: (account, currency)
         Account oldAccount = incomse.getAccount();
         String oldCurrency = oldAccount == null ? null
