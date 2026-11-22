@@ -41,7 +41,7 @@ public final class StatementCalculator {
             return 0.0;
         }
         double amount = Math.abs(t.getAmount());
-        return isIncoming(t) ? amount : -amount;
+        return t.isReversal() ? amount : -amount;
     }
 
     public static Result calculate(List<Transaction> transactions, String currency,
@@ -76,10 +76,15 @@ public final class StatementCalculator {
         for (Transaction t : period) {
             double effect = counted(t);
             rows.add(new StatementRow(t.getCreatedAt(), t.getNumber(), t.getType(), describe.apply(t),
-                    Math.abs(t.getAmount()), isIncoming(t), round(running), t.isCancelled(), t.getCancelReason()));
+                    Math.abs(t.getAmount()), effect > 0, round(running), t.isCancelled(), t.getCancelReason(),
+                    t.isReversal()));
             running -= effect;
-            if (effect > 0) totalIn += effect;
-            if (effect < 0) totalOut -= effect;
+            // a reversal lowers the total of its own side: a cancelled expense lowers what went out
+            if (isIncoming(t)) {
+                totalIn += effect;
+            } else {
+                totalOut -= effect;
+            }
         }
         return new Result(round(running), closing, round(totalIn), round(totalOut), rows);
     }

@@ -7,6 +7,7 @@ import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.mapMappers.CancellationRows;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
@@ -185,7 +186,7 @@ public class AccountService {
         transactions.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
         ));
-        return withDebtIds(transactions, currentUser);
+        return withDebtIds(CancellationRows.withReversals(transactions), currentUser);
     }
 
     public List<Transaction> getUserAllTransaction() {
@@ -204,7 +205,7 @@ public class AccountService {
                 debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNull(currentUser)
         ));
 
-        return withDebtIds(transactions, currentUser);
+        return withDebtIds(CancellationRows.withReversals(transactions), currentUser);
     }
 
     public List<Transaction> getAllIncomeExpenseTransactions() {
@@ -215,7 +216,7 @@ public class AccountService {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
-        return withDebtIds(transactionList, currentUser);
+        return withDebtIds(CancellationRows.withReversals(transactionList), currentUser);
     }
 
 
@@ -239,25 +240,13 @@ public class AccountService {
 
     @Transactional
     public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
-        User currentUser = userUtils.getCurrentAuthenticatedUser();
-        LocalDate from = LocalDate.parse(fromDate);
-        LocalDate to = LocalDate.parse(toDate);
-        LocalDateTime date1 = from.atStartOfDay();
-        LocalDateTime date2 = to.atStartOfDay();
-        List<Incomse> incomseList = incomseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
-        List<Expense> expenseList = expenseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
-        List<Transfer> transferList = transferRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
-
-        List<Transaction> transactionList = new ArrayList<>();
-        transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
-        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
-        transactionList.addAll(transferList.stream()
-                .flatMap(t -> accountMapper.mapTransferForUser(t).stream())
-                .toList());
-        transactionList.addAll(mapDebtMovements(
-                debtMovementRepository.findAllByUserAndDateBetweenAndMirroredTransactionIdIsNull(
-                        currentUser, Range.rightOpen(from, to))));
-        return withDebtIds(transactionList, currentUser);
+        LocalDateTime start = LocalDate.parse(fromDate).atStartOfDay();
+        LocalDateTime end = LocalDate.parse(toDate).atStartOfDay();
+        return getUserAllTransaction()
+                .stream()
+                .filter(t -> t.getCreatedAt() != null
+                && !t.getCreatedAt().isBefore(start) && t.getCreatedAt().isBefore(end))
+                .toList();
     }
 
 

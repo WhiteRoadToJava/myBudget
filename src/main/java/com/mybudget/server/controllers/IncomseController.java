@@ -22,7 +22,7 @@ public class IncomseController {
 
     @PostMapping("/add-incomse")
     public ResponseEntity<?> addIncomse(@RequestBody IncomseRequset incomseRequest){
-        IncomseResponse response = incomseService.addInccmse(incomseRequest);
+        IncomseResponse response = incomseService.addInccme(incomseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @PatchMapping("/update-incomse/{incomseId}")
@@ -32,14 +32,16 @@ public class IncomseController {
     }
     @DeleteMapping("/delete-incomse/{incomseId}")
     public ResponseEntity<?> deleteIncomse(@PathVariable String incomseId){
-        String response = incomseService.deleteIncomse(incomseId);
+        String response = incomseService.deleteIncome(incomseId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PatchMapping("/cancel/{incomeId}")
     public ResponseEntity<IncomseResponse> cancelIncome(@PathVariable String incomeId,
                                                         @RequestBody(required = false) CancelRequest request){
-        return ResponseEntity.ok(incomseService.cancelIncome(incomeId, request == null ? null : request.getReason()));
+        return ResponseEntity.ok(incomseService.cancelIncome(incomeId,
+                request == null ? null : request.getReason(),
+                request == null ? null : request.getCancelledAt()));
     }
 
     @PatchMapping("/restore/{incomeId}")
@@ -55,7 +57,7 @@ public class IncomseController {
 
     @GetMapping("/find-incomse/{incomseId}")
     public ResponseEntity<?> getIncomseById(@PathVariable String incomseId){
-        IncomseResponse response = incomseService.getIncomseById(incomseId);
+        IncomseResponse response = incomseService.getIncomeById(incomseId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @GetMapping("/account")
