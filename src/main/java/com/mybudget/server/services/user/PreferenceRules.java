@@ -1,6 +1,5 @@
 package com.mybudget.server.services.user;
 
-import com.mybudget.server.modules.enums.FeeDirection;
 
 import java.util.Locale;
 import java.util.Set;
@@ -34,7 +33,7 @@ public class PreferenceRules {
         if (day == null) return null;
         day = day.toUpperCase(Locale.ROOT);
         if (!FIRST_DAYS.contains(day)){
-            throw new IllegalArgumentException("The week can start on Saturday, Sunday, Monday");
+            throw new IllegalArgumentException("The week can start on Saturday, Sunday or Monday");
         }
         return day;
     }

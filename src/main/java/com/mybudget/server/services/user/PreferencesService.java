@@ -26,7 +26,9 @@ public class PreferencesService {
 
     public PreferencesResponse updatePreferences(PreferencesRequest request) {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
-        UserPreferences preferences = authenticatedUser.getPreferences();
+        // users from before preferences have none yet: the first save makes them
+        UserPreferences preferences = authenticatedUser.getPreferences() != null
+                ? authenticatedUser.getPreferences() : new UserPreferences();
 
         String language = request.getLanguage() == null ? preferences.getLanguage()
                 : PreferenceRules.language(request.getLanguage());
