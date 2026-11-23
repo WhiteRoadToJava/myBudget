@@ -17,7 +17,7 @@ public class PreferencesController {
 
     @GetMapping
     public ResponseEntity<PreferencesResponse> getPreferences() {
-        return ResponseEntity.of(preferencesService.getPreferences());
+        return ResponseEntity.ok(preferencesService.getPreferences());
     }
 
     @PatchMapping

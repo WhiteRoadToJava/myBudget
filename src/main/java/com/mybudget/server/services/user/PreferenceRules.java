@@ -23,7 +23,7 @@ public class PreferenceRules {
         String code = clean(value);
         if (code == null) return null;
         if (!code.matches("[A-Z]{3}")){
-            throw new IllegalArgumentException("A currency is a 3 l35534 code such as SEK");
+            throw new IllegalArgumentException("A currency is a 3-letters code such as SEK");
         }
         return code;
     }
@@ -33,7 +33,7 @@ public class PreferenceRules {
         if (day == null) return null;
         day = day.toLowerCase(Locale.ROOT);
         if (!FIRST_DAYS.contains(day)){
-            throw new IllegalArgumentException("THE week can start on Saturday, Sunday, Monday");
+            throw new IllegalArgumentException("The week can start on Saturday, Sunday, Monday");
         }
         return day;
     }

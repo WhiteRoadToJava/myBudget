@@ -24,16 +24,16 @@ public class PreferencesService {
         return toResponse(userUtils.getCurrentAuthenticatedUser());
     }
 
-    public PreferencesResponse updatePreferences(PreferencesRequest request){
+    public PreferencesResponse updatePreferences(PreferencesRequest request) {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
         UserPreferences preferences = authenticatedUser.getPreferences();
 
         String language = request.getLanguage() == null ? preferences.getLanguage()
-        : PreferenceRules.language(request.getBaseCurrency());
-        String currency = request.getBaseCurrency() == null ? preferences.getDefaultAccountId()
+                : PreferenceRules.language(request.getLanguage());
+        String currency = request.getBaseCurrency() == null ? preferences.getBaseCurrency()
                 : PreferenceRules.currency(request.getBaseCurrency());
         String firstDay = request.getFirstDayOfWeek() == null ? preferences.getFirstDayOfWeek()
-                : PreferenceRules.firstDayOfWeek(request.getBaseCurrency());
+                : PreferenceRules.firstDayOfWeek(request.getFirstDayOfWeek());
         String accountId = request.getDefaultAccountId() == null ? preferences.getDefaultAccountId()
                 : defaultAccount(request.getDefaultAccountId(), authenticatedUser);
 
@@ -46,7 +46,7 @@ public class PreferencesService {
         return toResponse(userRepository.save(authenticatedUser));
     }
 
-    private String defaultAccount(String accountId, User user){
+    private String defaultAccount(String accountId, User user) {
         if (accountId.isBlank()) return null;
         if (!isUsable(accountRepository.findByIdAndUser(accountId, user))) {
             throw new IllegalArgumentException("The default account must be one of your active accounts");
@@ -66,11 +66,10 @@ public class PreferencesService {
         return new PreferencesResponse(p.getLanguage(), p.getBaseCurrency(), p.getFirstDayOfWeek(), accountId);
     }
 
-    private boolean isUsable(Account account){
+    private boolean isUsable(Account account) {
         return account != null
-                && (account.getStatus() == null  || !account.getStatus().contains(AccountStatus.ARCHIVED));
+                && (account.getStatus() == null || !account.getStatus().contains(AccountStatus.ARCHIVED));
     }
-
 
 
 }
