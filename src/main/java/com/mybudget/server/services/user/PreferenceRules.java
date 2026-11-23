@@ -19,11 +19,12 @@ public class PreferenceRules {
         return code;
     }
 
-    public static String currency(String value){
+    public static String currency(String value) {
         String code = clean(value);
         if (code == null) return null;
-        if (!code.matches("[A-Z]{3}")){
-            throw new IllegalArgumentException("A currency is a 3-letters code such as SEK");
+        code = code.toUpperCase(Locale.ROOT);
+        if (!code.matches("[A-Z]{3}")) {
+            throw new IllegalArgumentException("A currency is a 3-letter code such as SEK");
         }
         return code;
     }
@@ -31,7 +32,7 @@ public class PreferenceRules {
     public static String firstDayOfWeek(String value){
         String day = clean(value);
         if (day == null) return null;
-        day = day.toLowerCase(Locale.ROOT);
+        day = day.toUpperCase(Locale.ROOT);
         if (!FIRST_DAYS.contains(day)){
             throw new IllegalArgumentException("The week can start on Saturday, Sunday, Monday");
         }
