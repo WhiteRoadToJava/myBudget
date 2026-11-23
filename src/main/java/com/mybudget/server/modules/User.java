@@ -4,18 +4,19 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mybudget.server.modules.enums.Role;
 import jakarta.validation.constraints.Pattern;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-import lombok.Data;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Document(collection = "users")
 public class User {
 
@@ -55,6 +56,7 @@ public class User {
     private Boolean enabled;
     @JsonIgnore
     private Instant passwordCreatedAt;
+    private UserPreferences preferences;
 
     public User() {
     }
