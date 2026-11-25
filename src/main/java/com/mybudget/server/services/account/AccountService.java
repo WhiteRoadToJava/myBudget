@@ -1,5 +1,5 @@
 package com.mybudget.server.services.account;
-
+import com.mybudget.server.services.currency.CurrencyCatalog;
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
@@ -7,6 +7,7 @@ import com.mybudget.server.dto.accounts.AllAccounts;
 import com.mybudget.server.dto.accounts.UpdateAccountStatus;
 import com.mybudget.server.exeptions.ConflictException;
 import com.mybudget.server.exeptions.ResourceNotFoundException;
+import com.mybudget.server.mapMappers.CancellationRows;
 import com.mybudget.server.modules.*;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.modules.enums.CashFlow;
@@ -14,7 +15,6 @@ import com.mybudget.server.repositories.*;
 import com.mybudget.server.util.UserUtils;
 import com.mybudget.server.mapMappers.AccountMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Range;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -39,7 +39,7 @@ public class AccountService {
     private final ScheduleRepository scheduleRepository;
     private final MongoTemplate mongoTemplate;
     private static final Set<String> DELETE_WORDS = Set.of("delete", "حذف", "radera");
-
+    private final CurrencyCatalog currencyCatalog;
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
@@ -48,13 +48,14 @@ public class AccountService {
         }
         Date createdAt = new Date();
         double openingBalance = accountRequest.getBalance() != null ? accountRequest.getBalance() : 0.0;
-
+        // only a currency of the app's list (the admin's) can be chosen
+        String currency = currencyCatalog.requireEnabled(accountRequest.getCurrency());
         Account account = new Account(
                 accountRequest.getName(),
                 accountRequest.getDescription(),
                 openingBalance,
                 openingBalance,
-                accountRequest.getCurrency(),
+                currency,
                 accountRequest.getType(),
                 currentUser,
                 createdAt.toString()
@@ -185,7 +186,7 @@ public class AccountService {
         transactions.addAll(mapDebtMovements(
                 debtMovementRepository.findAllByAccountAndMirroredTransactionIdIsNull(account)
         ));
-        return withDebtIds(transactions, currentUser);
+        return withDebtIds(CancellationRows.withReversals(transactions), currentUser);
     }
 
     public List<Transaction> getUserAllTransaction() {
@@ -204,7 +205,7 @@ public class AccountService {
                 debtMovementRepository.findAllByUserAndMirroredTransactionIdIsNull(currentUser)
         ));
 
-        return withDebtIds(transactions, currentUser);
+        return withDebtIds(CancellationRows.withReversals(transactions), currentUser);
     }
 
     public List<Transaction> getAllIncomeExpenseTransactions() {
@@ -215,7 +216,7 @@ public class AccountService {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
         transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
-        return withDebtIds(transactionList, currentUser);
+        return withDebtIds(CancellationRows.withReversals(transactionList), currentUser);
     }
 
 
@@ -237,27 +238,14 @@ public class AccountService {
     }
 
 
-    @Transactional
     public List<Transaction> getTransactionsBetweenTwoDates(String fromDate, String toDate) {
-        User currentUser = userUtils.getCurrentAuthenticatedUser();
-        LocalDate from = LocalDate.parse(fromDate);
-        LocalDate to = LocalDate.parse(toDate);
-        LocalDateTime date1 = from.atStartOfDay();
-        LocalDateTime date2 = to.atStartOfDay();
-        List<Incomse> incomseList = incomseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
-        List<Expense> expenseList = expenseRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
-        List<Transfer> transferList = transferRepository.findByUserAndCreatedAtBetween(currentUser, date1, date2);
-
-        List<Transaction> transactionList = new ArrayList<>();
-        transactionList.addAll(incomseList.stream().map(this::mapIToTransaction).toList());
-        transactionList.addAll(expenseList.stream().map(this::mapExpenseToTransaction).toList());
-        transactionList.addAll(transferList.stream()
-                .flatMap(t -> accountMapper.mapTransferForUser(t).stream())
-                .toList());
-        transactionList.addAll(mapDebtMovements(
-                debtMovementRepository.findAllByUserAndDateBetweenAndMirroredTransactionIdIsNull(
-                        currentUser, Range.rightOpen(from, to))));
-        return withDebtIds(transactionList, currentUser);
+        LocalDateTime start = LocalDate.parse(fromDate).atStartOfDay();
+        LocalDateTime end = LocalDate.parse(toDate).atStartOfDay();
+        return getUserAllTransaction()
+                .stream()
+                .filter(t -> t.getCreatedAt() != null
+                && !t.getCreatedAt().isBefore(start) && t.getCreatedAt().isBefore(end))
+                .toList();
     }
 
 
@@ -296,7 +284,8 @@ public class AccountService {
 
     public AccountResponse addCurrency(String accountId, String currency, Double openingBalance) {
         Account account = findOwnedAccount(accountId);
-        AccountBalances.add(account, currency, openingBalance == null ? 0.0 : openingBalance);
+        String code = currencyCatalog.requireEnabled(currency);
+        AccountBalances.add(account, code, openingBalance == null ? 0.0 : openingBalance);
         return accountMapper.mapToAccountResponse(accountRepository.save(account));
     }
 

@@ -41,7 +41,9 @@ public ResponseEntity<?> executeTranfer (@RequestBody TransferRequest request){
     @PatchMapping("/cancel/{transferId}")
     public ResponseEntity<TransferResponse> cancelTransfer(@PathVariable String transferId,
                                                            @RequestBody(required = false) CancelRequest request) {
-        return ResponseEntity.ok(transferService.cancelTransfer(transferId, request == null ? null : request.getReason()));
+        return ResponseEntity.ok(transferService.cancelTransfer(transferId,
+                request == null ? null : request.getReason(),
+                request == null ? null : request.getCancelledAt()));
     }
 
     @PatchMapping("/restore/{transferId}")

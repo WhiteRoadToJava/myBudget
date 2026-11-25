@@ -26,7 +26,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class IncomseService {
+public class IncomeService {
     private final UserUtils userUtils;
     private final AccountService accountService;
     private final IncomseRepository incomseRepository;
@@ -35,8 +35,9 @@ public class IncomseService {
     private final ReferenceNumbers referenceNumbers;
 
     @Transactional
-    public IncomseResponse addInccmse(IncomseRequset incomseRequest) {
+    public IncomseResponse addInccme(IncomseRequset incomseRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
+        TransactionDates.ensureNtFuture(incomseRequest.getCreatedAt());
         Incomse incomse = new Incomse();
         incomse.setAmount(incomseRequest.getAmount());
         incomse.setCategory(incomseRequest.getCategory());
@@ -54,7 +55,12 @@ public class IncomseService {
         incomse.setCurrency(currency);
         accountService.applyCashFlow(account, currency, CashFlow.IN, incomseRequest.getAmount());
         incomse.setNumber(referenceNumbers.next(incomse.getUser()));
-        return mapToIncomseResponse(incomseRepository.save(incomse));
+        Incomse saved = incomseRepository.save(incomse);
+        if (incomseRequest.getCreatedAt() != null) {
+            saved.setCreatedAt(incomseRequest.getCreatedAt());
+            saved = incomseRepository.save(saved);
+        }
+        return mapToIncomseResponse(saved);
     }
 
     // this method is used with schedule
@@ -79,7 +85,7 @@ public class IncomseService {
         return mapToIncomseResponse(incomseRepository.save(incomse));
     }
 
-    public IncomseResponse getIncomseById(String incomseId) {
+    public IncomseResponse getIncomeById(String incomseId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Incomse incomse = incomseRepository.findById(incomseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Incomse not found or access denied"));
@@ -98,7 +104,7 @@ public class IncomseService {
         Account newAccount = findOwnedAccount(requset.getAccount(), currentUser);
         ensureNotDebtMirror(incomseId);
         Cancellation.ensureActive(incomse.getCancelled(), "income");
-
+        TransactionDates.ensureNtFuture(requset.getCreatedAt());
         // the old and the new place of the money: (account, currency)
         Account oldAccount = incomse.getAccount();
         String oldCurrency = oldAccount == null ? null
@@ -119,6 +125,9 @@ public class IncomseService {
             incomse.setCategory(requset.getCategory());
             incomse.setImage(requset.getImage());
             incomse.setDescription(requset.getDescription());
+            if (requset.getCreatedAt() != null) {
+                incomse.setCreatedAt(requset.getCreatedAt());
+            }
             incomse.setCurrency(newCurrency);
             return mapToIncomseResponse(incomseRepository.save(incomse));
         } catch (RuntimeException e) {
@@ -151,7 +160,7 @@ public class IncomseService {
     }
 
     @Transactional
-    public String deleteIncomse(String incomseId) {
+    public String deleteIncome(String incomseId) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
         Incomse incomse = findOwnedIncomse(incomseId, currentUser);
         ensureNotDebtMirror(incomse.getId());
@@ -163,15 +172,15 @@ public class IncomseService {
     }
 
     @Transactional
-    public IncomseResponse cancelIncome(String incomeId, String reason) {
+    public IncomseResponse cancelIncome(String incomeId, String reason, LocalDateTime cancelledAt) {
         User authenticatedUser = userUtils.getCurrentAuthenticatedUser();
         Incomse income = findOwnedIncomse(incomeId, authenticatedUser);
         ensureNotDebtMirror(income.getId());
         Cancellation.ensureActive(income.getCancelled(), "income");
-
+        LocalDateTime at = Cancellation.date(cancelledAt, income.getCreatedAt());
         accountService.revertCashFlow(income.getAccount(), currencyOf(income), CashFlow.IN, income.getAmount());
         income.setCancelled(true);
-        income.setCancelledAt(LocalDateTime.now());
+        income.setCancelledAt(at);
         income.setCancelReason(Cancellation.reason(reason));
         return mapToIncomseResponse(incomseRepository.save(income));
     }

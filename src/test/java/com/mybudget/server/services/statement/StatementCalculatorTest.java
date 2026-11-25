@@ -45,16 +45,31 @@ class StatementCalculatorTest {
         assertEquals(5332.0, r.totalOut());
     }
 
-    @Test
-    void aCancelledRowIsListedButMovesNothing() {
-        Transaction cancelled = row("expense", 40, "SEK", "2026-11-05T12:00:00", 7);
-        cancelled.setCancelled(true);
-        StatementCalculator.Result r = StatementCalculator.calculate(List.of(cancelled), "SEK", from, to, 100, t -> "");
 
-        assertEquals(1, r.rows().size());
-        assertTrue(r.rows().get(0).cancelled());
-        assertEquals(100.0, r.opening());
-        assertEquals(100.0, r.closing());
-        assertEquals(0.0, r.totalOut());
+    @Test
+    void aCancelledRowCountsOnItsDayAndItsReversalOnTheDayItWasCancelled() {
+        // an expense of 40 on the 5th, cancelled on the 6th: the 5th still shows it
+        Transaction expense = row("expense", 40, "SEK", "2026-11-05T12:00:00", 7);
+        expense.setCancelled(true);
+        Transaction reversal = row("expense", 40, "SEK", "2026-11-06T09:00:00", 7);
+        reversal.setCancelled(true);
+        reversal.setReversal(true);
+        List<Transaction> rows = List.of(expense, reversal);
+
+        StatementCalculator.Result day5 = StatementCalculator.calculate(rows, "SEK", from, to, 100, t -> "");
+        assertEquals(1, day5.rows().size());
+        assertEquals(100.0, day5.opening());
+        assertEquals(60.0, day5.closing());
+        assertEquals(40.0, day5.totalOut());
+
+        StatementCalculator.Result both = StatementCalculator.calculate(rows, "SEK", from,
+                LocalDate.parse("2026-11-06"), 100, t -> "");
+        assertEquals(2, both.rows().size());
+        assertTrue(both.rows().get(0).reversal());
+        assertTrue(both.rows().get(0).incoming());
+        assertEquals(100.0, both.opening());
+        assertEquals(100.0, both.closing());
+        assertEquals(0.0, both.totalOut());   // the reversal lowers what went out
+        assertEquals(0.0, both.totalIn());
     }
 }

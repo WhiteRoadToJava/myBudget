@@ -84,6 +84,7 @@ public class ScheduleMapper {
                 schedule.getSourceAccount(),
                 schedule.getDescription(),
                 null,
+                null,
                 schedule.getSourceCurrency()
         );
     }
@@ -94,7 +95,7 @@ public class ScheduleMapper {
                 schedule.getUser(),
                 schedule.getSourceAccount(),
                 schedule.getDescription(),
-                schedule.getCreatedAt(),
+                null,
                 null,
                 schedule.getSourceCurrency()
         );
