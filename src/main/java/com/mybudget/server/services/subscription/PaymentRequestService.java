@@ -12,6 +12,7 @@ import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.PaymentMethod;
 import com.mybudget.server.modules.enums.PaymentRequestStatus;
 import com.mybudget.server.repositories.PaymentRequestRepository;
+import com.mybudget.server.services.currency.CurrencyCatalog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ public class PaymentRequestService {
 
     private final PaymentRequestRepository repository;
     private final SubscriptionService subscriptionService;
+    private final CurrencyCatalog currencyCatalog;
 
     // ---------- user ----------
 
@@ -42,8 +44,9 @@ public class PaymentRequestService {
         paymentRequest.setUsername(user.getUsername());
         paymentRequest.setMonths(request.getMonths());
         paymentRequest.setAmount(request.getAmount());
-        paymentRequest.setCurrency(request.getCurrency() == null ? null : request.getCurrency().trim().toUpperCase());
-        paymentRequest.setMethod(request.getMethod());
+        // the currency is optional; when given it must be one a subscription can be paid in
+        paymentRequest.setCurrency(request.getCurrency() == null || request.getCurrency().isBlank()
+                ? null : currencyCatalog.requirePayment(request.getCurrency()));        paymentRequest.setMethod(request.getMethod());
         paymentRequest.setReference(request.getReference().trim());
         paymentRequest.setNote(clean(request.getNote()));
         paymentRequest.setStatus(PaymentRequestStatus.PENDING);

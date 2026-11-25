@@ -1,5 +1,5 @@
 package com.mybudget.server.services.account;
-
+import com.mybudget.server.services.currency.CurrencyCatalog;
 import com.mybudget.server.dto.Transaction;
 import com.mybudget.server.dto.accounts.AccountRequest;
 import com.mybudget.server.dto.accounts.AccountResponse;
@@ -39,7 +39,7 @@ public class AccountService {
     private final ScheduleRepository scheduleRepository;
     private final MongoTemplate mongoTemplate;
     private static final Set<String> DELETE_WORDS = Set.of("delete", "حذف", "radera");
-
+    private final CurrencyCatalog currencyCatalog;
 
     public AccountResponse createAccount(AccountRequest accountRequest) {
         User currentUser = userUtils.getCurrentAuthenticatedUser();
@@ -48,13 +48,14 @@ public class AccountService {
         }
         Date createdAt = new Date();
         double openingBalance = accountRequest.getBalance() != null ? accountRequest.getBalance() : 0.0;
-
+        // only a currency of the app's list (the admin's) can be chosen
+        String currency = currencyCatalog.requireEnabled(accountRequest.getCurrency());
         Account account = new Account(
                 accountRequest.getName(),
                 accountRequest.getDescription(),
                 openingBalance,
                 openingBalance,
-                accountRequest.getCurrency(),
+                currency,
                 accountRequest.getType(),
                 currentUser,
                 createdAt.toString()
@@ -283,7 +284,8 @@ public class AccountService {
 
     public AccountResponse addCurrency(String accountId, String currency, Double openingBalance) {
         Account account = findOwnedAccount(accountId);
-        AccountBalances.add(account, currency, openingBalance == null ? 0.0 : openingBalance);
+        String code = currencyCatalog.requireEnabled(currency);
+        AccountBalances.add(account, code, openingBalance == null ? 0.0 : openingBalance);
         return accountMapper.mapToAccountResponse(accountRepository.save(account));
     }
 

@@ -13,6 +13,7 @@ class PreferenceRulesTest {
         assertNull(PreferenceRules.language(""));
         assertNull(PreferenceRules.currency("  "));
         assertNull(PreferenceRules.firstDayOfWeek(""));
+        assertNull(PreferenceRules.amountDisplay(""));
     }
 
     @Test
@@ -20,6 +21,8 @@ class PreferenceRulesTest {
         assertEquals("ar", PreferenceRules.language(" AR "));
         assertEquals("SEK", PreferenceRules.currency("sek"));
         assertEquals("SATURDAY", PreferenceRules.firstDayOfWeek("saturday"));
+        assertEquals("SYMBOL", PreferenceRules.amountDisplay(" symbol "));   // valuesAreTidied
+
     }
 
     @Test
@@ -28,5 +31,6 @@ class PreferenceRulesTest {
         assertThrows(IllegalArgumentException.class, () -> PreferenceRules.currency("SEKK"));
         assertThrows(IllegalArgumentException.class, () -> PreferenceRules.currency("12A"));
         assertThrows(IllegalArgumentException.class, () -> PreferenceRules.firstDayOfWeek("FRIDAY"));
+        assertThrows(IllegalArgumentException.class, () -> PreferenceRules.amountDisplay("FLAG")); // wrongValuesAreRefused
     }
 }

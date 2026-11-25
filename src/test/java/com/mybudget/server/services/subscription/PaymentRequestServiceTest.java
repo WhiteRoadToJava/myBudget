@@ -10,6 +10,7 @@ import com.mybudget.server.modules.User;
 import com.mybudget.server.modules.enums.PaymentMethod;
 import com.mybudget.server.modules.enums.PaymentRequestStatus;
 import com.mybudget.server.repositories.PaymentRequestRepository;
+import com.mybudget.server.services.currency.CurrencyCatalog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -33,12 +34,16 @@ class PaymentRequestServiceTest {
     private SubscriptionService subscriptionService;
     private PaymentRequestService service;
     private User user;
+    private CurrencyCatalog currencyCatalog;
 
     @BeforeEach
     void setUp() {
         repository = mock(PaymentRequestRepository.class);
         subscriptionService = mock(SubscriptionService.class);
-        service = new PaymentRequestService(repository, subscriptionService);
+        currencyCatalog = mock(CurrencyCatalog.class);
+        when(currencyCatalog.requirePayment("syp")).thenReturn("SYP");
+        when(currencyCatalog.requirePayment("GBP")).thenThrow(new IllegalArgumentException("not for payments"));
+        service = new PaymentRequestService(repository, subscriptionService, currencyCatalog);
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         user = new User();
         user.setId("u1");
@@ -126,5 +131,13 @@ class PaymentRequestServiceTest {
         HandlePaymentRequest reason = new HandlePaymentRequest();
         reason.setAdminNote("No transfer with this number");
         assertEquals(PaymentRequestStatus.REJECTED, service.reject("r1", reason, "admin").getStatus());
+    }
+    @Test
+    void theCurrencyMustBeOneForPayments() {
+        CreatePaymentRequest request = valid();
+        request.setCurrency("GBP");
+        assertThrows(IllegalArgumentException.class, () -> service.create(user, request));
+        request.setCurrency(null);
+        assertEquals(null, service.create(user, request).getCurrency());
     }
 }

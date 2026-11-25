@@ -4,6 +4,7 @@ public record PreferencesResponse(
         String language,
         String baseCurrency,
         String firstDayOfWeek,
-        String defaultAccountId
+        String defaultAccountId,
+        String amountDisplay
 ) {
 }
