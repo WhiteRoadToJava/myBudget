@@ -16,6 +16,7 @@ import com.mybudget.server.repositories.DebtMovementRepository;
 
 import com.mybudget.server.services.account.AccountBalances;
 import com.mybudget.server.services.account.AccountService;
+import com.mybudget.server.services.currency.CurrencyCatalog;
 import com.mybudget.server.services.transactions.ReferenceNumbers;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -44,12 +45,13 @@ public class DebtService {
     private final IncomseRepository incomseRepository;
     private final ExpenseRepository expenseRepository;
     private final ReferenceNumbers referenceNumbers;
+    private final CurrencyCatalog currencyCatalog;
 
 
     public DebtResponse createDebt(DebtRequest request) {
         User user = userUtils.getCurrentAuthenticatedUser();
         validateDebtRequest(request);
-
+        request.setCurrency(currencyCatalog.requireEnabled(request.getCurrency()));
         Debt debt = new Debt();
         debt.setUser(user);
         applySettings(debt, request);
@@ -82,6 +84,12 @@ public class DebtService {
         if (!movements.isEmpty()) {
             if (request.getDirection() != debt.getDirection()) {
                 throw new IllegalArgumentException("The direction can not be changed after movements were added");
+            }
+            // a debt keeps its currency even when the admin has switched it off; a new one must be on the list
+            if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())) {
+                request.setCurrency(currencyCatalog.requireEnabled(request.getCurrency()));
+            } else {
+                request.setCurrency(debt.getCurrency());
             }
             if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())) {
                 throw new IllegalArgumentException("The currency can not be changed after movements were added");
@@ -183,23 +191,23 @@ public class DebtService {
     public enum ScheduledPayment {PAID, FINISHED, NOTHING_TO_PAY}
 
     // checks a scheduled debt payment and gives the currency it is paid in (the debt's)
-    public String checkScheduledPayment (String debtId, String accountId, User user){
+    public String checkScheduledPayment(String debtId, String accountId, User user) {
         Debt debt = findDebt(debtId, user);
         Account account = accountRepository.findByIdAndUser(accountId, user);
         if (account == null) {
             throw new ResourceNotFoundException("Account not found");
         }
         checkAccountCanBeUsed(debt, account);
-        if (owedToday(debt).signum() <= 0){
-            throw   new IllegalArgumentException("The debt has nothing left to pay");
+        if (owedToday(debt).signum() <= 0) {
+            throw new IllegalArgumentException("The debt has nothing left to pay");
         }
         return debt.getCurrency();
     }
 
-    public ScheduledPayment payScheduled(String debtId, String accountId, BigDecimal amount, User user){
+    public ScheduledPayment payScheduled(String debtId, String accountId, BigDecimal amount, User user) {
         Debt debt = findDebt(debtId, user);
         BigDecimal owed = owedToday(debt);
-        if (owed.signum() <= 0){
+        if (owed.signum() <= 0) {
             return ScheduledPayment.NOTHING_TO_PAY;
         }
         BigDecimal pay = amount.setScale(2, RoundingMode.HALF_UP).min(owed);
@@ -213,9 +221,11 @@ public class DebtService {
 
         return pay.compareTo(owed) >= 0 ? ScheduledPayment.FINISHED : ScheduledPayment.PAID;
     }
+
     private BigDecimal owedToday(Debt debt) {
         return calculate(debt, debtMovementRepository.findByDebtOrderByDateAscCreatedAtAsc(debt)).totalOwed();
     }
+
     private Debt findDebt(String debtId, User user) {
         return debtRepository.findByIdAndUser(debtId, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Debt not found"));

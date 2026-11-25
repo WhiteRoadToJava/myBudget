@@ -9,6 +9,7 @@ import com.mybudget.server.modules.UserPreferences;
 import com.mybudget.server.modules.enums.AccountStatus;
 import com.mybudget.server.repositories.AccountRepository;
 import com.mybudget.server.repositories.UserRepository;
+import com.mybudget.server.services.currency.CurrencyCatalog;
 import com.mybudget.server.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class PreferencesService {
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
     private final UserUtils userUtils;
+    private final CurrencyCatalog currencyCatalog;
 
     public PreferencesResponse getPreferences() {
         return toResponse(userUtils.getCurrentAuthenticatedUser());
@@ -33,19 +35,29 @@ public class PreferencesService {
         String language = request.getLanguage() == null ? preferences.getLanguage()
                 : PreferenceRules.language(request.getLanguage());
         String currency = request.getBaseCurrency() == null ? preferences.getBaseCurrency()
-                : PreferenceRules.currency(request.getBaseCurrency());
+                : baseCurrency(request.getBaseCurrency());
         String firstDay = request.getFirstDayOfWeek() == null ? preferences.getFirstDayOfWeek()
                 : PreferenceRules.firstDayOfWeek(request.getFirstDayOfWeek());
         String accountId = request.getDefaultAccountId() == null ? preferences.getDefaultAccountId()
                 : defaultAccount(request.getDefaultAccountId(), authenticatedUser);
 
+        String amountDisplay = request.getAmountDisplay() == null ? preferences.getAmountDisplay()
+                : PreferenceRules.amountDisplay(request.getAmountDisplay());
 
         preferences.setLanguage(language);
         preferences.setBaseCurrency(currency);
         preferences.setFirstDayOfWeek(firstDay);
         preferences.setDefaultAccountId(accountId);
+        preferences.setAmountDisplay(amountDisplay);
         authenticatedUser.setPreferences(preferences);
         return toResponse(userRepository.save(authenticatedUser));
+    }
+
+
+    // "" clears it; otherwise a currency of the app's list
+    private String baseCurrency(String value) {
+        String code = PreferenceRules.currency(value);
+        return code == null ? null : currencyCatalog.requireEnabled(code);
     }
 
     private String defaultAccount(String accountId, User user) {
@@ -60,13 +72,13 @@ public class PreferencesService {
     private PreferencesResponse toResponse(User user) {
         UserPreferences p = user.getPreferences();
         if (p == null) {
-            return new PreferencesResponse(null, null, null, null);
+            return new PreferencesResponse(null, null, null, null, null);
         }
         String accountId = p.getDefaultAccountId() != null
                 && isUsable(accountRepository.findByIdAndUser(p.getDefaultAccountId(), user))
                 ? p.getDefaultAccountId() : null;
-        return new PreferencesResponse(p.getLanguage(), p.getBaseCurrency(), p.getFirstDayOfWeek(), accountId);
-    }
+        return new PreferencesResponse(p.getLanguage(), p.getBaseCurrency(), p.getFirstDayOfWeek(), accountId,
+                p.getAmountDisplay());    }
 
     private boolean isUsable(Account account) {
         return account != null
