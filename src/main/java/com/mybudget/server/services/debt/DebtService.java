@@ -85,15 +85,15 @@ public class DebtService {
             if (request.getDirection() != debt.getDirection()) {
                 throw new IllegalArgumentException("The direction can not be changed after movements were added");
             }
-            // a debt keeps its currency even when the admin has switched it off; a new one must be on the list
-            if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())) {
-                request.setCurrency(currencyCatalog.requireEnabled(request.getCurrency()));
-            } else {
-                request.setCurrency(debt.getCurrency());
-            }
             if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())) {
                 throw new IllegalArgumentException("The currency can not be changed after movements were added");
             }
+        }
+        // a debt keeps its currency even when the admin has switched it off; a new one must be on the list
+        if (!debt.getCurrency().equalsIgnoreCase(request.getCurrency().trim())) {
+            request.setCurrency(currencyCatalog.requireEnabled(request.getCurrency()));
+        } else {
+            request.setCurrency(debt.getCurrency());
         }
         applySettings(debt, request);
         DebtCalculator.Result result = calculate(debt, movements);
